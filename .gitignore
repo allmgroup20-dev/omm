@@ -15,7 +15,8 @@ node_modules
 
 # DB
 data/
-drizzle/*.sql
+# keep drizzle migrations (do not ignore *.sql)
+# drizzle/*.sql
 *.db
 *.sqlite
 *.sqlite3
