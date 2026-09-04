@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "omm-app",
+  "compatibility_date": "2026-09-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // D1 database - create with: npx wrangler d1 create omm-db
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "omm-db",
+      "database_id": "local-omm-db-id-replace-in-production"
+    }
+  ],
+  // R2 for receipts/uploads
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "omm-receipts"
+    }
+  ],
+  // KV for sessions / rate-limit / cache
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "local-kv-id-replace-in-production"
+    }
+  ],
+  "vars": {
+    "APP_URL": "https://omm.jobayergroup.com",
+    "APP_NAME": "Our Mess Management"
+  }
+}

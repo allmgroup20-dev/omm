@@ -1,0 +1,33 @@
+# Next.js
+.next/
+out/
+build/
+dist/
+.open-next/
+
+# Dependencies
+node_modules
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# DB
+data/
+drizzle/*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
