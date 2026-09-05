@@ -9,14 +9,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm install --legacy-peer-deps
       - run: npm run typecheck
+      - run: mkdir -p data
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: ./data/omm.db
       - run: npm run test
+        env:
+          DATABASE_URL: ./data/omm.db
+          AUTH_SECRET: ci-test-secret-must-be-32-chars-long-12345
       - run: npm run build -- --webpack
         env:
           DATABASE_URL: ./data/omm.db
@@ -30,9 +37,9 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
