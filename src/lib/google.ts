@@ -6,8 +6,10 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 
 export function googleConfig() {
-  const clientId = getEnv("GOOGLE_CLIENT_ID");
-  const clientSecret = getEnv("GOOGLE_CLIENT_SECRET");
+  // Secrets uploaded via stdin pipe can carry a trailing newline — trim it,
+  // otherwise Google rejects the exchange and id_token audience check fails.
+  const clientId = getEnv("GOOGLE_CLIENT_ID").trim();
+  const clientSecret = getEnv("GOOGLE_CLIENT_SECRET").trim();
   const appUrl = getEnv("APP_URL", "http://localhost:3000").replace(/\/$/, "");
   return {
     clientId,

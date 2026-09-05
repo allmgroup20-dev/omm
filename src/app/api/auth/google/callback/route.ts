@@ -23,20 +23,22 @@ export async function GET(req: Request) {
   const jar = await cookies();
   const savedState = jar.get("omm_oauth_state")?.value;
   if (!code || !state || !savedState || state !== savedState) {
-    return fail("Google login failed. Please try again.");
+    console.error("[google-callback] E1 state mismatch", { hasCode: !!code, hasState: !!state, hasSaved: !!savedState });
+    return fail("Google login failed (E1). Please try again.");
   }
 
   const ip = getClientIp(req);
   const rl = rateLimit(`google-cb:${ip}`, 10, 60_000);
-  if (!rl.allowed) return fail("Too many attempts. Try later.");
+  if (!rl.allowed) return fail("Too many attempts (E2). Try later.");
 
   let profile;
   try {
     profile = await exchangeCodeForProfile(code);
-  } catch {
-    return fail("Google verification failed. Try again.");
+  } catch (err) {
+    console.error("[google-callback] E3 exchange/verify failed", err instanceof Error ? err.message : err);
+    return fail("Google verification failed (E3). Try again.");
   }
-  if (!profile.emailVerified) return fail("Your Google email is not verified.");
+  if (!profile.emailVerified) return fail("Your Google email is not verified (E4).");
 
   const db = await getRequestDb();
   const now = new Date().toISOString();
