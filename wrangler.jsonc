@@ -46,12 +46,30 @@
   "routes": [{ "pattern": "omm.jobayergroup.com/*", "zone_name": "jobayergroup.com" }],
   "env": {
     "staging": {
-      "vars": { "APP_URL": "https://staging-omm.jobayergroup.com" },
-      "d1_databases": [{ "binding": "DB", "database_name": "omm-db-staging", "database_id": "REPLACE_STAGING_D1_ID" }]
+      "vars": {
+        "APP_URL": "https://staging-omm.jobayergroup.com",
+        "APP_NAME": "Our Mess Management",
+        "NODE_ENV": "production"
+      },
+      "d1_databases": [{ "binding": "DB", "database_name": "omm-db-staging", "database_id": "REPLACE_STAGING_D1_ID" }],
+      "r2_buckets": [
+        { "binding": "R2", "bucket_name": "omm-receipts" },
+        { "binding": "R2_LISTINGS", "bucket_name": "omm-listings" }
+      ],
+      "kv_namespaces": [{ "binding": "KV", "id": "REPLACE_STAGING_KV_ID" }]
     },
     "production": {
-      "vars": { "APP_URL": "https://omm.jobayergroup.com" },
-      "d1_databases": [{ "binding": "DB", "database_name": "omm-db", "database_id": "REPLACE_PROD_D1_ID" }]
+      "vars": {
+        "APP_URL": "https://omm.jobayergroup.com",
+        "APP_NAME": "Our Mess Management",
+        "NODE_ENV": "production"
+      },
+      "d1_databases": [{ "binding": "DB", "database_name": "omm-db", "database_id": "REPLACE_PROD_D1_ID" }],
+      "r2_buckets": [
+        { "binding": "R2", "bucket_name": "omm-receipts" },
+        { "binding": "R2_LISTINGS", "bucket_name": "omm-listings" }
+      ],
+      "kv_namespaces": [{ "binding": "KV", "id": "REPLACE_PROD_KV_ID" }]
     }
   }
 }
