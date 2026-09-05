@@ -29,11 +29,25 @@ jobs:
           DATABASE_URL: ./data/omm.db
           AUTH_SECRET: ci-test-secret-must-be-32-chars-long-12345
 
+  # `secrets` context is not allowed in job `if:` — detect via outputs instead.
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has-secrets: ${{ steps.check.outputs.has-secrets }}
+    steps:
+      - id: check
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "has-secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-secrets=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
-    needs: test
+    needs: [test, check-secrets]
     # Skip (don't fail) when Cloudflare secrets aren't configured yet.
     # Site is deployed directly until then; add the 2 secrets to enable auto-deploy.
-    if: github.ref == 'refs/heads/main' && secrets.CLOUDFLARE_API_TOKEN != ''
+    if: github.ref == 'refs/heads/main' && needs.check-secrets.outputs.has-secrets == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
