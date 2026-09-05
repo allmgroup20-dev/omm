@@ -31,7 +31,9 @@ jobs:
 
   deploy:
     needs: test
-    if: github.ref == 'refs/heads/main'
+    # Skip (don't fail) when Cloudflare secrets aren't configured yet.
+    # Site is deployed directly until then; add the 2 secrets to enable auto-deploy.
+    if: github.ref == 'refs/heads/main' && secrets.CLOUDFLARE_API_TOKEN != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
