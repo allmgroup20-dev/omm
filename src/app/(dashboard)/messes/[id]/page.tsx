@@ -57,9 +57,13 @@ export default async function MessOverviewPage({ params }: { params: Promise<{ i
         <h3 className="text-sm font-semibold">Quick Actions</h3>
         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
           <Link href={`/messes/${id}/members`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">+ সদস্য/আমন্ত্রণ</Link>
-          <span className="border rounded-xl p-3 text-center text-zinc-400">+ মিল (Phase 5)</span>
-          <span className="border rounded-xl p-3 text-center text-zinc-400">+ বাজার (Phase 6)</span>
-          <span className="border rounded-xl p-3 text-center text-zinc-400">+ জমা (Phase 8)</span>
+          <Link href={`/messes/${id}/meals`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">+ মিল দিন</Link>
+          <Link href={`/messes/${id}/market/add`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">+ বাজার যোগ</Link>
+          <Link href={`/messes/${id}/finance/deposits`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">+ টাকা জমা</Link>
+          <Link href={`/messes/${id}/dashboard`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">📊 ড্যাশবোর্ড</Link>
+          <Link href={`/messes/${id}/settlements`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">🧾 সেটেলমেন্ট</Link>
+          <Link href={`/messes/${id}/reports`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">📄 রিপোর্ট</Link>
+          <Link href={`/messes/${id}/calendar`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">📅 ক্যালেন্ডার</Link>
         </div>
       </div>
     </div>
