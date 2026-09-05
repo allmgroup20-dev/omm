@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* SolaimanLipi — primary Bangla font, self-hosted (no third-party dependency) */
+@font-face {
+  font-family: "SolaimanLipi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/solaimanlipi.woff") format("woff");
+}
+
 :root {
   --background: #fafafa;
   --foreground: #18181b;
+  --font-bangla: "SolaimanLipi", "Noto Sans Bengali", "Hind Siliguri", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -12,7 +22,13 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-bangla);
+  /* SolaimanLipi renders best with generous line-height for Bangla conjuncts */
+  line-height: 1.7;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
 }
 
 /* Dark mode */
