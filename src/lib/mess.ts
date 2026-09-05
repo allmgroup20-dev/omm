@@ -1,9 +1,11 @@
 import { nanoid } from "nanoid";
 
 export function generateMessCode(): string {
-  // OMM-XXXX (4 char base32)
-  const raw = nanoid(6).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-  return `OMM-${raw}`;
+  let raw = "";
+  while (raw.length < 6) {
+    raw += nanoid(8).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+  return `OMM-${raw.slice(0, 6)}`;
 }
 
 export function slugify(name: string): string {
@@ -16,7 +18,12 @@ export function slugify(name: string): string {
 }
 
 export function generateInviteCode(): string {
-  return nanoid(8).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  // Ensure exactly 8 alphanumeric chars (nanoid may include _-)
+  let code = "";
+  while (code.length < 8) {
+    code += nanoid(12).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+  return code.slice(0, 8);
 }
 
 export function generateLinkToken(): string {
