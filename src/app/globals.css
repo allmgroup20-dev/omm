@@ -14,3 +14,39 @@ body {
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
+
+/* Dark mode */
+html.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+html.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+html.dark * {
+  border-color: #27272a;
+}
+html.dark .bg-white {
+  background-color: #18181b !important;
+  color: #fafafa;
+}
+html.dark .bg-zinc-50 {
+  background-color: #27272a !important;
+}
+html.dark .text-zinc-500 { color: #a1a1aa !important; }
+html.dark .text-zinc-600 { color: #d4d4d8 !important; }
+html.dark .border { border-color: #3f3f46 !important; }
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  table { font-size: 12px; }
+  /* Ensure touch targets >=44px */
+  button, a { min-height: 32px; }
+}
+
+/* Print */
+@media print {
+  header, nav { display: none !important; }
+  body { background: white !important; }
+}
