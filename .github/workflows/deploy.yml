@@ -47,7 +47,7 @@ jobs:
       - run: npm install --legacy-peer-deps
 
       - name: Build Cloudflare Worker (OpenNext)
-        run: npx @opennextjs/cloudflare build
+        run: npx @opennextjs/cloudflare@1 build
         env:
           # Ensure next.config headers are applied
           NODE_ENV: production
