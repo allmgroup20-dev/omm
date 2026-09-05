@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TurnstileWidget } from "@/components/turnstile";
+import { GoogleButton, OrDivider } from "@/components/google-button";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -49,7 +50,13 @@ export default function RegisterPage() {
           <p className="text-sm text-zinc-500">OMM — Our Mess Management</p>
         </div>
         {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error}</div>}
-        <form onSubmit={submit} className="mt-6 space-y-4">
+        <div className="mt-6">
+          <GoogleButton text="Google দিয়ে রেজিস্টার করুন" />
+        </div>
+        <div className="mt-4">
+          <OrDivider />
+        </div>
+        <form onSubmit={submit} className="mt-4 space-y-4">
           <input placeholder="পূর্ণ নাম *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
           <input type="email" placeholder="ইমেইল *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
           <input placeholder="মোবাইল (ঐচ্ছিক)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" />

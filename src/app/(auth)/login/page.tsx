@@ -2,11 +2,13 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { GoogleButton, OrDivider } from "@/components/google-button";
 
 function LoginInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const next = sp.get("next") || "/dashboard";
+  const urlError = sp.get("error") || "";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ email: "", password: "" });
@@ -40,8 +42,14 @@ function LoginInner() {
           <h1 className="mt-3 text-xl font-bold">লগইন করুন</h1>
           <p className="text-sm text-zinc-500">omm.jobayergroup.com</p>
         </div>
-        {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error}</div>}
-        <form onSubmit={submit} className="mt-6 space-y-4">
+        {(error || urlError) && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error || urlError}</div>}
+        <div className="mt-6">
+          <GoogleButton text="Google দিয়ে চালিয়ে যান" />
+        </div>
+        <div className="mt-4">
+          <OrDivider />
+        </div>
+        <form onSubmit={submit} className="mt-4 space-y-4">
           <input type="email" placeholder="ইমেইল" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
           <input type="password" placeholder="পাসওয়ার্ড" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
           <button disabled={loading} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium hover:bg-black disabled:opacity-50">{loading ? "যাচাই হচ্ছে..." : "লগইন"}</button>
