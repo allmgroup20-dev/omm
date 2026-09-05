@@ -14,28 +14,24 @@
     "head_sampling_rate": 0.1,
     "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true }
   },
-  // D1 — create per env: npx wrangler d1 create omm-db --env production
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "omm-db",
-      "database_id": "REPLACE_WITH_D1_ID__see_DEPLOYMENT.md"
+      "database_id": "e5f2d06d-d3c6-45d0-a18b-640545ef31f7"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "R2",
-      "bucket_name": "omm-receipts"
-    },
-    {
-      "binding": "R2_LISTINGS",
-      "bucket_name": "omm-listings"
-    }
-  ],
+  // R2 TEMPORARILY REMOVED: account R2 not enabled yet (code: 10042).
+  // Code does not reference R2/KV bindings yet — re-add after enabling R2:
+  //   npx wrangler r2 bucket create omm-receipts && npx wrangler r2 bucket create omm-listings
+  // "r2_buckets": [
+  //   { "binding": "R2", "bucket_name": "omm-receipts" },
+  //   { "binding": "R2_LISTINGS", "bucket_name": "omm-listings" }
+  // ],
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "REPLACE_WITH_KV_ID__see_DEPLOYMENT.md"
+      "id": "210ff21d02564efdaf4c77293060c483"
     }
   ],
   "vars": {
@@ -51,12 +47,8 @@
         "APP_NAME": "Our Mess Management",
         "NODE_ENV": "production"
       },
-      "d1_databases": [{ "binding": "DB", "database_name": "omm-db-staging", "database_id": "REPLACE_STAGING_D1_ID" }],
-      "r2_buckets": [
-        { "binding": "R2", "bucket_name": "omm-receipts" },
-        { "binding": "R2_LISTINGS", "bucket_name": "omm-listings" }
-      ],
-      "kv_namespaces": [{ "binding": "KV", "id": "REPLACE_STAGING_KV_ID" }]
+      "d1_databases": [{ "binding": "DB", "database_name": "omm-db-staging", "database_id": "0a449513-9cc3-4dcb-8946-2285c2b42b87" }],
+      "kv_namespaces": [{ "binding": "KV", "id": "a50e9ec76a2d431ba85e6a2f3e6a6015" }]
     },
     "production": {
       "vars": {
@@ -64,12 +56,8 @@
         "APP_NAME": "Our Mess Management",
         "NODE_ENV": "production"
       },
-      "d1_databases": [{ "binding": "DB", "database_name": "omm-db", "database_id": "REPLACE_PROD_D1_ID" }],
-      "r2_buckets": [
-        { "binding": "R2", "bucket_name": "omm-receipts" },
-        { "binding": "R2_LISTINGS", "bucket_name": "omm-listings" }
-      ],
-      "kv_namespaces": [{ "binding": "KV", "id": "REPLACE_PROD_KV_ID" }]
+      "d1_databases": [{ "binding": "DB", "database_name": "omm-db", "database_id": "e5f2d06d-d3c6-45d0-a18b-640545ef31f7" }],
+      "kv_namespaces": [{ "binding": "KV", "id": "210ff21d02564efdaf4c77293060c483" }]
     }
   }
 }
