@@ -2,15 +2,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AddressSelect, { type AddressValue } from "@/components/address-select";
+
+const EMPTY_GEO: AddressValue = { division: "", district: "", upazila: "", unionName: "", area: "", address: "", postalCode: "" };
 
 export default function NewMessPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [geo, setGeo] = useState<AddressValue>(EMPTY_GEO);
   const [form, setForm] = useState({
     name: "",
     description: "",
-    address: "",
     contactInfo: "",
     startDate: new Date().toISOString().slice(0, 10),
     mealTypes: "Breakfast,Lunch,Dinner",
@@ -32,7 +35,13 @@ export default function NewMessPage() {
         body: JSON.stringify({
           name: form.name,
           description: form.description,
-          address: form.address,
+          address: geo.address,
+          division: geo.division || undefined,
+          district: geo.district || undefined,
+          upazila: geo.upazila || undefined,
+          unionName: geo.unionName || undefined,
+          area: geo.area || undefined,
+          postalCode: geo.postalCode || undefined,
           contactInfo: form.contactInfo,
           startDate: form.startDate,
           mealTypes: mealTypes.length ? mealTypes : undefined,
@@ -58,7 +67,10 @@ export default function NewMessPage() {
       <form onSubmit={submit} className="mt-6 bg-white border rounded-2xl p-6 space-y-4">
         <input placeholder="মেসের নাম *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm" required />
         <textarea placeholder="বিবরণ (ঐচ্ছিক)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm" rows={2} />
-        <input placeholder="ঠিকানা" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm" />
+        <div className="rounded-xl border p-4 bg-zinc-50/50">
+          <div className="text-xs font-semibold mb-2">মেসের ঠিকানা</div>
+          <AddressSelect value={geo} onChange={setGeo} />
+        </div>
         <input placeholder="যোগাযোগ তথ্য" value={form.contactInfo} onChange={(e) => setForm({ ...form, contactInfo: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm" />
         <div>
           <label className="text-xs text-zinc-600">শুরুর তারিখ *</label>

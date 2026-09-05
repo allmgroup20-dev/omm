@@ -6,6 +6,7 @@ import { listingSchema } from "@/lib/validators-listing";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { slugify } from "@/lib/mess";
+import { validateChain } from "@/lib/bd-geo";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -55,9 +56,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
   }
   if (data.description !== undefined) updates.description = data.description?.trim() || null;
   if (data.price !== undefined) updates.pricePaisa = Math.round(data.price * 100);
+  if (data.division !== undefined) updates.division = data.division?.trim() || null;
   if (data.district !== undefined) updates.district = data.district?.trim() || null;
+  if (data.upazila !== undefined) updates.upazila = data.upazila?.trim() || null;
+  if (data.unionName !== undefined) updates.unionName = data.unionName?.trim() || null;
   if (data.area !== undefined) updates.area = data.area?.trim() || null;
+  if (data.address !== undefined) updates.address = data.address?.trim() || null;
+  if (data.postalCode !== undefined) updates.postalCode = data.postalCode?.trim() || null;
   if (data.type !== undefined) updates.type = data.type;
+
+  // Validate merged geo chain (existing values + updates)
+  const merged = {
+    division: ((updates.division ?? rows[0].division) as string | null) || "",
+    district: ((updates.district ?? rows[0].district) as string | null) || "",
+    upazila: ((updates.upazila ?? rows[0].upazila) as string | null) || "",
+    union: ((updates.unionName ?? rows[0].unionName) as string | null) || "",
+  };
+  if (merged.division || merged.district || merged.upazila || merged.union) {
+    if (!validateChain(merged)) return NextResponse.json({ error: "ঠিকানা সঠিক নয় — বিভাগ/জেলা/উপজেলা/ইউনিয়ন সরকারি তালিকা থেকে বেছে নিন" }, { status: 400 });
+  }
 
   // Any edit after published goes back to pending for re-moderation
   if (rows[0].status === "published") updates.status = "pending";

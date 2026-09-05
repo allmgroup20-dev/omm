@@ -4,6 +4,7 @@ import { getRequestDb } from "@/db";
 import { messes, messMembers, mealTypes, auditLogs } from "@/db/schema";
 import { createMessSchema } from "@/lib/validators-mess";
 import { generateMessCode, slugify } from "@/lib/mess";
+import { validateChain } from "@/lib/bd-geo";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 
@@ -28,6 +29,16 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
+  // Government hierarchy validation (division → district → upazila → union)
+  if (data.division || data.district || data.upazila || data.unionName) {
+    const chain = validateChain({
+      division: data.division?.trim() || "",
+      district: data.district?.trim() || "",
+      upazila: data.upazila?.trim() || "",
+      union: data.unionName?.trim() || "",
+    });
+    if (!chain) return NextResponse.json({ error: "ঠিকানা সঠিক নয় — বিভাগ/জেলা/উপজেলা/ইউনিয়ন সরকারি তালিকা থেকে বেছে নিন" }, { status: 400 });
+  }
   const db = await getRequestDb();
   const now = new Date().toISOString();
   const messId = nanoid();
@@ -41,6 +52,12 @@ export async function POST(req: Request) {
       code,
       description: data.description?.trim() || null,
       address: data.address?.trim() || null,
+      division: data.division?.trim() || null,
+      district: data.district?.trim() || null,
+      upazila: data.upazila?.trim() || null,
+      unionName: data.unionName?.trim() || null,
+      area: data.area?.trim() || null,
+      postalCode: data.postalCode?.trim() || null,
       contactInfo: data.contactInfo?.trim() || null,
       currency: data.currency || "BDT",
       timezone: data.timezone || "Asia/Dhaka",

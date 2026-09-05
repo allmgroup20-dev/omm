@@ -14,13 +14,32 @@ function SearchInner() {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     q: sp.get("q") || "",
+    division: sp.get("division") || "",
     district: sp.get("district") || "",
+    upazila: sp.get("upazila") || "",
     area: sp.get("area") || "",
     type: sp.get("type") || "",
     rentMin: sp.get("rentMin") || "",
     rentMax: sp.get("rentMax") || "",
     sort: sp.get("sort") || "newest",
   });
+  const [divisions, setDivisions] = useState<{ en: string; bn: string }[]>([]);
+  const [districts, setDistricts] = useState<{ en: string; bn: string }[]>([]);
+  const [upazilas, setUpazilas] = useState<{ en: string; bn: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/geo?level=divisions").then((r) => r.json()).then((d) => { if (d.data) setDivisions(d.data); }).catch(() => {});
+  }, []);
+  useEffect(() => {
+    setDistricts([]);
+    if (!filters.division) return;
+    fetch(`/api/geo?level=districts&division=${encodeURIComponent(filters.division)}`).then((r) => r.json()).then((d) => { if (d.data) setDistricts(d.data); }).catch(() => {});
+  }, [filters.division]);
+  useEffect(() => {
+    setUpazilas([]);
+    if (!filters.district) return;
+    fetch(`/api/geo?level=upazilas&district=${encodeURIComponent(filters.district)}`).then((r) => r.json()).then((d) => { if (d.data) setUpazilas(d.data); }).catch(() => {});
+  }, [filters.district]);
 
   async function search() {
     setLoading(true);
@@ -46,7 +65,24 @@ function SearchInner() {
       <div className="bg-white border rounded-2xl p-4">
         <div className="grid md:grid-cols-4 gap-3">
           <input value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} placeholder="খুঁজুন (যেমন: মিরপুর, ২ সিট)" className="border rounded-full px-4 py-2 text-sm" />
-          <input value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value })} placeholder="জেলা (ঢাকা, চট্টগ্রাম)" className="border rounded-full px-4 py-2 text-sm" />
+          <select value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value, district: "", upazila: "" })} className="border rounded-full px-3 py-2 text-sm">
+            <option value="">সব বিভাগ</option>
+            {divisions.map((d) => (
+              <option key={d.en} value={d.en}>{d.bn}</option>
+            ))}
+          </select>
+          <select value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value, upazila: "" })} className="border rounded-full px-3 py-2 text-sm" disabled={!filters.division}>
+            <option value="">সব জেলা</option>
+            {districts.map((d) => (
+              <option key={d.en} value={d.en}>{d.bn}</option>
+            ))}
+          </select>
+          <select value={filters.upazila} onChange={(e) => setFilters({ ...filters, upazila: e.target.value })} className="border rounded-full px-3 py-2 text-sm" disabled={!filters.district}>
+            <option value="">সব উপজেলা</option>
+            {upazilas.map((d) => (
+              <option key={d.en} value={d.en}>{d.bn}</option>
+            ))}
+          </select>
           <input value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} placeholder="এলাকা (মিরপুর, ধানমন্ডি)" className="border rounded-full px-4 py-2 text-sm" />
           <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="border rounded-full px-3 py-2 text-sm">
             <option value="">সব টাইপ</option>

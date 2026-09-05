@@ -1,9 +1,19 @@
 import { z } from "zod";
 
+const geoFields = {
+  division: z.string().max(40).optional().or(z.literal("")),
+  district: z.string().max(40).optional().or(z.literal("")),
+  upazila: z.string().max(40).optional().or(z.literal("")),
+  unionName: z.string().max(60).optional().or(z.literal("")),
+  area: z.string().max(80).optional().or(z.literal("")),
+  postalCode: z.string().max(10).optional().or(z.literal("")),
+};
+
 export const createMessSchema = z.object({
   name: z.string().min(2).max(80),
   description: z.string().max(500).optional().or(z.literal("")),
   address: z.string().max(200).optional().or(z.literal("")),
+  ...geoFields,
   contactInfo: z.string().max(200).optional().or(z.literal("")),
   currency: z.string().default("BDT").optional(),
   timezone: z.string().default("Asia/Dhaka").optional(),
@@ -23,6 +33,12 @@ export const updateMessSchema = z.object({
   name: z.string().min(2).max(80).optional(),
   description: z.string().max(500).optional(),
   address: z.string().max(200).optional(),
+  division: z.string().max(40).optional(),
+  district: z.string().max(40).optional(),
+  upazila: z.string().max(40).optional(),
+  unionName: z.string().max(60).optional(),
+  area: z.string().max(80).optional(),
+  postalCode: z.string().max(10).optional(),
   contactInfo: z.string().max(200).optional(),
   timezone: z.string().optional(),
   costAllocation: z.enum(["equal", "meal_proportional", "member_specific", "custom"]).optional(),

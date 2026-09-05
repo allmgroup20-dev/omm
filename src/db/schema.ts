@@ -94,6 +94,12 @@ export const messes = sqliteTable(
     code: text("code").notNull().unique(), // OMM-XXXX unique
     description: text("description"),
     address: text("address"),
+    division: text("division"),
+    district: text("district"),
+    upazila: text("upazila"),
+    unionName: text("union_name"),
+    area: text("area"),
+    postalCode: text("postal_code"),
     contactInfo: text("contact_info"),
     currency: text("currency").notNull().default("BDT"),
     timezone: text("timezone").notNull().default("Asia/Dhaka"),
@@ -734,16 +740,20 @@ export const locations = sqliteTable(
   "locations",
   {
     id: text("id").primaryKey(),
+    level: integer("level").notNull().default(3), // 1=division, 2=district, 3=upazila
     division: text("division").notNull(),
     district: text("district").notNull(),
     upazila: text("upazila"),
+    unionName: text("union_name"),
     area: text("area"),
+    bnName: text("bn_name"),
+    postal: text("postal"),
     slug: text("slug").notNull().unique(),
     lat: text("lat"),
     lng: text("lng"),
     createdAt: text("created_at").notNull(),
   },
-  (t) => [index("idx_locations_district").on(t.district), index("idx_locations_area").on(t.area)],
+  (t) => [index("idx_locations_district").on(t.district), index("idx_locations_area").on(t.area), index("idx_locations_level").on(t.level)],
 );
 
 export const listings = sqliteTable(
@@ -766,8 +776,10 @@ export const listings = sqliteTable(
     division: text("division"),
     district: text("district"),
     upazila: text("upazila"),
+    unionName: text("union_name"),
     area: text("area"),
     address: text("address"),
+    postalCode: text("postal_code"),
     lat: text("lat"),
     lng: text("lng"),
     bedrooms: integer("bedrooms"),

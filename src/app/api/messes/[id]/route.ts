@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { messes, messMembers, auditLogs } from "@/db/schema";
 import { updateMessSchema } from "@/lib/validators-mess";
+import { validateChain } from "@/lib/bd-geo";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -40,6 +41,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (data.name !== undefined) updates.name = data.name.trim();
   if (data.description !== undefined) updates.description = data.description?.trim() || null;
   if (data.address !== undefined) updates.address = data.address || null;
+  if (data.division !== undefined) updates.division = data.division?.trim() || null;
+  if (data.district !== undefined) updates.district = data.district?.trim() || null;
+  if (data.upazila !== undefined) updates.upazila = data.upazila?.trim() || null;
+  if (data.unionName !== undefined) updates.unionName = data.unionName?.trim() || null;
+  if (data.area !== undefined) updates.area = data.area?.trim() || null;
+  if (data.postalCode !== undefined) updates.postalCode = data.postalCode?.trim() || null;
   if (data.contactInfo !== undefined) updates.contactInfo = data.contactInfo || null;
   if (data.timezone !== undefined) updates.timezone = data.timezone;
   if (data.costAllocation !== undefined) {
@@ -56,6 +63,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const before = await db.select().from(messes).where(eq(messes.id, id)).limit(1);
+  if (!before[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Validate merged geo chain (existing values + updates)
+  const merged = {
+    division: ((updates.division ?? before[0].division) as string | null) || "",
+    district: ((updates.district ?? before[0].district) as string | null) || "",
+    upazila: ((updates.upazila ?? before[0].upazila) as string | null) || "",
+    union: ((updates.unionName ?? before[0].unionName) as string | null) || "",
+  };
+  if (merged.division || merged.district || merged.upazila || merged.union) {
+    if (!validateChain(merged)) return NextResponse.json({ error: "ঠিকানা সঠিক নয় — বিভাগ/জেলা/উপজেলা/ইউনিয়ন সরকারি তালিকা থেকে বেছে নিন" }, { status: 400 });
+  }
   await db.update(messes).set(updates as never).where(eq(messes.id, id));
   await db.insert(auditLogs).values({
     id: nanoid(),

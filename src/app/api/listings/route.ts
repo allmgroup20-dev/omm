@@ -7,12 +7,15 @@ import { and, eq, desc, gte, lte, like, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { slugify } from "@/lib/mess";
 import { getEnv } from "@/lib/env";
+import { validateChain } from "@/lib/bd-geo";
 
 // GET /api/listings?city=&area=&rentMin=&rentMax=&type=&gender=&furnished=&availableFrom=&q=&sort=&page=&limit=
 // Public, no auth, cached via KV in production (here direct DB with proper WHERE)
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const district = url.searchParams.get("district") || url.searchParams.get("city") || "";
+  const division = url.searchParams.get("division") || "";
+  const upazila = url.searchParams.get("upazila") || "";
   const area = url.searchParams.get("area") || "";
   const type = url.searchParams.get("type") || "";
   const gender = url.searchParams.get("gender") || "";
@@ -25,6 +28,15 @@ export async function GET(req: Request) {
   const offset = (page - 1) * limit;
 
   const db = await getRequestDb();
+
+  // Owner view: ?mine=1 returns the caller's listings in any status (auth required)
+  const mine = url.searchParams.get("mine") === "1";
+  if (mine) {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const rows = await db.select().from(listings).where(eq(listings.ownerId, user.id)).orderBy(desc(listings.createdAt));
+    return NextResponse.json({ listings: rows, pagination: { page: 1, limit: rows.length, total: rows.length, totalPages: 1 } });
+  }
 
   // Build conditions using SQL where (not JS filter) to use indexes
   const conditions: ReturnType<typeof eq>[] = [];
@@ -40,7 +52,9 @@ export async function GET(req: Request) {
 
   // JS post-filter for MVP (with proper pagination after filter)
   // In production, move to SQL: and(eq(status,published), like(district, `%${district}%`))
+  if (division) rows = rows.filter((r) => (r.division || "") === division);
   if (district) rows = rows.filter((r) => (r.district || "").toLowerCase().includes(district.toLowerCase()));
+  if (upazila) rows = rows.filter((r) => (r.upazila || "") === upazila);
   if (area) rows = rows.filter((r) => (r.area || "").toLowerCase().includes(area.toLowerCase()));
   if (type) rows = rows.filter((r) => r.type === type);
   if (gender && gender !== "any") rows = rows.filter((r) => r.genderPreference === gender || r.genderPreference === "any");
@@ -84,6 +98,17 @@ export async function POST(req: Request) {
 
   // honeypot
   if (parsed.data.honeypot) return NextResponse.json({ error: "Spam detected" }, { status: 400 });
+
+  // Government hierarchy validation (division → district → upazila → union)
+  if (parsed.data.division || parsed.data.district || parsed.data.upazila || parsed.data.unionName) {
+    const chain = validateChain({
+      division: parsed.data.division?.trim() || "",
+      district: parsed.data.district?.trim() || "",
+      upazila: parsed.data.upazila?.trim() || "",
+      union: parsed.data.unionName?.trim() || "",
+    });
+    if (!chain) return NextResponse.json({ error: "ঠিকানা সঠিক নয় — বিভাগ/জেলা/উপজেলা/ইউনিয়ন সরকারি তালিকা থেকে বেছে নিন" }, { status: 400 });
+  }
 
   const db = await getRequestDb();
   // Rate limit: 5 listings per day per user
@@ -143,8 +168,10 @@ export async function POST(req: Request) {
     division: data.division?.trim() || null,
     district: data.district?.trim() || null,
     upazila: data.upazila?.trim() || null,
+    unionName: data.unionName?.trim() || null,
     area: data.area?.trim() || null,
     address: data.address?.trim() || null,
+    postalCode: data.postalCode?.trim() || null,
     lat: data.lat?.trim() || null,
     lng: data.lng?.trim() || null,
     bedrooms: data.bedrooms ?? null,
@@ -167,6 +194,17 @@ export async function POST(req: Request) {
   // Audit log for marketplace
   const { auditLogs } = await import("@/db/schema");
   await db.insert(auditLogs).values({ id: nanoid(), messId: null, actorId: user.id, action: "create", entityType: "listing", entityId: id, afterJson: JSON.stringify({ title: data.title, slug, type: data.type }), createdAt: now });
+
+  if (data.coverImageUrl?.trim()) {
+    await db.insert(listingImages).values({
+      id: nanoid(),
+      listingId: id,
+      url: data.coverImageUrl.trim(),
+      position: 0,
+      isCover: true,
+      createdAt: now,
+    });
+  }
 
   const row = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   return NextResponse.json({ ok: true, listing: row[0] });

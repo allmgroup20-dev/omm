@@ -15,6 +15,13 @@
       "when": 1788585593474,
       "tag": "0001_kind_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788616338871,
+      "tag": "0002_special_fixer",
+      "breakpoints": true
     }
   ]
 }

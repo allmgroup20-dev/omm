@@ -65,7 +65,16 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         </div>
         <div className="p-6">
           <h1 className="text-xl font-bold">{listing.title}</h1>
-          <div className="text-sm text-zinc-500 mt-1">{[listing.division, listing.district, listing.upazila, listing.area].filter(Boolean).join(" • ") || listing.address || "লোকেশন"}</div>
+          <div className="text-xs text-zinc-500 mt-2 flex flex-wrap items-center gap-1">
+            <span>🇧🇩 বাংলাদেশ</span>
+            {[listing.division, listing.district, listing.upazila, listing.unionName].filter(Boolean).map((p) => (
+              <span key={p}>› <b>{p}</b></span>
+            ))}
+          </div>
+          <div className="text-sm text-zinc-600 mt-1">
+            {[listing.area, listing.address].filter(Boolean).join(", ") || "লোকেশন"}
+            {listing.postalCode ? ` — ${listing.postalCode}` : ""}
+          </div>
           <div className="font-bold text-lg mt-3">৳{(listing.pricePaisa / 100).toLocaleString("bn-BD")} <span className="text-xs font-normal">/মাস</span> {listing.depositPaisa ? <span className="text-xs text-zinc-500">• জামানত ৳{(listing.depositPaisa / 100).toLocaleString("bn-BD")}</span> : null}</div>
           <div className="flex gap-2 mt-3 text-xs">
             <span className="border rounded-full px-3 py-1 bg-zinc-50">{listing.type}</span>
