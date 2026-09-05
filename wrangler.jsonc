@@ -1,40 +1,53 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "omm-app",
-  "compatibility_date": "2026-09-04",
+  "compatibility_date": "2026-09-05",
   "compatibility_flags": ["nodejs_compat"],
+  // OpenNext output — run `npx @opennextjs/cloudflare build` to generate .open-next
   "main": ".open-next/worker.js",
   "assets": {
     "directory": ".open-next/assets",
     "not_found_handling": "single-page-application"
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true }
   },
-  // D1 database - create with: npx wrangler d1 create omm-db
+  // D1 — create per env: npx wrangler d1 create omm-db --env production
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "omm-db",
-      "database_id": "local-omm-db-id-replace-in-production"
+      "database_id": "REPLACE_WITH_D1_ID__see_DEPLOYMENT.md"
     }
   ],
-  // R2 for receipts/uploads
   "r2_buckets": [
     {
       "binding": "R2",
       "bucket_name": "omm-receipts"
     }
   ],
-  // KV for sessions / rate-limit / cache
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "local-kv-id-replace-in-production"
+      "id": "REPLACE_WITH_KV_ID__see_DEPLOYMENT.md"
     }
   ],
   "vars": {
     "APP_URL": "https://omm.jobayergroup.com",
-    "APP_NAME": "Our Mess Management"
+    "APP_NAME": "Our Mess Management",
+    "NODE_ENV": "production"
+  },
+  "routes": [{ "pattern": "omm.jobayergroup.com/*", "zone_name": "jobayergroup.com" }],
+  "env": {
+    "staging": {
+      "vars": { "APP_URL": "https://staging-omm.jobayergroup.com" },
+      "d1_databases": [{ "binding": "DB", "database_name": "omm-db-staging", "database_id": "REPLACE_STAGING_D1_ID" }]
+    },
+    "production": {
+      "vars": { "APP_URL": "https://omm.jobayergroup.com" },
+      "d1_databases": [{ "binding": "DB", "database_name": "omm-db", "database_id": "REPLACE_PROD_D1_ID" }]
+    }
   }
 }

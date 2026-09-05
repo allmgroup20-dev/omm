@@ -1,0 +1,4 @@
+# For wrangler dev — copy to .dev.vars (gitignored)
+AUTH_SECRET=dev-local-secret-must-be-32-chars-min-change-me-123
+AUTH_URL=http://localhost:3000
+DATABASE_URL=./data/omm.db
