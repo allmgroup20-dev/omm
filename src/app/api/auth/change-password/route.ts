@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { changePasswordSchema } from "@/lib/validators";
 import { getCurrentUser } from "@/lib/session";
 import { hashPassword, verifyPassword, validatePasswordPolicy } from "@/lib/auth";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const policy = validatePasswordPolicy(newPassword);
   if (policy) return NextResponse.json({ error: policy }, { status: 400 });
 
-  const db = getDb();
+  const db = await getRequestDb();
   const ok = await verifyPassword(currentPassword, user.passwordHash);
   if (!ok) return NextResponse.json({ error: "বর্তমান পাসওয়ার্ড ভুল" }, { status: 400 });
 

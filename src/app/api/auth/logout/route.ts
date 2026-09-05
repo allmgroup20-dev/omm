@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { clearSessionCookie, getCookieName, verifySessionToken } from "@/lib/auth";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { sessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const payload = await verifySessionToken(token);
     if (payload) {
       try {
-        const db = getDb();
+        const db = await getRequestDb();
         // best-effort delete sessions for this token prefix
         // we stored slice(0,32) as hash, so try to delete matching
         const hash = token.slice(0, 32);

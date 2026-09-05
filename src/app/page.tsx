@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -8,7 +8,7 @@ export const revalidate = 60; // ISR 60s for popular listings
 export default async function HomePage() {
   let popular: typeof listings.$inferSelect[] = [];
   try {
-    const db = getDb();
+    const db = await getRequestDb();
     popular = await db.select().from(listings).where(eq(listings.status, "published")).orderBy(desc(listings.publishedAt)).limit(6);
   } catch {}
 

@@ -1,4 +1,4 @@
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messes, messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, memberSettlements } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { calcMealRate } from "./money";
@@ -7,7 +7,7 @@ export type CostingModel = "food_only" | "food_plus_expenses" | "custom";
 export type Allocation = "equal" | "meal_proportional" | "member_specific" | "custom";
 
 export async function computeSettlement(messId: string, year: number, month: number) {
-  const db = getDb();
+  const db = await getRequestDb();
   const messRows = await db.select().from(messes).where(eq(messes.id, messId)).limit(1);
   if (!messRows[0]) throw new Error("Mess not found");
   const mess = messRows[0];

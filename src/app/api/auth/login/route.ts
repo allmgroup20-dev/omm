@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { loginSchema } from "@/lib/validators";
 import { verifyPassword, createSessionToken, sessionCookie } from "@/lib/auth";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { users, sessions, loginHistory } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 
   const { email, password } = parsed.data;
-  const db = getDb();
+  const db = await getRequestDb();
   const now = new Date().toISOString();
 
   // brute-force check (5 failures in 15 min)

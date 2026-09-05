@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messes, messMembers } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
@@ -9,7 +9,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) notFound();
   const mess = await db.select().from(messes).where(eq(messes.id, id)).limit(1);

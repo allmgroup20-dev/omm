@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { monthlySettlements, memberSettlements, messMembers, auditLogs, closingPeriods } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can generate settlement" }, { status: 403 });
 

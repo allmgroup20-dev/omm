@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { mealTypes, messMembers, auditLogs } from "@/db/schema";
 import { mealTypeSchema } from "@/lib/validators-meal";
 import { slugify } from "@/lib/mess";
@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id, typeId } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0] || !["manager", "assistant_manager"].includes(access[0].role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -50,7 +50,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id, typeId } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can archive" }, { status: 403 });
 

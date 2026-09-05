@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings, listingImages, inquiries, favorites, moderationLogs } from "@/db/schema";
 import { listingSchema } from "@/lib/validators-listing";
 import { eq } from "drizzle-orm";
@@ -9,7 +9,7 @@ import { slugify } from "@/lib/mess";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   const listing = rows[0];
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -32,7 +32,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (rows[0].ownerId !== user.id) {
@@ -74,7 +74,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ slug
   const { slug } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (rows[0].ownerId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

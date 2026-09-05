@@ -1,9 +1,9 @@
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { ledgerEntries, deposits, mealRecords, marketEntries, expenses } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getMemberBalancePaisa(messId: string, memberId: string): Promise<number> {
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(ledgerEntries).where(eq(ledgerEntries.memberId, memberId));
   // filter by messId (ledgerEntries has messId, but we query by memberId which is unique per mess)
   const filtered = rows.filter((r) => r.messId === messId);
@@ -14,7 +14,7 @@ export async function getMemberBalancePaisa(messId: string, memberId: string): P
 }
 
 export async function computeMemberDepositsPaisa(messId: string, memberId: string, upToDate?: string): Promise<number> {
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(deposits).where(eq(deposits.memberId, memberId));
   let filtered = rows.filter((r) => r.messId === messId && r.status === "active");
   if (upToDate) filtered = filtered.filter((r) => r.date <= upToDate);
@@ -22,7 +22,7 @@ export async function computeMemberDepositsPaisa(messId: string, memberId: strin
 }
 
 export async function computeMemberMealsScaled(messId: string, memberId: string, year: number, month: number): Promise<number> {
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(mealRecords).where(eq(mealRecords.messId, messId));
   const mm = String(month).padStart(2, "0");
   const prefix = `${year}-${mm}-`;
@@ -31,7 +31,7 @@ export async function computeMemberMealsScaled(messId: string, memberId: string,
 }
 
 export async function computeMonthlyFinance(messId: string, year: number, month: number) {
-  const db = getDb();
+  const db = await getRequestDb();
   const mm = String(month).padStart(2, "0");
   const prefix = `${year}-${mm}-`;
   const marketRows = await db.select().from(marketEntries).where(eq(marketEntries.messId, messId));

@@ -1,4 +1,4 @@
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { notifications } from "@/db/schema";
 import { nanoid } from "nanoid";
 
@@ -21,7 +21,7 @@ export async function createNotification(params: {
   body?: string | null;
   link?: string | null;
 }) {
-  const db = getDb();
+  const db = await getRequestDb();
   const now = new Date().toISOString();
   await db.insert(notifications).values({
     id: nanoid(),
@@ -44,7 +44,7 @@ export async function notifyMessMembers(
   link?: string,
   excludeUserId?: string,
 ) {
-  const db = getDb();
+  const db = await getRequestDb();
   const { messMembers } = await import("@/db/schema");
   const { eq } = await import("drizzle-orm");
   const members = await db.select().from(messMembers).where(eq(messMembers.messId, messId));

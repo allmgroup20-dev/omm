@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messMembers, auditLogs } from "@/db/schema";
 import { updateMemberSchema } from "@/lib/validators-mess";
 import { and, eq } from "drizzle-orm";
@@ -10,7 +10,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id, memberId } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can update members" }, { status: 403 });
 

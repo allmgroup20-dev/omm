@@ -1,4 +1,4 @@
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messMembers, messes } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -19,7 +19,7 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number];
 
 export async function getUserMessRole(userId: string, messId: string): Promise<Role | null> {
-  const db = getDb();
+  const db = await getRequestDb();
   const row = await db
     .select({ role: messMembers.role })
     .from(messMembers)

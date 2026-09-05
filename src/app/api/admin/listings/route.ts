@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { isSuperAdmin } from "@/lib/admin";
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const limit = Math.min(50, Number(url.searchParams.get("limit") || 20));
   const offset = Number(url.searchParams.get("offset") || 0);
 
-  const db = getDb();
+  const db = await getRequestDb();
   // Proper SQL where status = ? with pagination count
   const allPending = await db.select().from(listings).where(eq(listings.status, status)).orderBy(desc(listings.createdAt));
   const total = allPending.length; // In prod, use SELECT COUNT(*) WHERE status=?

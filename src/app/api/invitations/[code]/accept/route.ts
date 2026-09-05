@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { invitations, messMembers } from "@/db/schema";
 import { and, eq, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -9,7 +9,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ code: 
   const { code } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const invRows = await db
     .select()
     .from(invitations)

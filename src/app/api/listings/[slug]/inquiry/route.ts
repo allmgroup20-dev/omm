@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings, inquiries } from "@/db/schema";
 import { inquirySchema } from "@/lib/validators-listing";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { getEnv } from "@/lib/env";
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (rows[0].status !== "published") return NextResponse.json({ error: "Listing not available" }, { status: 409 });
@@ -28,7 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // Turnstile verify if configured (optional)
   const turnstileToken = (body as Record<string, unknown>)?.turnstileToken as string | undefined;
-  const turnstileSecret = process.env.TURNSTILE_SECRET;
+  const turnstileSecret = getEnv("TURNSTILE_SECRET");
   if (turnstileSecret && turnstileToken) {
     try {
       const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {

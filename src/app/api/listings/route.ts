@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings, listingImages } from "@/db/schema";
 import { listingSchema } from "@/lib/validators-listing";
 import { and, eq, desc, gte, lte, like, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { slugify } from "@/lib/mess";
+import { getEnv } from "@/lib/env";
 
 // GET /api/listings?city=&area=&rentMin=&rentMax=&type=&gender=&furnished=&availableFrom=&q=&sort=&page=&limit=
 // Public, no auth, cached via KV in production (here direct DB with proper WHERE)
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
   const limit = Math.min(20, Math.max(1, Number(url.searchParams.get("limit") || 12)));
   const offset = (page - 1) * limit;
 
-  const db = getDb();
+  const db = await getRequestDb();
 
   // Build conditions using SQL where (not JS filter) to use indexes
   const conditions: ReturnType<typeof eq>[] = [];
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
   // honeypot
   if (parsed.data.honeypot) return NextResponse.json({ error: "Spam detected" }, { status: 400 });
 
-  const db = getDb();
+  const db = await getRequestDb();
   // Rate limit: 5 listings per day per user
   const today = new Date().toISOString().slice(0, 10);
   const userListingsToday = await db.select().from(listings).where(eq(listings.ownerId, user.id));
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
 
   // Turnstile verify if secret configured (optional for MVP)
   const turnstileToken = (body as Record<string, unknown>)?.turnstileToken as string | undefined;
-  const turnstileSecret = process.env.TURNSTILE_SECRET;
+  const turnstileSecret = getEnv("TURNSTILE_SECRET");
   if (turnstileSecret && turnstileToken) {
     try {
       const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {

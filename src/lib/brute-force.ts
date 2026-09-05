@@ -1,9 +1,9 @@
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { loginHistory } from "@/db/schema";
 import { and, eq, gte } from "drizzle-orm";
 
 export async function isBruteForced(userId: string | null, ip: string, email: string): Promise<boolean> {
-  const db = getDb();
+  const db = await getRequestDb();
   const since = new Date(Date.now() - 15 * 60 * 1000).toISOString(); // last 15 min
   // count failures for ip OR email OR userId
   const rows = await db.select().from(loginHistory);
@@ -12,7 +12,7 @@ export async function isBruteForced(userId: string | null, ip: string, email: st
 }
 
 export async function recordLoginAttempt(userId: string | null, email: string, ip: string, userAgent: string | null, success: boolean) {
-  const db = getDb();
+  const db = await getRequestDb();
   const { nanoid } = await import("nanoid");
   await db.insert(loginHistory).values({
     id: nanoid(),

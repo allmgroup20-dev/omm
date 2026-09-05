@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messes, messMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import Link from "next/link";
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select({ mess: messes, member: messMembers }).from(messMembers).innerJoin(messes, eq(messMembers.messId, messes.id)).where(eq(messMembers.userId, user.id));
 
   return (

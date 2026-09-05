@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { registerSchema } from "@/lib/validators";
 import { hashPassword, validatePasswordPolicy, createSessionToken, sessionCookie } from "@/lib/auth";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { users, sessions, loginHistory } from "@/db/schema";
 import { nanoid } from "nanoid";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const policyError = validatePasswordPolicy(password);
   if (policyError) return NextResponse.json({ error: policyError }, { status: 400 });
 
-  const db = getDb();
+  const db = await getRequestDb();
   const now = new Date().toISOString();
   const id = nanoid();
 

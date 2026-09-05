@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings, listingImages } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   const l = rows[0];
   if (!l) return { title: "Not found — OMM" };
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   const listing = rows[0];
   if (!listing || listing.status !== "published") notFound();

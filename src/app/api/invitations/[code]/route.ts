@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { invitations, messes } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 
 // GET /api/invitations/:code  (code or linkToken)
 export async function GET(_req: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db
     .select()
     .from(invitations)

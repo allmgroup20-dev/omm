@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings, moderationLogs, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -17,7 +17,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const reason = (body?.reason as string)?.trim() || null;
   if (!["approve", "reject", "flag", "pause"].includes(action)) return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.id, id)).limit(1);
   if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

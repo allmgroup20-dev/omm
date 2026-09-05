@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { mealRecords, messMembers, mealTypes, auditLogs, mealCorrections } from "@/db/schema";
 import { mealEntrySchema, bulkMealSchema, toScaled, validatePrecision } from "@/lib/validators-meal";
 import { getMessPrecision, isDateLocked, isMonthClosed } from "@/lib/meal-helpers";
@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -42,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

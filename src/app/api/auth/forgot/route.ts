@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { forgotSchema } from "@/lib/validators";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { SignJWT } from "jose";
+import { getEnv } from "@/lib/env";
 
 function getSecret(): Uint8Array {
-  const s = process.env.AUTH_SECRET;
+  const s = getEnv("AUTH_SECRET");
   if (!s || s.length < 32) throw new Error("AUTH_SECRET must be >=32 chars");
   return new TextEncoder().encode(s);
 }
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Validation failed" }, { status: 400 });
 
   const { email } = parsed.data;
-  const db = getDb();
+  const db = await getRequestDb();
   const rows = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim())).limit(1);
   if (!rows[0]) {
     // do not reveal existence
@@ -35,6 +36,6 @@ export async function POST(req: Request) {
     .sign(getSecret());
 
   // In production send email via R2/Email service. For now return token in dev only.
-  const isDev = process.env.NODE_ENV !== "production";
+  const isDev = getEnv("NODE_ENV") !== "production";
   return NextResponse.json({ ok: true, message: "রিসেট লিংক তৈরি হয়েছে", ...(isDev ? { resetToken: token } : {}) });
 }

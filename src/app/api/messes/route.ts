@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messes, messMembers, mealTypes, auditLogs } from "@/db/schema";
 import { createMessSchema } from "@/lib/validators-mess";
 import { generateMessCode, slugify } from "@/lib/mess";
@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const db = getDb();
+  const db = await getRequestDb();
   // list messes where user is member
   const rows = await db
     .select({ mess: messes, member: messMembers })
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
-  const db = getDb();
+  const db = await getRequestDb();
   const now = new Date().toISOString();
   const messId = nanoid();
   const code = generateMessCode();

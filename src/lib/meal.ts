@@ -1,9 +1,9 @@
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { messes, mealTypes, messMembers } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export async function getMessWithAccess(messId: string, userId: string) {
-  const db = getDb();
+  const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, messId), eq(messMembers.userId, userId))).limit(1);
   if (!access[0]) throw new Error("Forbidden");
   const mess = await db.select().from(messes).where(eq(messes.id, messId)).limit(1);

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getDb } from "@/db";
+import { getRequestDb } from "@/db";
 import { listings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const db = getDb();
+    const db = await getRequestDb();
     const published = await db.select().from(listings).where(eq(listings.status, "published")).limit(1000);
     const listingUrls: MetadataRoute.Sitemap = published.map((l) => ({
       url: `${base}/listings/${l.slug}`,
