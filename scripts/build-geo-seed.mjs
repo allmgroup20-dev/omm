@@ -11,7 +11,7 @@ const geo = JSON.parse(fs.readFileSync(path.join(root, "data", "bd-geo.json"), "
 
 const esc = (v) => (v === null || v === undefined ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
 const now = new Date().toISOString();
-const lines = ["-- BD geo seed (divisions/districts/upazilas). Idempotent via OR IGNORE on slug.", "BEGIN TRANSACTION;"];
+const lines = ["-- BD geo seed (divisions/districts/upazilas). Idempotent via OR IGNORE on slug.", "-- NOTE: no BEGIN/COMMIT — D1 remote execute rejects explicit transactions."]; 
 
 let n = 0;
 for (const div of geo.divisions) {
@@ -32,6 +32,5 @@ for (const div of geo.divisions) {
     }
   }
 }
-lines.push("COMMIT;");
 fs.writeFileSync(path.join(root, "drizzle", "seed-geo.sql"), lines.join("\n"));
 console.log(`wrote drizzle/seed-geo.sql with ${n} inserts`);
