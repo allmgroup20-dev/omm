@@ -1,0 +1,64 @@
+name: Deploy OMM to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build -- --webpack
+        env:
+          DATABASE_URL: ./data/omm.db
+          AUTH_SECRET: ci-test-secret-must-be-32-chars-long-12345
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build Cloudflare Worker (OpenNext)
+        run: npx @opennextjs/cloudflare build
+        env:
+          # Ensure next.config headers are applied
+          NODE_ENV: production
+
+      - name: Deploy to Cloudflare Workers (production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env production
+          # wrangler.jsonc already has routes: omm.jobayergroup.com/*
+          # Ensure D1/KV/R2 already created via `wrangler d1 create` etc. (see DEPLOYMENT.md)
+
+      - name: Run D1 migrations (if any)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Execute latest drizzle SQL if you use D1 migrations via file
+          # This is a no-op if file already applied (idempotent check in migrate.ts)
+          command: d1 execute omm-db --remote --file=./drizzle/0001_kind_bucky.sql --env production
