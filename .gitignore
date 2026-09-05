@@ -15,7 +15,8 @@ node_modules
 .dev.vars
 
 # DB (local sqlite files ignored, but reference geo data is tracked)
-data/
+# NOTE: use data/* (not data/) so the ! negation below works
+data/*
 !data/bd-geo.json
 # keep drizzle migrations (do not ignore *.sql)
 # drizzle/*.sql
