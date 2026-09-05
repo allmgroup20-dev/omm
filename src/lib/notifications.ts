@@ -51,6 +51,7 @@ export async function notifyMessMembers(
   for (const m of members) {
     if (excludeUserId && m.userId === excludeUserId) continue;
     if (m.status !== "active") continue;
+    if (!m.userId) continue; // placeholders have no account to notify
     await createNotification({ userId: m.userId, messId, type, title, body: body || null, link: link || null });
   }
 }

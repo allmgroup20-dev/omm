@@ -25,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // ledger balances per member (current)
   const ledgerRows = await db.select().from(ledgerEntries).where(eq(ledgerEntries.messId, id));
 
-  const result: { memberId: string; userId: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string }[] = [];
+  const result: { memberId: string; userId: string | null; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string }[] = [];
 
   for (const m of members) {
     const mealsScaled = finance.monthMeals.filter((r) => r.memberId === m.id).reduce((a, r) => a + r.quantityScaled, 0);

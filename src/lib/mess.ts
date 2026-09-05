@@ -29,3 +29,18 @@ export function generateInviteCode(): string {
 export function generateLinkToken(): string {
   return nanoid(24);
 }
+
+export type MemberWithUser = {
+  member: { id: string; displayName: string | null };
+  user: { id: string; fullName: string } | null;
+};
+
+/** Single source of truth for member display name: linked account wins, else placeholder name. */
+export function memberDisplayName(member: { displayName: string | null }, user: { fullName: string } | null): string {
+  return user?.fullName || member.displayName || "সদস্য";
+}
+
+/** Normalize placeholder names for uniqueness checks (case-insensitive, trimmed). */
+export function normalizeMemberName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { monthlySettlements, memberSettlements, messMembers, users } from "@/db/schema";
+import { memberDisplayName } from "@/lib/mess";
 import { and, eq } from "drizzle-orm";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string; settlementId: string }> }) {
@@ -16,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!sett[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const members = await db.select({ ms: memberSettlements, member: messMembers, user: users }).from(memberSettlements)
     .innerJoin(messMembers, eq(memberSettlements.memberId, messMembers.id))
-    .innerJoin(users, eq(messMembers.userId, users.id))
+    .leftJoin(users, eq(messMembers.userId, users.id))
     .where(eq(memberSettlements.settlementId, settlementId));
 
   return NextResponse.json({
@@ -24,8 +25,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     members: members.map((r) => ({
       id: r.ms.id,
       memberId: r.ms.memberId,
-      fullName: r.user.fullName,
-      email: r.user.email,
+      fullName: memberDisplayName(r.member, r.user ? { fullName: r.user.fullName } : null),
+      email: r.user?.email || null,
+      isPlaceholder: !r.member.userId,
       totalMeals: r.ms.totalMealsScaled / 100,
       totalMealsScaled: r.ms.totalMealsScaled,
       mealCostPaisa: r.ms.mealCostPaisa,

@@ -124,9 +124,10 @@ export const messMembers = sqliteTable(
     messId: text("mess_id")
       .notNull()
       .references(() => messes.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
+    userId: text("user_id").references(() => users.id, { onDelete: "restrict" }), // NULL = placeholder (no account yet)
+    displayName: text("display_name"), // placeholder name; shown when userId is NULL
+    claimedAt: text("claimed_at"),
+    claimedBy: text("claimed_by").references(() => users.id),
     role: text("role").notNull().default("member"), // manager|assistant_manager|member
     isPrimaryManager: integer("is_primary_manager", { mode: "boolean" }).notNull().default(false),
     permissionsJson: text("permissions_json"), // granular overrides JSON

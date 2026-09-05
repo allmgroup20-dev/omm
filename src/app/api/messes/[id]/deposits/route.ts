@@ -98,10 +98,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "create", entityType: "deposit", entityId: depId, afterJson: JSON.stringify({ amountPaisa }), createdAt: now });
 
-  // notify member
+  // notify member (skip placeholders — no account to notify yet)
   try {
     const memUserId = mem[0].userId;
-    await createNotification({ userId: memUserId, messId: id, type: "deposit", title: `Deposit ৳${(amountPaisa / 100).toFixed(2)} received`, body: `${data.date} — ${data.paymentMethod || "cash"}`, link: `/messes/${id}/finance/deposits` });
+    if (memUserId) {
+      await createNotification({ userId: memUserId, messId: id, type: "deposit", title: `Deposit ৳${(amountPaisa / 100).toFixed(2)} received`, body: `${data.date} — ${data.paymentMethod || "cash"}`, link: `/messes/${id}/finance/deposits` });
+    }
   } catch {}
 
   const row = await db.select().from(deposits).where(eq(deposits.id, depId)).limit(1);

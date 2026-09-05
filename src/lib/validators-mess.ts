@@ -59,3 +59,12 @@ export const updateMemberSchema = z.object({
   isPrimaryManager: z.boolean().optional(),
   permissionsJson: z.string().optional(),
 });
+
+export const createPlaceholderSchema = z.object({
+  displayName: z.string().min(2, "নাম কমপক্ষে ২ অক্ষর").max(80),
+  role: z.enum(["member", "assistant_manager", "manager"]).default("member").optional(),
+});
+
+export const linkMemberSchema = z.object({
+  userId: z.string().min(1),
+});

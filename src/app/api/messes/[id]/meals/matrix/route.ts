@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { mealRecords, messMembers, mealTypes, users } from "@/db/schema";
+import { memberDisplayName } from "@/lib/mess";
 import { and, eq } from "drizzle-orm";
 import { getMonthDates } from "@/lib/calendar";
 
@@ -23,7 +24,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const members = await db
     .select({ member: messMembers, user: users })
     .from(messMembers)
-    .innerJoin(users, eq(messMembers.userId, users.id))
+    .leftJoin(users, eq(messMembers.userId, users.id))
     .where(eq(messMembers.messId, id));
 
   const records = await db.select().from(mealRecords).where(eq(mealRecords.messId, id));
@@ -49,8 +50,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     mealTypes: types,
     members: members.map((m) => ({
       memberId: m.member.id,
-      userId: m.user.id,
-      fullName: m.user.fullName,
+      userId: m.user?.id || null,
+      fullName: memberDisplayName(m.member, m.user ? { fullName: m.user.fullName } : null),
       status: m.member.status,
     })),
     matrix,
