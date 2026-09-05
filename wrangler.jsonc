@@ -26,6 +26,10 @@
     {
       "binding": "R2",
       "bucket_name": "omm-receipts"
+    },
+    {
+      "binding": "R2_LISTINGS",
+      "bucket_name": "omm-listings"
     }
   ],
   "kv_namespaces": [

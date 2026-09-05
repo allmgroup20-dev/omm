@@ -12,6 +12,8 @@ export async function POST(req: Request) {
   if (!rl.allowed) return NextResponse.json({ error: "Too many attempts. Try later." }, { status: 429 });
 
   const body = await req.json().catch(() => null);
+  // Honeypot anti-spam: hidden field must be empty
+  if (body?.honeypot) return NextResponse.json({ error: "Spam detected" }, { status: 400 });
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 

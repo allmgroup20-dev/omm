@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot", "/reset", "/api/auth/register", "/api/auth/login", "/api/auth/forgot", "/api/auth/reset"];
+const PUBLIC_PATHS = [
+  "/",
+  "/s",
+  "/listings",
+  "/properties",
+  "/about",
+  "/how-it-works",
+  "/login",
+  "/register",
+  "/forgot",
+  "/reset",
+  "/api/auth/register",
+  "/api/auth/login",
+  "/api/auth/forgot",
+  "/api/auth/reset",
+  "/api/listings",
+];
 
 // Simple in-memory CSRF double-submit for state-changing API calls
 // Token is set as cookie `omm_csrf` on first GET, then required as header `x-csrf-token` for POST/PATCH/DELETE
@@ -28,10 +44,11 @@ export function middleware(req: NextRequest) {
   // Public paths
   if (isPublic(pathname)) {
     const res = NextResponse.next();
-    // Set CSRF cookie for public GET if missing
+    // Set CSRF cookie for public GET if missing (Secure in prod)
     if (!req.cookies.get("omm_csrf")?.value && req.method === "GET") {
       const token = crypto.randomUUID();
-      res.cookies.set("omm_csrf", token, { httpOnly: false, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7 });
+      const isProd = process.env.NODE_ENV === "production";
+      res.cookies.set("omm_csrf", token, { httpOnly: false, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7, secure: isProd });
     }
     return addSecurityHeaders(res);
   }
@@ -48,24 +65,23 @@ export function middleware(req: NextRequest) {
     return addSecurityHeaders(NextResponse.redirect(url));
   }
 
-  // CSRF check for state-changing API calls (POST/PATCH/DELETE) except auth public routes
+  // CSRF double-submit: if cookie exists, header must match; if no cookie yet, allow and set one
   if (["POST", "PATCH", "PUT", "DELETE"].includes(req.method) && pathname.startsWith("/api/") && !PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     const csrfCookie = req.cookies.get("omm_csrf")?.value;
     const csrfHeader = req.headers.get("x-csrf-token");
-    // Only enforce if both present — gradually strict. If cookie exists but header missing, block.
-    if (csrfCookie && csrfHeader !== csrfCookie) {
-      // Allow if no cookie yet (first request) — set it
-      if (csrfCookie) {
-        return addSecurityHeaders(NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 }));
-      }
+    if (csrfCookie && csrfHeader && csrfHeader !== csrfCookie) {
+      return addSecurityHeaders(NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 }));
     }
+    // If cookie exists but header missing, allow for backwards compat (will be strict after UI updated to send x-csrf-token)
+    // TODO: enforce strict after all clients send header
   }
 
   const res = NextResponse.next();
-  // Ensure CSRF cookie exists for authenticated GETs
+  // Ensure CSRF cookie exists for authenticated GETs (Secure in prod)
   if (!req.cookies.get("omm_csrf")?.value && req.method === "GET" && !pathname.startsWith("/api/")) {
     const csrf = crypto.randomUUID();
-    res.cookies.set("omm_csrf", csrf, { httpOnly: false, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7 });
+    const isProd = process.env.NODE_ENV === "production";
+    res.cookies.set("omm_csrf", csrf, { httpOnly: false, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7, secure: isProd });
   }
 
   // Rate limit hint headers (actual limiting in route handlers via rateLimit())

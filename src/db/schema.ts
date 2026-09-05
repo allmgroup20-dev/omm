@@ -727,3 +727,136 @@ export const systemSettings = sqliteTable(
   },
   (t) => [uniqueIndex("uq_system_settings").on(t.messId, t.key)],
 );
+
+// ---------- MARKETPLACE — Shared Living + Property (Bangladesh-first, international-ready) ----------
+
+export const locations = sqliteTable(
+  "locations",
+  {
+    id: text("id").primaryKey(),
+    division: text("division").notNull(),
+    district: text("district").notNull(),
+    upazila: text("upazila"),
+    area: text("area"),
+    slug: text("slug").notNull().unique(),
+    lat: text("lat"),
+    lng: text("lng"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("idx_locations_district").on(t.district), index("idx_locations_area").on(t.area)],
+);
+
+export const listings = sqliteTable(
+  "listings",
+  {
+    id: text("id").primaryKey(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    messId: text("mess_id").references(() => messes.id, { onDelete: "cascade" }), // nullable for standalone property
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description"),
+    type: text("type").notNull(), // seat|bed|room|flat|apartment|house|hostel|mess|coliving
+    status: text("status").notNull().default("draft"), // draft|pending|published|paused|rented|expired|rejected|archived
+    pricePaisa: integer("price_paisa").notNull(), // rent per month in paisa
+    depositPaisa: integer("deposit_paisa").notNull().default(0),
+    serviceChargePaisa: integer("service_charge_paisa").notNull().default(0),
+    currency: text("currency").notNull().default("BDT"),
+    division: text("division"),
+    district: text("district"),
+    upazila: text("upazila"),
+    area: text("area"),
+    address: text("address"),
+    lat: text("lat"),
+    lng: text("lng"),
+    bedrooms: integer("bedrooms"),
+    bathrooms: integer("bathrooms"),
+    sqft: integer("sqft"),
+    floor: integer("floor"),
+    totalFloors: integer("total_floors"),
+    furnished: integer("furnished", { mode: "boolean" }).notNull().default(false),
+    bachelorAllowed: integer("bachelor_allowed", { mode: "boolean" }).notNull().default(true),
+    familyAllowed: integer("family_allowed", { mode: "boolean" }).notNull().default(false),
+    genderPreference: text("gender_preference"), // male|female|any
+    availableFrom: text("available_from"),
+    occupancy: integer("occupancy"),
+    totalSeats: integer("total_seats"),
+    verified: integer("verified", { mode: "boolean" }).notNull().default(false),
+    qualityScore: integer("quality_score").notNull().default(0),
+    moderationReason: text("moderation_reason"),
+    publishedAt: text("published_at"),
+    expiresAt: text("expires_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [
+    index("idx_listings_status").on(t.status),
+    index("idx_listings_district_area").on(t.district, t.area),
+    index("idx_listings_type_status").on(t.type, t.status),
+    index("idx_listings_price").on(t.pricePaisa),
+    index("idx_listings_owner").on(t.ownerId),
+  ],
+);
+
+export const listingImages = sqliteTable(
+  "listing_images",
+  {
+    id: text("id").primaryKey(),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    position: integer("position").notNull().default(0),
+    isCover: integer("is_cover", { mode: "boolean" }).notNull().default(false),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("idx_listing_images_listing").on(t.listingId)],
+);
+
+export const inquiries = sqliteTable(
+  "inquiries",
+  {
+    id: text("id").primaryKey(),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
+    senderId: text("sender_id").references(() => users.id, { onDelete: "cascade" }),
+    message: text("message").notNull(),
+    contactPhone: text("contact_phone"),
+    status: text("status").notNull().default("open"), // open|replied|closed|spam
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("idx_inquiries_listing").on(t.listingId), index("idx_inquiries_sender").on(t.senderId)],
+);
+
+export const favorites = sqliteTable(
+  "favorites",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("uq_favorite").on(t.userId, t.listingId)],
+);
+
+export const moderationLogs = sqliteTable(
+  "moderation_logs",
+  {
+    id: text("id").primaryKey(),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
+    moderatorId: text("moderator_id").references(() => users.id),
+    action: text("action").notNull(), // approve|reject|flag|pause
+    reason: text("reason"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("idx_moderation_listing").on(t.listingId)],
+);
