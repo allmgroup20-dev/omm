@@ -5,6 +5,7 @@ import { monthlySettlements, memberSettlements, messMembers, auditLogs, closingP
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { computeSettlement } from "@/lib/settlement";
+import { notifyMessMembers } from "@/lib/notifications";
 
 // GET list
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -100,6 +101,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "create", entityType: "settlement", entityId: settlementId, afterJson: JSON.stringify({ year, month, mealRatePaisa: computed.mealRatePaisa }), createdAt: now });
+
+  try {
+    await notifyMessMembers(id, "settlement", `Settlement ready ${year}-${String(month).padStart(2, "0")} — Rate ৳${(computed.mealRatePaisa / 100).toFixed(2)}`, `Total meals ${computed.totalMealsScaled / 100}`, `/messes/${id}/settlements/${settlementId}`, user.id);
+  } catch {}
 
   const settlement = await db.select().from(monthlySettlements).where(eq(monthlySettlements.id, settlementId)).limit(1);
   const members = await db.select().from(memberSettlements).where(eq(memberSettlements.settlementId, settlementId));

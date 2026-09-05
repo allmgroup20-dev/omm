@@ -6,6 +6,7 @@ import { depositSchema } from "@/lib/validators-finance";
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getMemberBalancePaisa } from "@/lib/finance";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -96,6 +97,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
 
   await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "create", entityType: "deposit", entityId: depId, afterJson: JSON.stringify({ amountPaisa }), createdAt: now });
+
+  // notify member
+  try {
+    const memUserId = mem[0].userId;
+    await createNotification({ userId: memUserId, messId: id, type: "deposit", title: `Deposit ৳${(amountPaisa / 100).toFixed(2)} received`, body: `${data.date} — ${data.paymentMethod || "cash"}`, link: `/messes/${id}/finance/deposits` });
+  } catch {}
 
   const row = await db.select().from(deposits).where(eq(deposits.id, depId)).limit(1);
   return NextResponse.json({ ok: true, deposit: row[0], balancePaisa: newBalance });
