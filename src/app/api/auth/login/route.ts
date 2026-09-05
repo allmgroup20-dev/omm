@@ -6,6 +6,7 @@ import { users, sessions, loginHistory } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { isBruteForced } from "@/lib/brute-force";
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
@@ -19,6 +20,11 @@ export async function POST(req: Request) {
   const { email, password } = parsed.data;
   const db = getDb();
   const now = new Date().toISOString();
+
+  // brute-force check (5 failures in 15 min)
+  if (await isBruteForced(null, ip, email)) {
+    return NextResponse.json({ error: "Too many failed attempts. Try after 15 minutes." }, { status: 429 });
+  }
 
   const rows = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim())).limit(1);
   const user = rows[0];
