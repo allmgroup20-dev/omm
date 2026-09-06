@@ -55,6 +55,7 @@ export const BD_PRODUCTS: CatalogProduct[] = [
   { slug: "mach-koi", name: "কৈ", categorySlug: "mach", defaultUnit: "kg" },
   { slug: "mach-shing", name: "শিং/মাগুর", categorySlug: "mach", defaultUnit: "kg" },
   { slug: "mach-boal", name: "বোয়াল", categorySlug: "mach", defaultUnit: "kg" },
+  { slug: "mach-sorputi", name: "সরপুঁটি", categorySlug: "mach", defaultUnit: "kg" },
   { slug: "mach-shutki", name: "শুঁটকি", categorySlug: "mach", defaultUnit: "kg" },
   // মাংস
   { slug: "mangsho-goru", name: "গরুর মাংস", categorySlug: "mangsho", defaultUnit: "kg" },

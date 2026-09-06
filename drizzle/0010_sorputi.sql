@@ -1,0 +1,1 @@
+INSERT OR IGNORE INTO market_products (id, mess_id, category_id, name, slug, default_unit, sort_order, is_archived, created_at) VALUES ('prod__mach_sorputi', NULL, 'cat__mach', 'সরপুঁটি', 'mach-sorputi', 'kg', 0, 0, '2026-09-06T00:00:00.000Z');
