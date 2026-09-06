@@ -58,10 +58,24 @@ export async function exchangeCodeForProfile(code: string): Promise<GoogleProfil
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }),
+    signal: AbortSignal.timeout(10000),
   });
-  if (!tokenRes.ok) throw new Error("Google token exchange failed");
-  const tokens = (await tokenRes.json()) as { id_token?: string };
-  if (!tokens.id_token) throw new Error("No id_token from Google");
+  const raw = await tokenRes.text();
+  // Log for Workers tail (invocation_logs: true in wrangler.jsonc)
+  console.error("[google-token] status", tokenRes.status, "bodyLen", raw.length, "preview", raw.slice(0, 500));
+  if (!tokenRes.ok) {
+    throw new Error(`Google token exchange failed (E3.1): ${tokenRes.status} ${raw.slice(0, 400)}`);
+  }
+  let tokens: { id_token?: string; error?: string; error_description?: string };
+  try {
+    tokens = JSON.parse(raw) as { id_token?: string; error?: string; error_description?: string };
+  } catch (e) {
+    throw new Error(`Google token JSON parse failed (E3.2): ${(e as Error).message} rawLen=${raw.length} preview=${raw.slice(0, 200)}`);
+  }
+  if (!tokens.id_token) {
+    const details = tokens.error ? `${tokens.error}: ${tokens.error_description || ""}`.trim() : "";
+    throw new Error(`No id_token from Google (E3.3)${details ? ` — ${details}` : ""}`);
+  }
 
   const jwks = createRemoteJWKSet(new URL(GOOGLE_JWKS_URL));
   const { payload } = await jwtVerify(tokens.id_token, jwks, {

@@ -35,8 +35,27 @@ export async function GET(req: Request) {
   try {
     profile = await exchangeCodeForProfile(code);
   } catch (err) {
-    console.error("[google-callback] E3 exchange/verify failed", err instanceof Error ? err.message : err);
-    return fail("Google verification failed (E3). Try again.");
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    const cause = err instanceof Error ? (err as unknown as { cause?: unknown }).cause : undefined;
+    console.error("[google-callback] E3 exchange/verify failed", {
+      message: msg,
+      stack: stack?.slice(0, 800),
+      cause: cause ? String(cause).slice(0, 400) : undefined,
+      hasCode: !!code,
+      codeLen: code?.length,
+      statePrefix: state?.slice(0, 8),
+      savedStatePrefix: savedState?.slice(0, 8),
+      ip,
+      appUrl,
+      redirectUri: googleConfig().redirectUri,
+      clientIdLen: googleConfig().clientId.length,
+      requestId: req.headers.get("x-request-id") || req.headers.get("cf-ray") || "n/a",
+    });
+    // Preserve sub-code (E3.1/E3.2/E3.3/E3.4) if present, otherwise generic E3
+    const codeMatch = msg.match(/\(E3\.\d\)/);
+    const suffix = codeMatch ? ` ${codeMatch[0]}` : "";
+    return fail(`Google verification failed${suffix} (E3). ${msg.slice(0, 120)} — Try again.`);
   }
   if (!profile.emailVerified) return fail("Your Google email is not verified (E4).");
 
