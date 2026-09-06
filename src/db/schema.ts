@@ -363,7 +363,7 @@ export const marketEntryItems = sqliteTable(
     productId: text("product_id").references(() => marketProducts.id, { onDelete: "restrict" }),
     productNameSnapshot: text("product_name_snapshot").notNull(), // preserve if product renamed/deleted
     categoryNameSnapshot: text("category_name_snapshot"),
-    quantityScaled: integer("quantity_scaled").notNull(), // x1000 for kg? keep x100 for uniform; actual grams handled via unit
+    quantityScaled: integer("quantity_scaled").notNull(), // x1000 — preserves 42.560 (42kg 560g) exactly
     unit: text("unit").notNull(),
     unitPricePaisa: integer("unit_price_paisa").notNull(),
     totalPaisa: integer("total_paisa").notNull(),

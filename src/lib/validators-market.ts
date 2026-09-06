@@ -23,15 +23,20 @@ export const vendorSchema = z.object({
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 
-export const marketEntryItemSchema = z.object({
-  productId: z.string().optional().nullable(),
-  productName: z.string().min(1).max(60), // if productId absent, free form
-  categoryName: z.string().max(40).optional().or(z.literal("")),
-  quantity: z.number().min(0.01).max(100000),
-  unit: z.enum(UNITS),
-  unitPrice: z.number().min(0).max(1000000), // BDT per unit
-  notes: z.string().max(200).optional().or(z.literal("")),
-});
+export const marketEntryItemSchema = z
+  .object({
+    productId: z.string().optional().nullable(),
+    productName: z.string().min(1).max(60), // if productId absent, free form
+    categoryName: z.string().max(40).optional().or(z.literal("")),
+    quantity: z.number().min(0.001).max(100000),
+    unit: z.enum(UNITS),
+    unitPrice: z.number().min(0).max(1000000).optional(), // BDT per unit — optional when total given
+    total: z.number().min(0).max(10000000).optional(), // BDT total — exact when pasted (e.g. 2460 for 42.56kg)
+    notes: z.string().max(200).optional().or(z.literal("")),
+  })
+  .superRefine((v, ctx) => {
+    if (v.unitPrice == null && v.total == null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "unitPrice or total required", path: ["unitPrice"] });
+  });
 
 export const marketEntrySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -56,4 +61,10 @@ export function toScaled(q: number): number {
 }
 export function fromScaled(s: number): number {
   return s / 100;
+}
+export function toScaledMarket(q: number): number {
+  return Math.round(q * 1000); // x1000 — preserves 42.560 (42kg 560g) exactly, market only
+}
+export function fromScaledMarket(s: number): number {
+  return s / 1000;
 }

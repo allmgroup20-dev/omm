@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { marketEntries, marketEntryItems, messMembers, vendors, marketProducts, auditLogs } from "@/db/schema";
-import { marketEntrySchema, calcItemTotal, toScaled } from "@/lib/validators-market";
+import { marketEntrySchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -63,11 +63,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const itemRows: { id: string; productId: string | null; productNameSnapshot: string; categoryNameSnapshot: string | null; quantityScaled: number; unit: string; unitPricePaisa: number; totalPaisa: number }[] = [];
 
   for (const it of data.items) {
-    const unitPricePaisa = Math.round(it.unitPrice * 100);
-    const total = calcItemTotal(it.quantity, it.unitPrice); // paisa
-    // validate total = qty * unitPrice
-    const expected = Math.round(it.quantity * it.unitPrice * 100);
-    if (total !== expected) return NextResponse.json({ error: `Item ${it.productName} total mismatch` }, { status: 400 });
+    // exact total wins when pasted (e.g. 42.560kg = 2460) — no toFixed(2) drift to 56/57
+    let total: number;
+    let unitPricePaisa: number;
+    if (it.total != null) {
+      total = Math.round(it.total * 100);
+      // derive unitPrice paisa from exact total/qty when total given
+      const qty = it.quantity || 1;
+      unitPricePaisa = qty > 0 ? Math.round((total / qty)) : Math.round((it.unitPrice || 0) * 100);
+    } else {
+      const up = it.unitPrice ?? 0;
+      unitPricePaisa = Math.round(up * 100);
+      total = calcItemTotal(it.quantity, up); // paisa
+    }
 
     totalPaisa += total;
     // resolve product snapshot if productId given
@@ -86,7 +94,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       productId: it.productId || null,
       productNameSnapshot: prodName,
       categoryNameSnapshot: catName,
-      quantityScaled: toScaled(it.quantity),
+      quantityScaled: toScaledMarket(it.quantity),
       unit: it.unit,
       unitPricePaisa,
       totalPaisa: total,

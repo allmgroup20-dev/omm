@@ -10,9 +10,10 @@ type Row = {
   productName: string;
   categorySel: string; // category id | "custom" | ""
   categoryName: string;
-  quantity: string;
+  quantity: string; // e.g. "42.560" — for kg, 42kg 560g = 42.560
   unit: string;
   unitPrice: string;
+  total: string; // exact pasted total, e.g. "2460" — wins over qty*price when present
 };
 
 type Product = { id: string; name: string; categoryId: string | null; defaultUnit: string };
@@ -22,7 +23,7 @@ type Vendor = { id: string; name: string };
 const UNIT_CODES = ["kg", "gram", "litre", "ml", "piece", "dozen", "packet", "bottle", "box", "custom"] as const;
 const CUSTOM = "__custom__";
 
-const EMPTY_ROW: Row = { productSel: "", productName: "", categorySel: "", categoryName: "", quantity: "1", unit: "kg", unitPrice: "0" };
+const EMPTY_ROW: Row = { productSel: "", productName: "", categorySel: "", categoryName: "", quantity: "1", unit: "kg", unitPrice: "0", total: "" };
 
 export default function AddMarketPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,16 +51,48 @@ export default function AddMarketPage() {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   }
 
+  function onQuantityChange(idx: number, val: string) {
+    // keep total in sync when qty changes if total was pasted — recompute unitPrice from total/qty to keep 2460 exact
+    const qty = parseFloat(val) || 0;
+    const totalStr = items[idx]?.total;
+    if (totalStr) {
+      const total = parseFloat(totalStr) || 0;
+      if (qty > 0 && total > 0) {
+        const up = total / qty;
+        updateItem(idx, { quantity: val, unitPrice: up.toFixed(4).replace(/\.?0+$/, "") });
+        return;
+      }
+    }
+    updateItem(idx, { quantity: val });
+  }
+
+  function onUnitPriceChange(idx: number, val: string) {
+    // when unitPrice typed, clear total so qty*price wins (avoid stale total)
+    updateItem(idx, { unitPrice: val, total: "" });
+  }
+
   function onTotalChange(idx: number, totalStr: string) {
+    // user pasted exact total (e.g. 2460) — preserve it, derive unitPrice without 2-dec truncation drift
     const total = parseFloat(totalStr) || 0;
     const qty = parseFloat(items[idx]?.quantity) || 0;
+    if (!totalStr) {
+      updateItem(idx, { total: "", unitPrice: "0" });
+      return;
+    }
     if (qty > 0) {
       const unitPrice = total / qty;
-      updateItem(idx, { unitPrice: unitPrice.toFixed(2).replace(/\.00$/, "") });
+      updateItem(idx, { total: totalStr, unitPrice: unitPrice.toFixed(4).replace(/\.?0+$/, "") });
     } else {
-      // if no qty yet, just set unitPrice to total (assume qty=1) so user sees something
-      updateItem(idx, { unitPrice: totalStr });
+      updateItem(idx, { total: totalStr, unitPrice: totalStr });
     }
+  }
+
+  function onKgChange(idx: number, kgStr: string, gramStr: string) {
+    const kg = parseFloat(kgStr) || 0;
+    const g = parseFloat(gramStr) || 0;
+    const qty = kg + g / 1000;
+    // keep 3-dec for kg+gram case (42.560)
+    onQuantityChange(idx, qty ? qty.toFixed(3).replace(/\.?0+$/, "") : "0");
   }
 
   function onProductChange(idx: number, sel: string) {
@@ -106,7 +139,7 @@ export default function AddMarketPage() {
   function addRow() { setItems((prev) => [...prev, { ...EMPTY_ROW }]); }
   function removeRow(idx: number) { setItems((prev) => prev.filter((_, i) => i !== idx)); }
 
-  const total = items.reduce((a, it) => a + (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0), 0);
+  const total = items.reduce((a, it) => a + (it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0)), 0);
   const discountNum = parseFloat(discount) || 0;
   const final = Math.max(0, total - discountNum);
 
@@ -131,6 +164,7 @@ export default function AddMarketPage() {
             quantity: parseFloat(it.quantity) || 0,
             unit: it.unit,
             unitPrice: parseFloat(it.unitPrice) || 0,
+            total: it.total ? parseFloat(it.total) || 0 : undefined,
           })),
           clientRefId: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         }),
@@ -166,7 +200,7 @@ export default function AddMarketPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between"><span className="font-medium text-sm">{t("market.items")} ({items.length})</span><button type="button" onClick={addRow} className="text-xs border rounded-full px-3 py-1">{t("market.addRow")}</button></div>
            {items.map((it, idx) => {
-            const rowTotal = (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
+            const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
             return (
               <div key={idx} className="border rounded-xl p-4 bg-zinc-50 space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -225,8 +259,42 @@ export default function AddMarketPage() {
                 </div>
                 <div className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-6 md:col-span-3">
-                    <label className="text-[11px] text-zinc-500">{t("market.quantity")}</label>
-                    <input type="number" step="0.01" placeholder={t("market.quantity")} value={it.quantity} onChange={(e) => updateItem(idx, { quantity: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
+                    <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? "(কেজি + গ্রাম)" : ""}</label>
+                    {it.unit === "kg" ? (
+                      <div className="flex gap-1">
+                        {(() => {
+                          const q = parseFloat(it.quantity) || 0;
+                          const kg = Math.floor(q);
+                          const g = Math.round((q - kg) * 1000);
+                          return (
+                            <>
+                              <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                placeholder="কেজি"
+                                value={q ? String(kg) : it.quantity === "0" ? "0" : ""}
+                                onChange={(e) => onKgChange(idx, e.target.value, String(g))}
+                                className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white"
+                                required
+                              />
+                              <input
+                                type="number"
+                                min={0}
+                                max={999}
+                                step={1}
+                                placeholder="গ্রাম"
+                                value={q ? String(g) : ""}
+                                onChange={(e) => onKgChange(idx, String(kg), e.target.value)}
+                                className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white"
+                              />
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <input type="number" step="0.001" placeholder={t("market.quantity")} value={it.quantity} onChange={(e) => onQuantityChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
+                    )}
                   </div>
                   <div className="col-span-6 md:col-span-2">
                     <label className="text-[11px] text-zinc-500">{t("market.unit")}</label>
@@ -240,17 +308,18 @@ export default function AddMarketPage() {
                   </div>
                   <div className="col-span-6 md:col-span-3">
                     <label className="text-[11px] text-zinc-500">{t("market.unitPrice")}</label>
-                    <input type="number" step="0.01" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => updateItem(idx, { unitPrice: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
+                    <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
                   </div>
                   <div className="col-span-6 md:col-span-3">
-                    <label className="text-[11px] text-zinc-500">মোট (টাকা) — সরাসরি</label>
+                    <label className="text-[11px] text-zinc-500">মোট (টাকা) — কপি-পেস্ট exact</label>
                     <input
                       type="number"
                       step="0.01"
-                      placeholder="যেমন ৩০০০"
-                      value={rowTotal ? rowTotal.toFixed(2).replace(/\.00$/, "") : ""}
+                      placeholder="যেমন ২৪৬০"
+                      value={it.total !== "" ? it.total : rowTotal ? rowTotal.toFixed(2).replace(/\.00$/, "") : ""}
                       onChange={(e) => onTotalChange(idx, e.target.value)}
                       className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white border-amber-300 focus:border-amber-500"
+                      title="২৪৬০ পেস্ট করলে ৫৬/৫৭ drift ছাড়া exact থাকবে"
                     />
                   </div>
                   <div className="col-span-12 md:col-span-1 flex justify-end">
@@ -260,7 +329,8 @@ export default function AddMarketPage() {
                   </div>
                 </div>
                 <div className="text-xs text-zinc-500 text-right">
-                  {t("market.total")}: {formatCurrency(Math.round(rowTotal * 100), locale)} {rowTotal > 0 && <span className="text-zinc-400">({it.quantity} × {it.unitPrice})</span>}
+                  {t("market.total")}: {formatCurrency(Math.round((it.total ? parseFloat(it.total) || 0 : rowTotal) * 100), locale)}{" "}
+                  {rowTotal > 0 && <span className="text-zinc-400">({it.quantity} × {it.unitPrice} {it.total ? "= " + it.total + " exact" : ""})</span>}
                 </div>
               </div>
             );
