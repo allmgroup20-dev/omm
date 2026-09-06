@@ -111,6 +111,7 @@ export const BD_PRODUCTS: CatalogProduct[] = [
   // তেল/ঘি
   { slug: "tel-soyabin", name: "সয়াবিন তেল", categorySlug: "tel-ghee", defaultUnit: "litre" },
   { slug: "tel-shorisha", name: "সরিষার তেল", categorySlug: "tel-ghee", defaultUnit: "litre" },
+  { slug: "tel-canola", name: "ক্যানোলা তেল", categorySlug: "tel-ghee", defaultUnit: "litre" },
   { slug: "ghee", name: "ঘি", categorySlug: "tel-ghee", defaultUnit: "gram" },
   // দুধ/দই
   { slug: "dudh", name: "দুধ", categorySlug: "dudh-doi", defaultUnit: "litre" },

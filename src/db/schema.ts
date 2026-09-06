@@ -319,6 +319,7 @@ export const marketProducts = sqliteTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     defaultUnit: text("default_unit").notNull().default("kg"), // kg|gram|litre|ml|piece|dozen|packet|bottle|box|custom
+    sortOrder: integer("sort_order").notNull().default(0),
     isArchived: integer("is_archived", { mode: "boolean" }).notNull().default(false),
     createdAt: text("created_at").notNull(),
   },

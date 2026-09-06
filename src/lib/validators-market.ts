@@ -13,6 +13,7 @@ export const productSchema = z.object({
   name: z.string().min(1).max(40),
   categoryId: z.string().min(1),
   defaultUnit: z.enum(UNITS).default("kg").optional(),
+  sortOrder: z.number().int().min(0).optional(),
 });
 
 export const vendorSchema = z.object({

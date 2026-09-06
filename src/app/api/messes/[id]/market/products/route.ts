@@ -21,6 +21,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   for (const g of globals) bySlug.set(g.slug, g);
   for (const r of perMess) bySlug.set(r.slug, r);
   const products = perMess.length > 0 ? [...bySlug.values()] : globals;
+  products.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   return NextResponse.json({ products });
 }
 
@@ -36,7 +37,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const parsed = productSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 
-  const { name, categoryId, defaultUnit } = parsed.data;
+  const { name, categoryId, defaultUnit, sortOrder } = parsed.data;
   const cat = await db.select().from(marketCategories).where(eq(marketCategories.id, categoryId)).limit(1);
   if (!cat[0]) return NextResponse.json({ error: "Category not found" }, { status: 404 });
 
@@ -50,6 +51,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     name: name.trim(),
     slug,
     defaultUnit: defaultUnit || "kg",
+    sortOrder: sortOrder ?? 0,
     isArchived: false,
     createdAt: now,
   });
