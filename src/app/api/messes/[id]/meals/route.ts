@@ -7,14 +7,15 @@ import { getMessPrecision, isDateLocked, isMonthClosed } from "@/lib/meal-helper
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-// GET /api/messes/:id/meals?date=YYYY-MM-DD  or ?year=2026&month=9  (returns all for month)
+// GET /api/messes/:id/meals?date=YYYY-MM-DD  or ?year=2026&month=9  (returns all for month) — public for dashboard share
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const db = await getRequestDb();
-  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
-  if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = await getCurrentUser();
+  if (user) {
+    const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+    // public read — don't block
+  }
 
   const url = new URL(req.url);
   const date = url.searchParams.get("date");

@@ -7,9 +7,12 @@ import { computeMonthlyFinance } from "@/lib/finance";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const db = await getRequestDb();
+  const user = await getCurrentUser();
+  // public GET — if no user, return guest zeros (dashboard shows 0)
+  if (!user) {
+    return NextResponse.json({ todayMeals: 0, monthMeals: 0, mealRatePaisa: 0, monthMealCostPaisa: 0, totalDepositPaisa: 0, monthDepositPaisa: 0, currentBalancePaisa: 0, dueAdvance: "guest", recentLedger: [], targetMemberId: null, guest: true });
+  }
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

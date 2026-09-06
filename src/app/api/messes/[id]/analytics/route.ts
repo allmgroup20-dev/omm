@@ -6,11 +6,13 @@ import { and, eq } from "drizzle-orm";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const db = await getRequestDb();
-  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
-  if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = await getCurrentUser();
+  // public GET for dashboard share — allow unauthenticated
+  if (user) {
+    const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+    // don't block public
+  }
 
   const url = new URL(req.url);
   const year = Number(url.searchParams.get("year") || new Date().getFullYear());
