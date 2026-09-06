@@ -167,6 +167,40 @@ export const invitations = sqliteTable(
   (t) => [index("idx_invitations_mess").on(t.messId), index("idx_invitations_code").on(t.code)],
 );
 
+export const messShareTokens = sqliteTable(
+  "mess_share_tokens",
+  {
+    id: text("id").primaryKey(),
+    messId: text("mess_id")
+      .notNull()
+      .references(() => messes.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    createdBy: text("created_by").references(() => users.id),
+    expiresAt: text("expires_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("idx_share_tokens_mess").on(t.messId)],
+);
+
+export const messJoinRequests = sqliteTable(
+  "mess_join_requests",
+  {
+    id: text("id").primaryKey(),
+    messId: text("mess_id")
+      .notNull()
+      .references(() => messes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"), // pending|approved|rejected
+    requestedAt: text("requested_at").notNull(),
+    decidedBy: text("decided_by").references(() => users.id),
+    decidedAt: text("decided_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("uq_join_request").on(t.messId, t.userId), index("idx_join_requests_mess").on(t.messId)],
+);
+
 // ---------- MEAL ----------
 
 export const mealTypes = sqliteTable(

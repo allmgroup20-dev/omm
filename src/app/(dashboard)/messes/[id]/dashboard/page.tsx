@@ -21,6 +21,12 @@ type Stats = {
 
 export default function ManagerDashboardPage() {
   const { id } = useParams<{ id: string }>();
+  const [ym, setYm] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [shareUrl, setShareUrl] = useState("");
+  const [balances, setBalances] = useState<{ members: { memberId: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string }[]; mealRatePaisa: number } | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
@@ -28,7 +34,8 @@ export default function ManagerDashboardPage() {
   const [analytics, setAnalytics] = useState<{ monthlyTrend: { ym: string; market: number; other: number; total: number }[]; categorySpend: { name: string; value: number }[]; memberMealComp: { memberId: string; meals: number }[] } | null>(null);
 
   useEffect(() => {
-    fetch(`/api/messes/${id}/dashboard`).then((r) => r.json()).then((d) => {
+    const date = `${ym}-01`;
+    fetch(`/api/messes/${id}/dashboard?date=${date}`).then((r) => r.json()).then((d) => {
       if (!d.error) {
         setStats(d.stats);
         setInsights(d.insights || []);
@@ -36,20 +43,34 @@ export default function ManagerDashboardPage() {
       }
     });
     fetch(`/api/messes/${id}/dashboard/member`).then((r) => r.json()).then((d) => { if (!d.error) setMemberDash(d); });
-    fetch(`/api/messes/${id}/analytics`).then((r) => r.json()).then((d) => { if (!d.error) setAnalytics(d); });
-  }, [id]);
+    fetch(`/api/messes/${id}/analytics?year=${ym.split("-")[0]}&month=${ym.split("-")[1]}`).then((r) => r.json()).then((d) => { if (!d.error) setAnalytics(d); });
+    const [y, m] = ym.split("-").map(Number);
+    fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`).then((r) => r.json()).then((d) => { if (!d.error) setBalances(d); });
+  }, [id, ym]);
+
+  async function createShare() {
+    const res = await fetch(`/api/messes/${id}/share`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok) setShareUrl(`${window.location.origin}${data.url}`);
+  }
 
   const COLORS = ["#18181b", "#71717a", "#a1a1aa", "#d4d4d8", "#e4e4e7"];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Manager Dashboard</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">Manager Dashboard</h1>
+          <div className="text-xs text-zinc-500 mt-1">চলমান মাস: {ym} • মাস অনুযায়ী সব হিসাব • Main + সাব-ড্যাশবোর্ড</div>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3 py-1.5 text-sm" />
+          <button onClick={createShare} className="px-4 py-1.5 border rounded-full text-sm bg-white">🔗 Share (public)</button>
           <Link href={`/messes/${id}/analytics`} className="px-4 py-1.5 border rounded-full text-sm">Analytics →</Link>
           <Link href={`/messes/${id}`} className="px-4 py-1.5 border rounded-full text-sm">Overview</Link>
         </div>
       </div>
+      {shareUrl && <div className="rounded-xl border bg-white p-3 text-sm break-all">Public link: <a href={shareUrl} target="_blank" className="underline">{shareUrl}</a> — যে কেউ দেখতে পারবে, প্রতি 30s এ অ্যাকাউন্ট প্রম্পট</div>}
 
       {!stats ? (
         <div className="bg-white border rounded-2xl p-10 text-center text-sm">লোড হচ্ছে...</div>
@@ -66,6 +87,38 @@ export default function ManagerDashboardPage() {
             <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">Total Due</div><div className="text-sm font-bold text-red-600">৳{(stats.totalDuePaisa / 100).toFixed(2)}</div></div>
             <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">Total Advance</div><div className="text-sm font-bold text-emerald-600">৳{(stats.totalAdvancePaisa / 100).toFixed(2)}</div></div>
             <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">Your Today</div><div className="text-sm font-bold">{memberDash?.todayMeals ?? 0} meals</div></div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-5">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-zinc-500">মোট বাজার খরচ ({ym})</span><span className="font-bold">৳{(stats.monthMarketPaisa / 100 || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-xs text-zinc-500">Meal Rate ({ym}) — খরচ/মিল</span><span className="font-bold text-emerald-700">৳{(stats.mealRatePaisa / 100 || 0).toFixed(2)}</span>
+            </div>
+            <div className="text-xs text-zinc-500 mt-1">বাজার ৳{(stats.monthMarketPaisa / 100).toFixed(2)} + অন্যান্য ৳{(stats.monthOtherPaisa / 100).toFixed(2)} = সর্বমোট ৳{(stats.monthTotalPaisa / 100).toFixed(2)}</div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-5">
+            <div className="font-semibold text-sm">👥 Per-Member — {ym} (কে কত মিল, জমা, খরচ, পাবে/দেবে)</div>
+            <div className="overflow-x-auto mt-3">
+              <table className="w-full text-xs">
+                <thead className="bg-zinc-50"><tr><th className="text-left p-2">সদস্য</th><th className="p-2">মিল</th><th className="p-2">মিল খরচ</th><th className="p-2">জমা</th><th className="p-2">ব্যালেন্স</th><th className="p-2">অবস্থা</th></tr></thead>
+                <tbody>
+                  {(balances?.members || []).map((m) => (
+                    <tr key={m.memberId} className="border-t">
+                      <td className="p-2 font-mono">{m.memberId.slice(0, 6)}</td>
+                      <td className="p-2 text-center">{m.totalMeals}</td>
+                      <td className="p-2 text-right">৳{(m.mealCostPaisa / 100).toFixed(2)}</td>
+                      <td className="p-2 text-right text-emerald-700">৳{(m.depositPaisa / 100).toFixed(2)}</td>
+                      <td className="p-2 text-right font-semibold">৳{(m.balancePaisa / 100).toFixed(2)}</td>
+                      <td className="p-2 text-center"><span className={`rounded-full px-2 py-0.5 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{m.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(!balances || balances.members.length === 0) && <div className="p-4 text-center text-xs text-zinc-500">এই মাসে হিসাব নেই — মিল/বাজার/জমা যোগ করুন</div>}
+            </div>
           </div>
 
           <div className="rounded-2xl border bg-white p-5">

@@ -35,6 +35,26 @@ export default function MembersPage() {
   const [found, setFound] = useState<FoundUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [msg, setMsg] = useState("");
+  const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; status: string; requestedAt: string }[]>([]);
+
+  async function loadJoinRequests() {
+    const res = await fetch(`/api/messes/${id}/join-requests`).catch(() => null);
+    if (res && res.ok) {
+      const data = await res.json();
+      setJoinRequests(data.requests || []);
+    }
+  }
+
+  async function handleJoinRequest(reqId: string, action: "approve" | "reject") {
+    const res = await fetch(`/api/messes/${id}/join-requests/${reqId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+    const data = await res.json();
+    if (!res.ok) setMsg(data.error);
+    else {
+      setMsg(action === "approve" ? "Approved" : "Rejected");
+      load();
+      loadJoinRequests();
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -51,6 +71,7 @@ export default function MembersPage() {
   }
   useEffect(() => {
     load();
+    loadJoinRequests();
   }, [id]);
 
   async function updateRole(memberId: string, role: string) {
@@ -219,6 +240,27 @@ export default function MembersPage() {
           </div>
           {members.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("members.noMembers")}</div>}
           <p className="p-3 text-xs text-zinc-500">{t("members.historyNote")}</p>
+        </div>
+      )}
+
+      {joinRequests.length > 0 && (
+        <div className="bg-white border rounded-2xl p-4 space-y-3">
+          <div className="font-semibold text-sm">Join Requests — ম্যানেজার Approval (পাবলিক শেয়ার থেকে)</div>
+          <div className="space-y-2">
+            {joinRequests.map((r) => (
+              <div key={r.id} className="flex items-center justify-between border rounded-xl px-3 py-2 text-sm">
+                <div>
+                  <span className="font-mono text-xs">{r.userId.slice(0, 8)}</span> <span className={`text-xs rounded-full px-2 py-0.5 ${r.status === "pending" ? "bg-amber-100" : r.status === "approved" ? "bg-emerald-100" : "bg-zinc-200"}`}>{r.status}</span> <span className="text-xs text-zinc-500">{new Date(r.requestedAt).toLocaleString()}</span>
+                </div>
+                {r.status === "pending" && (
+                  <div className="flex gap-1">
+                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1">Approve</button>
+                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-3 py-1">Reject</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
