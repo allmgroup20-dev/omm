@@ -150,6 +150,10 @@ export default function AddMarketPage() {
     setSaving(true);
     setMsg("");
     try {
+      const validItems = items.filter((it) => it.productName.trim() && (parseFloat(it.quantity) || 0) > 0);
+      if (validItems.length === 0 && transportNum === 0) {
+        throw new Error("পণ্য বা গাড়ি ভাড়া যেকোনো একটি দিন — শুধু গাড়ি ভাড়া ৪০৳ হলেও সেভ হবে");
+      }
       const res = await fetch(`/api/messes/${id}/market/entries`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -161,7 +165,7 @@ export default function AddMarketPage() {
           discount: discountNum,
           transport: transportNum,
           notes,
-          items: items.map((it) => ({
+          items: validItems.map((it) => ({
             productName: it.productName,
             categoryName: it.categoryName,
             quantity: parseFloat(it.quantity) || 0,
@@ -203,6 +207,7 @@ export default function AddMarketPage() {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between"><span className="font-medium text-sm">{t("market.items")} ({items.length})</span><button type="button" onClick={addRow} className="text-xs border rounded-full px-3 py-1">{t("market.addRow")}</button></div>
+          <p className="text-xs text-zinc-500">টিপ: পণ্য ছাড়া শুধু <b>গাড়ি ভাড়া</b> সেভ করতে চাইলে পণ্য খালি রাখুন — গাড়ি ভাড়া ৪০ লিখে Save করুন, আলাদা এন্ট্রি হিসেবে সেভ হবে (পণ্য সহ একসাথে বা আলাদা — উভয়ই)</p>
            {items.map((it, idx) => {
             const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
             return (

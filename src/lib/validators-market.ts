@@ -39,32 +39,44 @@ export const marketEntryItemSchema = z
     if (v.unitPrice == null && v.total == null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "unitPrice or total required", path: ["unitPrice"] });
   });
 
-export const marketEntrySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  purchasedBy: z.string().min(1).optional(), // messMemberId
-  vendorId: z.string().optional().nullable(),
-  vendorName: z.string().max(60).optional().or(z.literal("")), // free form if no vendorId
-  paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).default("cash").optional(),
-  discount: z.number().min(0).max(1000000).optional().default(0), // BDT
-  transport: z.number().min(0).max(100000).optional().default(0), // গাড়ি ভাড়া BDT
-  classification: z.enum(["food", "shared", "non_food"]).default("food").optional(),
-  notes: z.string().max(500).optional().or(z.literal("")),
-  referenceNumber: z.string().max(40).optional().or(z.literal("")),
-  clientRefId: z.string().max(80).optional(),
-  items: z.array(marketEntryItemSchema).min(1).max(50),
-});
+export const marketEntrySchema = z
+  .object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    purchasedBy: z.string().min(1).optional(), // messMemberId
+    vendorId: z.string().optional().nullable(),
+    vendorName: z.string().max(60).optional().or(z.literal("")), // free form if no vendorId
+    paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).default("cash").optional(),
+    discount: z.number().min(0).max(1000000).optional().default(0), // BDT
+    transport: z.number().min(0).max(100000).optional().default(0), // গাড়ি ভাড়া BDT — alone allowed
+    classification: z.enum(["food", "shared", "non_food"]).default("food").optional(),
+    notes: z.string().max(500).optional().or(z.literal("")),
+    referenceNumber: z.string().max(40).optional().or(z.literal("")),
+    clientRefId: z.string().max(80).optional(),
+    items: z.array(marketEntryItemSchema).min(0).max(50).default([]),
+  })
+  .superRefine((v, ctx) => {
+    const hasItems = v.items && v.items.length > 0;
+    const hasTransport = (v.transport || 0) > 0;
+    if (!hasItems && !hasTransport) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "items or transport required (পণ্য বা গাড়ি ভাড়া যেকোনো একটি)", path: ["items"] });
+  });
 
-export const marketEntryUpdateSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  vendorId: z.string().optional().nullable(),
-  paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).optional(),
-  discount: z.number().min(0).max(1000000).optional(),
-  transport: z.number().min(0).max(100000).optional(),
-  classification: z.enum(["food", "shared", "non_food"]).optional(),
-  notes: z.string().max(500).optional().or(z.literal("")),
-  referenceNumber: z.string().max(40).optional().or(z.literal("")),
-  items: z.array(marketEntryItemSchema.extend({ id: z.string().optional() })).min(1).max(50).optional(),
-});
+export const marketEntryUpdateSchema = z
+  .object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    vendorId: z.string().optional().nullable(),
+    paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).optional(),
+    discount: z.number().min(0).max(1000000).optional(),
+    transport: z.number().min(0).max(100000).optional(),
+    classification: z.enum(["food", "shared", "non_food"]).optional(),
+    notes: z.string().max(500).optional().or(z.literal("")),
+    referenceNumber: z.string().max(40).optional().or(z.literal("")),
+    items: z.array(marketEntryItemSchema.extend({ id: z.string().optional() })).min(0).max(50).optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.items !== undefined && v.items.length === 0 && (v.transport == null || v.transport === 0)) {
+      // allow clearing items only if transport will be set — but on update we don't know existing transport, so allow empty items (caller should ensure transport or items)
+    }
+  });
 
 export function calcItemTotal(quantity: number, unitPriceBDT: number): number {
   return Math.round(quantity * unitPriceBDT * 100); // paisa
