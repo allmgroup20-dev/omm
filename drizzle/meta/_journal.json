@@ -29,6 +29,41 @@
       "when": 1788625773327,
       "tag": "0003_warm_wolf_cub",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788630000000,
+      "tag": "0004_bd_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788631000000,
+      "tag": "0005_meal_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788632000000,
+      "tag": "0006_canola_and_sort",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788633000000,
+      "tag": "0007_share_and_join",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788634000000,
+      "tag": "0008_gari_vara",
+      "breakpoints": true
     }
   ]
 }
