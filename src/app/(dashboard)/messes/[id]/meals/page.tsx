@@ -21,6 +21,9 @@ export default function MealsPage() {
   const [closed, setClosed] = useState(false);
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
+  const [defaults, setDefaults] = useState<Record<string, number>>({}); // mealTypeId -> qty
+  const [defaultsSaving, setDefaultsSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
 
   async function loadMeta() {
     const [mtRes, memRes] = await Promise.all([fetch(`/api/messes/${id}/meal-types`), fetch(`/api/messes/${id}/members`)]);
@@ -28,6 +31,20 @@ export default function MealsPage() {
     const memData = await memRes.json();
     if (mtRes.ok) setMealTypes(mtData.mealTypes.filter((x: MealType) => x.isActive).sort((a: MealType, b: MealType) => a.sortOrder - b.sortOrder));
     if (memRes.ok) setMembers(memData.members.filter((m: Member) => m.status === "active"));
+  }
+
+  async function loadDefaults() {
+    const res = await fetch(`/api/messes/${id}/meals/defaults`);
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.defaults) {
+      const map: Record<string, number> = {};
+      for (const d of data.defaults as { mealTypeId: string; defaultScaled: number; isEnabled: boolean }[]) {
+        map[d.mealTypeId] = d.isEnabled ? d.defaultScaled / 100 : 0;
+      }
+      setDefaults(map);
+    } else {
+      setDefaults({});
+    }
   }
 
   async function loadDate(d: string) {
@@ -50,6 +67,7 @@ export default function MealsPage() {
 
   useEffect(() => {
     loadMeta();
+    loadDefaults();
   }, [id]);
   useEffect(() => {
     loadDate(date);
@@ -78,6 +96,45 @@ export default function MealsPage() {
       }
       return copy;
     });
+  }
+
+  async function saveDefaults() {
+    setDefaultsSaving(true);
+    setMsg("");
+    try {
+      const payload = {
+        defaults: mealTypes.map((t) => ({
+          mealTypeId: t.id,
+          defaultQty: defaults[t.id] ?? 0,
+          isEnabled: (defaults[t.id] ?? 0) > 0,
+        })),
+      };
+      const res = await fetch(`/api/messes/${id}/meals/defaults`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+      setMsg("Auto template saved — every day will auto-fill until you change it");
+      loadDefaults();
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : t("errors.saveFail"));
+    } finally {
+      setDefaultsSaving(false);
+    }
+  }
+
+  async function autoFillToday() {
+    setAutoSaving(true);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/messes/${id}/meals/auto-fill`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+      setMsg(`Auto-filled ${data.inserted} meals for ${date} (skipped ${data.skipped})`);
+      loadDate(date);
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : t("errors.saveFail"));
+    } finally {
+      setAutoSaving(false);
+    }
   }
 
   async function copyPrevDay() {
@@ -155,6 +212,36 @@ export default function MealsPage() {
 
       {(locked || closed) && <div className="rounded-xl border p-3 text-sm bg-amber-50">{locked ? t("meals.lockedMsg") : ""} {closed ? t("meals.closedMsg") : ""}{t("meals.saveNeedManager")}</div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
+
+      <div className="bg-white border rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-sm">Auto template — প্রতিদিন auto</div>
+            <div className="text-xs text-zinc-500">একবার সেভ করুন (যেমন লাঞ্চ 1, ডিনার 1, ব্রেকফাস্ট 0) — প্রতিদিন নতুন তারিখে Auto-fill চাপলে বা খালি দিনে auto উঠবে; যেকোনো দিন এডিট করা যাবে, টেমপ্লেটও এডিট করা যাবে</div>
+          </div>
+          <Link href={`/messes/${id}/meal-types`} className="text-xs underline">মিল টাইপ এডিট (ব্রেকফাস্ট বাদ দিতে Deactivate)</Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {mealTypes.map((t) => (
+            <div key={t.id} className="border rounded-xl p-3 bg-zinc-50">
+              <div className="text-xs font-medium">{t.name}</div>
+              <select value={String(defaults[t.id] ?? 1)} onChange={(e) => setDefaults((prev) => ({ ...prev, [t.id]: parseFloat(e.target.value) }))} className="w-full border rounded-lg px-2 py-1.5 text-sm mt-1 bg-white">
+                <option value="0">0 — বাদ</option>
+                <option value="0.5">0.5</option>
+                <option value="1">1</option>
+                <option value="1.5">1.5</option>
+                <option value="2">2</option>
+              </select>
+              <div className="text-[11px] text-zinc-500 mt-1">{(defaults[t.id] ?? 1) === 0 ? "Auto-তে বাদ" : "Auto-তে " + (defaults[t.id] ?? 1)}</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={saveDefaults} disabled={defaultsSaving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50">{defaultsSaving ? "সেভ হচ্ছে..." : "টেমপ্লেট সেভ করুন"}</button>
+          <button onClick={autoFillToday} disabled={autoSaving} className="px-6 rounded-full border bg-white text-sm disabled:opacity-50">{autoSaving ? "ভরছে..." : `Auto-fill ${date}`}</button>
+        </div>
+        <p className="text-xs text-zinc-500">টিপ: ব্রেকফাস্ট আগামী মাস থেকে বাদ দিতে `মিল টাইপ এডিট` এ ব্রেকফাস্ট Deactivate করুন — পুরনো হিসাব থাকবে, নতুন দিনে কলাম আসবে না</p>
+      </div>
 
       <div className="bg-white border rounded-2xl p-4 space-y-3">
         <div className="flex flex-wrap gap-2 text-xs">

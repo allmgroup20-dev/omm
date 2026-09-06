@@ -50,3 +50,14 @@ export function validatePrecision(scaled: number, precision: number): boolean {
   // precision 50 => multiples of 50, 100 => multiples of 100
   return scaled % precision === 0;
 }
+
+export const mealDefaultSchema = z.object({
+  mealTypeId: z.string().min(1),
+  defaultQty: z.number().min(0).max(20), // 0 disables that type in auto, 1 = every day
+  isEnabled: z.boolean().optional().default(true),
+  memberId: z.string().optional().nullable(), // null = mess-wide
+});
+
+export const mealDefaultsBulkSchema = z.object({
+  defaults: z.array(mealDefaultSchema).min(1).max(20),
+});

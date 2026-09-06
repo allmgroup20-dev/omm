@@ -188,6 +188,28 @@ export const mealTypes = sqliteTable(
   ],
 );
 
+export const mealDefaults = sqliteTable(
+  "meal_defaults",
+  {
+    id: text("id").primaryKey(),
+    messId: text("mess_id")
+      .notNull()
+      .references(() => messes.id, { onDelete: "cascade" }),
+    mealTypeId: text("meal_type_id")
+      .notNull()
+      .references(() => mealTypes.id, { onDelete: "cascade" }),
+    memberId: text("member_id").references(() => messMembers.id, { onDelete: "cascade" }), // null = mess-wide default, else per-member override
+    defaultScaled: integer("default_scaled").notNull().default(100), // x100 — 1 => 100, 0.5 => 50
+    isEnabled: integer("is_enabled", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [
+    uniqueIndex("uq_meal_default").on(t.messId, t.mealTypeId, t.memberId),
+    index("idx_meal_defaults_mess").on(t.messId),
+  ],
+);
+
 export const mealRecords = sqliteTable(
   "meal_records",
   {
