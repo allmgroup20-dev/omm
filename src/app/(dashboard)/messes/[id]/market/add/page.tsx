@@ -72,11 +72,23 @@ export default function AddMarketPage() {
 
   function onCategoryChange(idx: number, sel: string) {
     if (sel === CUSTOM) {
-      updateItem(idx, { categorySel: sel, categoryName: "" });
+      updateItem(idx, { categorySel: sel, categoryName: "", productSel: CUSTOM, productName: "" });
+      return;
+    }
+    if (!sel) {
+      updateItem(idx, { categorySel: "", categoryName: "", productSel: "", productName: "", unit: "kg" });
       return;
     }
     const c = categories.find((x) => x.id === sel);
-    updateItem(idx, { categorySel: sel, categoryName: c?.name || "" });
+    // reset product if it doesn't belong to new category
+    setItems((prev) =>
+      prev.map((it, i) => {
+        if (i !== idx) return it;
+        const keepProduct = it.productSel && it.productSel !== CUSTOM && products.some((p) => p.id === it.productSel && p.categoryId === sel);
+        if (keepProduct) return { ...it, categorySel: sel, categoryName: c?.name || "" };
+        return { ...it, categorySel: sel, categoryName: c?.name || "", productSel: "", productName: "", unit: "kg" };
+      }),
+    );
   }
 
   function addRow() { setItems((prev) => [...prev, { ...EMPTY_ROW }]); }
@@ -144,17 +156,7 @@ export default function AddMarketPage() {
           {items.map((it, idx) => (
             <div key={idx} className="grid grid-cols-12 gap-2 border rounded-xl p-3 bg-zinc-50">
               <div className="col-span-6 md:col-span-3">
-                <select value={it.productSel} onChange={(e) => onProductChange(idx, e.target.value)} className="w-full border rounded-lg px-2 py-2 text-sm bg-white" required={it.productSel !== CUSTOM}>
-                  <option value="">{t("market.productPh")}</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  <option value={CUSTOM}>{t("market.newCustom")}</option>
-                </select>
-                {it.productSel === CUSTOM && (
-                  <input placeholder={t("market.productCustomPh")} value={it.productName} onChange={(e) => updateItem(idx, { productName: e.target.value })} className="w-full border rounded-lg px-2 py-2 text-sm mt-1 bg-white" required />
-                )}
-              </div>
-              <div className="col-span-6 md:col-span-2">
-                <select value={it.categorySel} onChange={(e) => onCategoryChange(idx, e.target.value)} className="w-full border rounded-lg px-2 py-2 text-sm bg-white">
+                <select value={it.categorySel} onChange={(e) => onCategoryChange(idx, e.target.value)} className="w-full border rounded-lg px-2 py-2 text-sm bg-white font-medium">
                   <option value="">{t("market.categoryPh")}</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   <option value={CUSTOM}>{t("market.newCustom")}</option>
@@ -163,8 +165,43 @@ export default function AddMarketPage() {
                   <input placeholder={t("market.category")} value={it.categoryName} onChange={(e) => updateItem(idx, { categoryName: e.target.value })} className="w-full border rounded-lg px-2 py-2 text-sm mt-1 bg-white" />
                 )}
               </div>
+              <div className="col-span-6 md:col-span-3">
+                {(() => {
+                  const filtered = it.categorySel && it.categorySel !== CUSTOM ? products.filter((p) => p.categoryId === it.categorySel) : [];
+                  const isDisabled = !it.categorySel || it.categorySel === CUSTOM;
+                  return (
+                    <>
+                      <select
+                        value={it.productSel}
+                        onChange={(e) => onProductChange(idx, e.target.value)}
+                        className="w-full border rounded-lg px-2 py-2 text-sm bg-white disabled:bg-zinc-100 disabled:text-zinc-400"
+                        required={!!it.categorySel && it.categorySel !== CUSTOM && it.productSel !== CUSTOM}
+                        disabled={isDisabled && it.categorySel !== CUSTOM}
+                      >
+                        <option value="">{isDisabled ? (it.categorySel === CUSTOM ? t("market.productCustomPh") : "— " + t("market.categoryPh") + " আগে —") : t("market.productPh")}</option>
+                        {filtered.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({t(`units.${p.defaultUnit}` as never) || p.defaultUnit})
+                          </option>
+                        ))}
+                        <option value={CUSTOM}>{t("market.newCustom")}</option>
+                      </select>
+                      {filtered.length > 0 && it.categorySel !== CUSTOM && <div className="text-[11px] text-zinc-500 mt-1">{filtered.length}টি পণ্য</div>}
+                      {it.productSel === CUSTOM && (
+                        <input
+                          placeholder={t("market.productCustomPh")}
+                          value={it.productName}
+                          onChange={(e) => updateItem(idx, { productName: e.target.value })}
+                          className="w-full border rounded-lg px-2 py-2 text-sm mt-1 bg-white"
+                          required
+                        />
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
               <input type="number" step="0.01" placeholder={t("market.quantity")} value={it.quantity} onChange={(e) => updateItem(idx, { quantity: e.target.value })} className="col-span-4 md:col-span-2 border rounded-lg px-2 py-2 text-sm text-center bg-white" required />
-              <select value={it.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="col-span-4 md:col-span-2 border rounded-lg px-2 py-2 text-sm bg-white">{UNIT_CODES.map((u) => <option key={u} value={u}>{t(`units.${u}`)}</option>)}</select>
+              <select value={it.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="col-span-4 md:col-span-1 border rounded-lg px-2 py-2 text-sm bg-white">{UNIT_CODES.map((u) => <option key={u} value={u}>{t(`units.${u}`)}</option>)}</select>
               <input type="number" step="0.01" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => updateItem(idx, { unitPrice: e.target.value })} className="col-span-3 md:col-span-2 border rounded-lg px-2 py-2 text-sm text-center bg-white" required />
               <button type="button" onClick={() => removeRow(idx)} className="col-span-1 text-xs border rounded-lg bg-white">{t("market.remove")}</button>
               <div className="col-span-12 text-xs text-zinc-500">{t("market.total")}: {formatCurrency(Math.round((parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0) * 100), locale)}</div>
