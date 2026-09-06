@@ -85,6 +85,13 @@
       "when": 1788637000000,
       "tag": "0011_multi_purchaser",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1788638000000,
+      "tag": "0012_profile_google_sub",
+      "breakpoints": true
     }
   ]
 }

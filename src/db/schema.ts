@@ -23,10 +23,11 @@ export const users = sqliteTable(
     status: text("status").notNull().default("active"), // active|suspended|deleted
     emergencyContact: text("emergency_contact"),
     notes: text("notes"),
+    googleSub: text("google_sub"), // Google OAuth sub — stable link even if email changes
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
-  (t) => [index("idx_users_email").on(t.email), index("idx_users_phone").on(t.phone)],
+  (t) => [index("idx_users_email").on(t.email), index("idx_users_phone").on(t.phone), uniqueIndex("uq_users_google_sub").on(t.googleSub)],
 );
 
 export const sessions = sqliteTable(

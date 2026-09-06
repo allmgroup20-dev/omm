@@ -81,7 +81,7 @@ jobs:
           # wrangler.jsonc already has routes: omm.jobayergroup.com/*
           # Ensure D1/KV/R2 already created via `wrangler d1 create` etc. (see DEPLOYMENT.md)
 
-      - name: Run D1 migrations (if any)
+      - name: Run D1 migrations (profile google_sub)
         uses: cloudflare/wrangler-action@v3
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -89,6 +89,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Execute latest drizzle SQL if you use D1 migrations via file
-          # This is a no-op if file already applied (idempotent check in migrate.ts)
-          command: d1 execute omm-db --remote --file=./drizzle/0001_kind_bucky.sql --env production
+          command: d1 execute omm-db --remote --file=./drizzle/0012_profile_google_sub.sql --env production

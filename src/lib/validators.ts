@@ -39,5 +39,15 @@ export const resetSchema = z.object({
   path: ["confirmPassword"],
 });
 
+export const updateProfileSchema = z.object({
+  fullName: z.string().min(2, "নাম কমপক্ষে ২ অক্ষর").max(80, "নাম ৮০ অক্ষরের মধ্যে"),
+  email: z.string().email("সঠিক ইমেইল দিন").max(120),
+  phone: z.string().max(20).optional().or(z.literal("")),
+  profilePhoto: z.string().max(500).optional().or(z.literal("")),
+  emergencyContact: z.string().max(200).optional().or(z.literal("")),
+  notes: z.string().max(500).optional().or(z.literal("")),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

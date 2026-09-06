@@ -510,7 +510,17 @@
     "prefsDesc": "Notification preferences (meal reminder, deposit, due, settlement, approval, invitation, security) — configurable per user (soon: per-type toggles).",
     "prefCurrent": "Current: all enabled (default).",
     "sessions": "Active Sessions",
-    "sessionsDesc": "Tracked via loginHistory with IP. Suspicious login detection ready (flags new IP/device)."
+    "sessionsDesc": "Tracked via loginHistory with IP. Suspicious login detection ready (flags new IP/device).",
+    "editTitle": "Edit Profile",
+    "updated": "Profile updated successfully",
+    "photoLabel": "Profile Photo URL",
+    "photoHint": "Paste https:// image link. Leave empty to use initials.",
+    "emergencyLabel": "Emergency Contact",
+    "emergencyPh": "Emergency phone / contact",
+    "notesPh": "Notes (optional)",
+    "emailChangeHint": "Changing email will require login with the new email next time. Your Google link stays intact.",
+    "googleEmailHint": "Google-linked: future Google logins will sync to the new email automatically.",
+    "editNote": "All fields from Google can be edited. Email change keeps Google login working via stable ID."
   },
   "admin": {
     "title": "Admin — Moderation",

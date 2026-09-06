@@ -67,35 +67,92 @@ export async function GET(req: Request) {
     const email = profile.email.toLowerCase().trim();
     const userAgent = req.headers.get("user-agent") || null;
 
-    const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    console.error("[google-callback] E5 checkpoint: user lookup done", { exists: !!existing[0] });
+    // Priority 1: match by stable googleSub (survives email changes via profile edit)
+    // Priority 2: fallback to email match (legacy + first-time link)
+    // Wrapped in try/catch for D1 not yet migrated (no google_sub column)
+    let existing: (typeof users.$inferSelect)[] = [];
+    let matchBy: string = "googleSub";
+    try {
+      existing = await db.select().from(users).where(eq(users.googleSub, profile.sub)).limit(1);
+      if (!existing[0]) {
+        existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        matchBy = "email";
+      }
+    } catch (e: unknown) {
+      const emsg = e instanceof Error ? e.message : String(e);
+      if (emsg.includes("google_sub") || emsg.includes("no such column")) {
+        console.error("[google-callback] google_sub column missing, fallback to email only", emsg.slice(0, 200));
+        existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        matchBy = "email";
+      } else throw e;
+    }
+    console.error("[google-callback] E5 checkpoint: user lookup done", { exists: !!existing[0], matchBy });
     let userId: string;
     if (existing[0]) {
-      // Auto-link: existing account signs in with Google (same verified email)
+      // Auto-link: existing account signs in with Google (same verified email or same googleSub)
       if (existing[0].status !== "active") return fail("Account suspended. Contact admin.");
       userId = existing[0].id;
       const updates: Record<string, unknown> = { updatedAt: now };
       if (!existing[0].profilePhoto && profile.picture) updates.profilePhoto = profile.picture;
       if (!existing[0].emailVerified) updates.emailVerified = true;
-      if (Object.keys(updates).length > 1) {
-        await db.update(users).set(updates as never).where(eq(users.id, userId));
+      // Persist googleSub if not yet stored (migration for old users)
+      if (!existing[0].googleSub) updates.googleSub = profile.sub;
+      // If user changed email via profile edit, sync back only if googleSub was already linked
+      // (prevents hijack: only update email if matchBy was googleSub, meaning ownership proven)
+      if (matchBy === "googleSub" && existing[0].email !== email) {
+        updates.email = email;
+        updates.emailVerified = true;
+        console.error("[google-callback] E5 checkpoint: syncing email via googleSub", { oldEmail: existing[0].email, newEmail: email });
       }
-      console.error("[google-callback] E5 checkpoint: existing user linked", { userId });
+      if (Object.keys(updates).length > 1) {
+        try {
+          await db.update(users).set(updates as never).where(eq(users.id, userId));
+        } catch (e: unknown) {
+          const em = e instanceof Error ? e.message : String(e);
+          if (em.includes("google_sub") || em.includes("no such column")) {
+            console.error("[google-callback] update google_sub missing, retry without it", em.slice(0, 200));
+            const fallback = { ...updates };
+            delete (fallback as Record<string, unknown>).googleSub;
+            if (Object.keys(fallback).length > 1) await db.update(users).set(fallback as never).where(eq(users.id, userId));
+          } else throw e;
+        }
+      }
+      console.error("[google-callback] E5 checkpoint: existing user linked", { userId, matchBy });
     } else {
       // Auto-register: no password known to the user (Google-only account)
       userId = nanoid();
-      await db.insert(users).values({
-        id: userId,
-        email,
-        phone: null,
-        passwordHash: await hashPassword(nanoid(32)),
-        fullName: profile.name,
-        profilePhoto: profile.picture || null,
-        emailVerified: true,
-        status: "active",
-        createdAt: now,
-        updatedAt: now,
-      });
+      try {
+        await db.insert(users).values({
+          id: userId,
+          email,
+          phone: null,
+          passwordHash: await hashPassword(nanoid(32)),
+          fullName: profile.name,
+          profilePhoto: profile.picture || null,
+          emailVerified: true,
+          googleSub: profile.sub,
+          status: "active",
+          createdAt: now,
+          updatedAt: now,
+        });
+      } catch (e: unknown) {
+        const em = e instanceof Error ? e.message : String(e);
+        if (em.includes("google_sub") || em.includes("no such column")) {
+          console.error("[google-callback] insert google_sub missing, retry without", em.slice(0,200));
+          await db.insert(users).values({
+            id: userId,
+            email,
+            phone: null,
+            passwordHash: await hashPassword(nanoid(32)),
+            fullName: profile.name,
+            profilePhoto: profile.picture || null,
+            emailVerified: true,
+            status: "active",
+            createdAt: now,
+            updatedAt: now,
+          });
+        } else throw e;
+      }
       console.error("[google-callback] E5 checkpoint: new user inserted", { userId });
     }
 

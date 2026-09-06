@@ -7,11 +7,13 @@ import { computeMonthlyFinance } from "@/lib/finance";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const db = await getRequestDb();
-  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
-  if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // public GET — no auth required for dashboard read-only; write still protected via POST
+  const user = await getCurrentUser();
+  if (user) {
+    const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+    // for public, don't block — just continue; for private, still allow
+  }
 
   const url = new URL(req.url);
   const ymParam = url.searchParams.get("ym");

@@ -24,8 +24,11 @@ const PUBLIC_PATHS = [
 
 // Simple in-memory CSRF double-submit for state-changing API calls
 // Token is set as cookie `omm_csrf` on first GET, then required as header `x-csrf-token` for POST/PATCH/DELETE
+const PUBLIC_GET_API = [/^\/api\/messes\/[^\/]+\/dashboard(\/.*)?$/, /^\/api\/messes\/[^\/]+\/finance\/balances$/, /^\/api\/messes\/[^\/]+\/market\/entries$/, /^\/api\/messes\/[^\/]+\/deposits$/, /^\/api\/messes\/[^\/]+\/meals(\/.*)?$/, /^\/api\/messes\/[^\/]+\/analytics$/, /^\/api\/auth\/me$/];
+
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
+  if (pathname.match(/^\/messes\/[^\/]+\/dashboard(\/.*)?$/)) return true;
   if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/public")) return true;
   if (pathname.match(/\.(svg|png|jpg|jpeg|ico|css|js|woff2?)$/)) return true;
   return false;
@@ -52,6 +55,17 @@ export function middleware(req: NextRequest) {
       const token = crypto.randomUUID();
       const isProd = process.env.NODE_ENV === "production";
       res.cookies.set("omm_csrf", token, { httpOnly: false, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7, secure: isProd });
+    }
+    return addSecurityHeaders(res);
+  }
+
+  // Public GET for dashboard data — read-only
+  if (req.method === "GET" && PUBLIC_GET_API.some((r) => r.test(pathname))) {
+    const res = NextResponse.next();
+    if (!req.cookies.get("omm_csrf")?.value) {
+      const token2 = crypto.randomUUID();
+      const isProd = process.env.NODE_ENV === "production";
+      res.cookies.set("omm_csrf", token2, { httpOnly: false, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7, secure: isProd });
     }
     return addSecurityHeaders(res);
   }
