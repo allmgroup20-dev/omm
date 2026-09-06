@@ -12,7 +12,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
-  if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can update members" }, { status: 403 });
+  if (!access[0] || (access[0].role !== "manager" && !access[0].isPrimaryManager)) return NextResponse.json({ error: "Only manager can update members" }, { status: 403 });
 
   const target = await db.select().from(messMembers).where(and(eq(messMembers.id, memberId), eq(messMembers.messId, id))).limit(1);
   if (!target[0]) return NextResponse.json({ error: "Member not found" }, { status: 404 });

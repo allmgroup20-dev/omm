@@ -59,27 +59,32 @@ export default function EntriesPage() {
   }
 
   async function deleteOne(entryId: string) {
-    if (!confirm("এই এন্ট্রি ডিলিট (void) করবেন? ভুল এন্ট্রি বাতিল হবে, history থাকবে")) return;
+    if (!confirm("এই এন্ট্রি ডিলিট (hard delete, DB থেকে vanish) করবেন?")) return;
     const res = await fetch(`/api/messes/${id}/market/entries/${entryId}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(data.error || "Delete failed — manager/assistant required");
+    if (!res.ok) setMsg(`${data.error || "Delete failed"} — আপনার role ${data.role ? data.role : ""} হলে Members → role manager করুন`);
     else {
-      setMsg("Deleted (voided)");
+      setMsg("Deleted (hard vanish)");
       load();
     }
   }
 
   async function deleteSelected() {
     if (selected.size === 0) return;
-    if (!confirm(`${selected.size} টি এন্ট্রি একসাথে ডিলিট (void) করবেন?`)) return;
+    if (!confirm(`${selected.size} টি এন্ট্রি একসাথে ডিলিট (hard vanish) করবেন?`)) return;
     let ok = 0;
     let fail = 0;
+    let lastErr = "";
     for (const eid of [...selected]) {
       const res = await fetch(`/api/messes/${id}/market/entries/${eid}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) ok++;
-      else fail++;
+      else {
+        fail++;
+        lastErr = data.error || "Unknown";
+      }
     }
-    setMsg(`Deleted ${ok} — ${fail ? fail + " failed (manager only)" : "done"}`);
+    setMsg(`Deleted ${ok} — ${fail ? fail + " failed: " + lastErr + " (Members → role=manager করুন)" : "done (vanished)"}`);
     setSelected(new Set());
     load();
   }
