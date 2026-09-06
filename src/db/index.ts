@@ -62,9 +62,18 @@ export function getD1Db(binding: unknown): Db {
 export async function getRequestDb(): Promise<Db> {
   try {
     const ctx = getCloudflareContext();
-    const binding = (ctx.env as Record<string, unknown> | undefined)?.DB;
+    const env = ctx.env as Record<string, unknown> | undefined;
+    const binding = env?.DB;
     if (binding) return getD1Db(binding);
-  } catch {
+    // We are on Workers but DB binding missing — must NOT silently fall through
+    // to better-sqlite3 (native module = cryptic 500). Throw a clear E5-DB error.
+    if (ctx.env) {
+      console.error("[db] D1 binding DB missing in Workers env", { keys: Object.keys((ctx.env as Record<string, unknown>) || {}).slice(0, 20) });
+      throw new Error("DB binding missing (E5-DB): wrangler.jsonc d1_databases not attached to this Worker");
+    }
+  } catch (err) {
+    // Only fall through for non-Workers contexts (local dev / CI / build)
+    if (err instanceof Error && err.message.includes("E5-DB")) throw err;
     // Not in a Workers request context (local dev / CI / build) — fall through
   }
   return getDb();
