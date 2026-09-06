@@ -1,0 +1,160 @@
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/session";
+import { getRequestDb } from "@/db";
+import { marketEntries, marketEntryItems, messMembers, vendors, auditLogs } from "@/db/schema";
+import { marketEntryUpdateSchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
+import { and, eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string; entryId: string }> }) {
+  const { id, entryId } = await params;
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getRequestDb();
+  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+  if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const entry = await db.select().from(marketEntries).where(and(eq(marketEntries.id, entryId), eq(marketEntries.messId, id))).limit(1);
+  if (!entry[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
+  const audits = await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, "market_entry"), eq(auditLogs.entityId, entryId)));
+  return NextResponse.json({ entry: entry[0], items, audits });
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; entryId: string }> }) {
+  const { id, entryId } = await params;
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getRequestDb();
+  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+  if (!access[0] || !["manager", "assistant_manager"].includes(access[0].role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const existing = await db.select().from(marketEntries).where(and(eq(marketEntries.id, entryId), eq(marketEntries.messId, id))).limit(1);
+  if (!existing[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (existing[0].status !== "active") return NextResponse.json({ error: "Only active entries can be edited" }, { status: 400 });
+
+  const body = await req.json().catch(() => null);
+  const parsed = marketEntryUpdateSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
+
+  const data = parsed.data;
+  const before = existing[0];
+  const now = new Date().toISOString();
+
+  // header updates
+  const headerUpdates: Record<string, unknown> = { updatedAt: now };
+  if (data.date !== undefined) headerUpdates.date = data.date;
+  if (data.vendorId !== undefined) {
+    if (data.vendorId) {
+      const v = await db.select().from(vendors).where(and(eq(vendors.id, data.vendorId), eq(vendors.messId, id))).limit(1);
+      if (!v[0]) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+    }
+    headerUpdates.vendorId = data.vendorId;
+  }
+  if (data.paymentMethod !== undefined) headerUpdates.paymentMethod = data.paymentMethod;
+  if (data.classification !== undefined) headerUpdates.classification = data.classification;
+  if (data.notes !== undefined) headerUpdates.notes = data.notes?.trim() || null;
+  if (data.referenceNumber !== undefined) headerUpdates.referenceNumber = data.referenceNumber?.trim() || null;
+
+  // if items provided, recalc totals
+  let newTotalPaisa = before.totalPaisa;
+  let newDiscountPaisa = before.discountPaisa;
+  let newFinalPaisa = before.finalPaisa;
+  let itemRows: typeof marketEntryItems.$inferInsert[] | null = null;
+
+  if (data.items) {
+    let totalPaisa = 0;
+    const rows: typeof marketEntryItems.$inferInsert[] = [];
+    for (const it of data.items) {
+      let total: number;
+      let unitPricePaisa: number;
+      if (it.total != null) {
+        total = Math.round(it.total * 100);
+        const qty = it.quantity || 1;
+        unitPricePaisa = qty > 0 ? Math.round(total / qty) : Math.round((it.unitPrice || 0) * 100);
+      } else {
+        const up = it.unitPrice ?? 0;
+        unitPricePaisa = Math.round(up * 100);
+        total = calcItemTotal(it.quantity, up);
+      }
+      totalPaisa += total;
+      rows.push({
+        id: (it as { id?: string }).id || nanoid(),
+        entryId,
+        productId: it.productId || null,
+        productNameSnapshot: it.productName,
+        categoryNameSnapshot: it.categoryName || null,
+        quantityScaled: toScaledMarket(it.quantity),
+        unit: it.unit,
+        unitPricePaisa,
+        totalPaisa: total,
+      });
+    }
+    newTotalPaisa = totalPaisa;
+    if (data.discount !== undefined) newDiscountPaisa = Math.round(data.discount * 100);
+    newFinalPaisa = Math.max(0, newTotalPaisa - newDiscountPaisa);
+    headerUpdates.totalPaisa = newTotalPaisa;
+    headerUpdates.discountPaisa = newDiscountPaisa;
+    headerUpdates.finalPaisa = newFinalPaisa;
+    itemRows = rows;
+  } else if (data.discount !== undefined) {
+    newDiscountPaisa = Math.round(data.discount * 100);
+    newFinalPaisa = Math.max(0, newTotalPaisa - newDiscountPaisa);
+    headerUpdates.discountPaisa = newDiscountPaisa;
+    headerUpdates.finalPaisa = newFinalPaisa;
+  }
+
+  // vendor delta
+  const oldFinal = before.finalPaisa;
+  const oldVendorId = before.vendorId;
+  const newVendorId = (headerUpdates.vendorId as string | null) ?? oldVendorId;
+  const delta = newFinalPaisa - oldFinal;
+
+  if (Object.keys(headerUpdates).length > 1 || itemRows) {
+    await db.update(marketEntries).set(headerUpdates as never).where(eq(marketEntries.id, entryId));
+    if (itemRows) {
+      await db.delete(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
+      for (const r of itemRows) await db.insert(marketEntryItems).values(r as never);
+    }
+    // adjust vendor totals
+    if (oldVendorId && oldVendorId !== newVendorId) {
+      const vOld = await db.select().from(vendors).where(eq(vendors.id, oldVendorId)).limit(1);
+      if (vOld[0]) await db.update(vendors).set({ totalPurchasesPaisa: vOld[0].totalPurchasesPaisa - oldFinal, updatedAt: now } as never).where(eq(vendors.id, oldVendorId));
+      if (newVendorId) {
+        const vNew = await db.select().from(vendors).where(eq(vendors.id, newVendorId)).limit(1);
+        if (vNew[0]) await db.update(vendors).set({ totalPurchasesPaisa: vNew[0].totalPurchasesPaisa + newFinalPaisa, updatedAt: now } as never).where(eq(vendors.id, newVendorId));
+      }
+    } else if (newVendorId && delta !== 0) {
+      const v = await db.select().from(vendors).where(eq(vendors.id, newVendorId)).limit(1);
+      if (v[0]) await db.update(vendors).set({ totalPurchasesPaisa: v[0].totalPurchasesPaisa + delta, updatedAt: now } as never).where(eq(vendors.id, newVendorId));
+    }
+
+    await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "update", entityType: "market_entry", entityId: entryId, beforeJson: JSON.stringify(before), afterJson: JSON.stringify({ ...headerUpdates, items: itemRows?.length }), createdAt: now });
+  }
+
+  const entry = await db.select().from(marketEntries).where(eq(marketEntries.id, entryId)).limit(1);
+  const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
+  return NextResponse.json({ ok: true, entry: entry[0], items });
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string; entryId: string }> }) {
+  const { id, entryId } = await params;
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getRequestDb();
+  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+  if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can void" }, { status: 403 });
+
+  const entry = await db.select().from(marketEntries).where(and(eq(marketEntries.id, entryId), eq(marketEntries.messId, id))).limit(1);
+  if (!entry[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (entry[0].status !== "active") return NextResponse.json({ error: "Already voided" }, { status: 400 });
+
+  const now = new Date().toISOString();
+  await db.update(marketEntries).set({ status: "voided", updatedAt: now } as never).where(eq(marketEntries.id, entryId));
+  if (entry[0].vendorId) {
+    const v = await db.select().from(vendors).where(eq(vendors.id, entry[0].vendorId)).limit(1);
+    if (v[0]) await db.update(vendors).set({ totalPurchasesPaisa: Math.max(0, v[0].totalPurchasesPaisa - entry[0].finalPaisa), updatedAt: now } as never).where(eq(vendors.id, entry[0].vendorId));
+  }
+  await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "void", entityType: "market_entry", entityId: entryId, beforeJson: JSON.stringify(entry[0]), createdAt: now });
+  return NextResponse.json({ ok: true });
+}

@@ -40,6 +40,9 @@ export default function AuditLogsPage() {
           <option value="settlement">settlement</option>
           <option value="mess_member">mess_member</option>
           <option value="meal_lock">meal_lock</option>
+          <option value="market_entry">market_entry</option>
+          <option value="market_category">market_category</option>
+          <option value="market_product">market_product</option>
         </select>
         <button onClick={load} className="px-4 py-1.5 border rounded-full">{t("common.refresh")}</button>
       </div>

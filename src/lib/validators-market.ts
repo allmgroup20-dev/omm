@@ -53,6 +53,17 @@ export const marketEntrySchema = z.object({
   items: z.array(marketEntryItemSchema).min(1).max(50),
 });
 
+export const marketEntryUpdateSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  vendorId: z.string().optional().nullable(),
+  paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).optional(),
+  discount: z.number().min(0).max(1000000).optional(),
+  classification: z.enum(["food", "shared", "non_food"]).optional(),
+  notes: z.string().max(500).optional().or(z.literal("")),
+  referenceNumber: z.string().max(40).optional().or(z.literal("")),
+  items: z.array(marketEntryItemSchema.extend({ id: z.string().optional() })).min(1).max(50).optional(),
+});
+
 export function calcItemTotal(quantity: number, unitPriceBDT: number): number {
   return Math.round(quantity * unitPriceBDT * 100); // paisa
 }
