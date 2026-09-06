@@ -34,15 +34,14 @@ export default function ManagerDashboardPage() {
   const [analytics, setAnalytics] = useState<{ monthlyTrend: { ym: string; market: number; other: number; total: number }[]; categorySpend: { name: string; value: number }[]; memberMealComp: { memberId: string; meals: number }[] } | null>(null);
 
   useEffect(() => {
-    const date = `${ym}-01`;
-    fetch(`/api/messes/${id}/dashboard?date=${date}`).then((r) => r.json()).then((d) => {
+    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => {
       if (!d.error) {
         setStats(d.stats);
         setInsights(d.insights || []);
         setDailyTrend(d.dailyTrend || []);
       }
     });
-    fetch(`/api/messes/${id}/dashboard/member`).then((r) => r.json()).then((d) => { if (!d.error) setMemberDash(d); });
+    fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) setMemberDash(d); });
     fetch(`/api/messes/${id}/analytics?year=${ym.split("-")[0]}&month=${ym.split("-")[1]}`).then((r) => r.json()).then((d) => { if (!d.error) setAnalytics(d); });
     const [y, m] = ym.split("-").map(Number);
     fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`).then((r) => r.json()).then((d) => { if (!d.error) setBalances(d); });
@@ -137,18 +136,19 @@ export default function ManagerDashboardPage() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="rounded-2xl border bg-white p-5">
-              <div className="font-semibold text-sm">Daily Expense Trend (7 days)</div>
+              <div className="font-semibold text-sm">Daily Expense Trend ({ym}) — পুরো মাস, ক্লিক করে দিনের বিস্তারিত</div>
               <div className="h-[220px] mt-3">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dailyTrend}>
+                  <BarChart data={dailyTrend} onClick={(e) => { if (e && (e as { activeLabel?: string }).activeLabel) { const d = (e as { activeLabel: string }).activeLabel; const full = `${ym}-${d}`; window.location.href = `/messes/${id}/market/entries?date=${full}`; } }}>
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} />
                     <Tooltip />
-                    <Bar dataKey="market" stackId="a" fill="#18181b" name="Market" />
-                    <Bar dataKey="other" stackId="a" fill="#a1a1aa" name="Other" />
+                    <Bar dataKey="market" stackId="a" fill="#18181b" name="Market" cursor="pointer" />
+                    <Bar dataKey="other" stackId="a" fill="#a1a1aa" name="Other" cursor="pointer" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              <div className="text-xs text-zinc-500 mt-1">বারে ক্লিক → ঐ তারিখের বাজার/মিল দেখুন (মিল পেজে তারিখ এডিট)</div>
             </div>
             <div className="rounded-2xl border bg-white p-5">
               <div className="font-semibold text-sm">Monthly Trend (12 months)</div>

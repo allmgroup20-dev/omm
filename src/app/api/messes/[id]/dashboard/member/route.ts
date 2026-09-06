@@ -23,10 +23,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     targetMemberId = access[0].id; // own messMember id
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const year = Number(today.slice(0, 4));
-  const month = Number(today.slice(5, 7));
-  const ym = today.slice(0, 7);
+  const ymParam = url.searchParams.get("ym");
+  const ym = ymParam && /^\d{4}-\d{2}$/.test(ymParam) ? ymParam : new Date().toISOString().slice(0, 7);
+  const today = `${ym}-01`;
+  const year = Number(ym.slice(0, 4));
+  const month = Number(ym.slice(5, 7));
 
   const mealRows = await db.select().from(mealRecords).where(eq(mealRecords.messId, id));
   const todayMeals = mealRows.filter((r) => r.memberId === targetMemberId && r.date === today).reduce((a, r) => a + r.quantityScaled / 100, 0);

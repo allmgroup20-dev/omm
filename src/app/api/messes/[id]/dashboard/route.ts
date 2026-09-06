@@ -14,11 +14,32 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = new URL(req.url);
-  const nowParam = url.searchParams.get("date"); // YYYY-MM-DD override for testing
-  const today = nowParam || new Date().toISOString().slice(0, 10);
-  const ym = today.slice(0, 7); // YYYY-MM
-  const year = Number(today.slice(0, 4));
-  const month = Number(today.slice(5, 7));
+  const ymParam = url.searchParams.get("ym");
+  const yearParam = url.searchParams.get("year");
+  const monthParam = url.searchParams.get("month");
+  const nowParam = url.searchParams.get("date"); // legacy YYYY-MM-DD
+  let ym: string;
+  let year: number;
+  let month: number;
+  if (ymParam && /^\d{4}-\d{2}$/.test(ymParam)) {
+    ym = ymParam;
+    year = Number(ym.slice(0, 4));
+    month = Number(ym.slice(5, 7));
+  } else if (yearParam && monthParam) {
+    year = Number(yearParam);
+    month = Number(monthParam);
+    ym = `${year}-${String(month).padStart(2, "0")}`;
+  } else if (nowParam) {
+    ym = nowParam.slice(0, 7);
+    year = Number(nowParam.slice(0, 4));
+    month = Number(nowParam.slice(5, 7));
+  } else {
+    const d = new Date();
+    ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    year = d.getFullYear();
+    month = d.getMonth() + 1;
+  }
+  const today = `${ym}-01`; // anchor for dailyTrend within month
 
   const members = await db.select().from(messMembers).where(eq(messMembers.messId, id));
   const activeMembers = members.filter((m) => m.status === "active").length;
@@ -81,20 +102,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (incompleteMeals) insights.push(`${incompleteMeals} জন সদস্যের আজকের মিল এন্ট্রি অসম্পূর্ণ।`);
   if (dueCount) insights.push(`${dueCount} জন সদস্যের Due রয়েছে।`);
 
-  // analytics sparklines for last 7 days
-  const dailyTrend: { date: string; market: number; other: number; total: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const ds = d.toISOString().slice(0, 10);
+  // dailyTrend for the full month — always full month, not last 7 days
+  const { getMonthDates } = await import("@/lib/calendar");
+  const monthDates = getMonthDates(year, month);
+  const dailyTrend: { date: string; market: number; other: number; total: number }[] = monthDates.map((ds) => {
     const mVal = markets.filter((r) => r.date === ds).reduce((a, r) => a + r.finalPaisa, 0) / 100;
     const oVal = exps.filter((r) => r.date === ds).reduce((a, r) => a + r.amountPaisa, 0) / 100;
-    dailyTrend.push({ date: ds.slice(5), market: mVal, other: oVal, total: mVal + oVal });
-  }
+    return { date: ds.slice(5), market: mVal, other: oVal, total: mVal + oVal };
+  });
 
   const settlements = await db.select().from(monthlySettlements).where(eq(monthlySettlements.messId, id));
 
   return NextResponse.json({
+    ym,
     stats: {
       activeMembers,
       todayMeals: todayMealsCount,
