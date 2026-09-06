@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { messMembers, ledgerEntries } from "@/db/schema";
+import { messMembers, ledgerEntries, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 
@@ -24,8 +24,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // ledger balances per member (current)
   const ledgerRows = await db.select().from(ledgerEntries).where(eq(ledgerEntries.messId, id));
+  // map userId -> fullName for display
+  const userRows = await db.select().from(users);
+  const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
 
-  const result: { memberId: string; userId: string | null; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string }[] = [];
+  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string }[] = [];
 
   for (const m of members) {
     const mealsScaled = finance.monthMeals.filter((r) => r.memberId === m.id).reduce((a, r) => a + r.quantityScaled, 0);
@@ -49,9 +52,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     else if (net < 0) status = "due";
     else status = "settled";
 
+    const displayName = (m.displayName?.trim() || (m.userId ? userMap.get(m.userId) : null) || m.id.slice(0, 6)) as string;
     result.push({
       memberId: m.id,
       userId: m.userId,
+      displayName,
       totalMeals: mealsScaled / 100,
       mealCostPaisa,
       depositPaisa: monthDeposits,

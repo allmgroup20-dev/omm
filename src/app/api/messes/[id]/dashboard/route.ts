@@ -39,12 +39,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     year = d.getFullYear();
     month = d.getMonth() + 1;
   }
-  const today = `${ym}-01`; // anchor for dailyTrend within month
+  // today = actual today if ym is current month, otherwise last day of ym; keep dailyTrend full month
+  const now = new Date();
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const today = ym === currentYm ? now.toISOString().slice(0, 10) : `${ym}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`;
 
   const members = await db.select().from(messMembers).where(eq(messMembers.messId, id));
   const activeMembers = members.filter((m) => m.status === "active").length;
 
-  const meals = await db.select().from(marketEntries).where(eq(marketEntries.messId, id)); // placeholder for meal check
   const mealRows = await db.select().from(mealRecords).where(eq(mealRecords.messId, id));
   const todayMeals = mealRows.filter((r) => r.date === today);
   const todayMealsCount = todayMeals.reduce((a, r) => a + r.quantityScaled / 100, 0);
