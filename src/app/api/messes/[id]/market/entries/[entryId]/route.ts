@@ -183,11 +183,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (entry[0].status !== "active") return NextResponse.json({ error: "Already voided" }, { status: 400 });
 
   const now = new Date().toISOString();
-  await db.update(marketEntries).set({ status: "voided", updatedAt: now } as never).where(eq(marketEntries.id, entryId));
+  // hard delete — fully vanish from DB as requested
+  await db.delete(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
+  await db.delete(marketEntryPurchasers).where(eq(marketEntryPurchasers.entryId, entryId));
+  await db.delete(marketEntries).where(eq(marketEntries.id, entryId));
   if (entry[0].vendorId) {
     const v = await db.select().from(vendors).where(eq(vendors.id, entry[0].vendorId)).limit(1);
     if (v[0]) await db.update(vendors).set({ totalPurchasesPaisa: Math.max(0, v[0].totalPurchasesPaisa - entry[0].finalPaisa), updatedAt: now } as never).where(eq(vendors.id, entry[0].vendorId));
   }
-  await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "void", entityType: "market_entry", entityId: entryId, beforeJson: JSON.stringify(entry[0]), createdAt: now });
-  return NextResponse.json({ ok: true });
+  await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "delete", entityType: "market_entry", entityId: entryId, beforeJson: JSON.stringify(entry[0]), createdAt: now });
+  return NextResponse.json({ ok: true, deleted: true });
 }

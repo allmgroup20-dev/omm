@@ -94,14 +94,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     } as never);
   }
 
-  // void originals and adjust vendor totals
+  // hard delete originals — fully vanish as requested (not just void)
   for (const e of entries) {
-    await db.update(marketEntries).set({ status: "voided", updatedAt: now } as never).where(eq(marketEntries.id, e.id));
+    await db.delete(marketEntryItems).where(eq(marketEntryItems.entryId, e.id));
+    await db.delete(marketEntryPurchasers).where(eq(marketEntryPurchasers.entryId, e.id));
+    await db.delete(marketEntries).where(eq(marketEntries.id, e.id));
     if (e.vendorId) {
       const v = await db.select().from(vendors).where(eq(vendors.id, e.vendorId)).limit(1);
       if (v[0]) await db.update(vendors).set({ totalPurchasesPaisa: Math.max(0, v[0].totalPurchasesPaisa - e.finalPaisa), updatedAt: now } as never).where(eq(vendors.id, e.vendorId));
     }
-    await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "void", entityType: "market_entry", entityId: e.id, beforeJson: JSON.stringify(e), createdAt: now });
+    await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "delete", entityType: "market_entry", entityId: e.id, beforeJson: JSON.stringify(e), createdAt: now });
   }
   if (chosenVendorId) {
     const v = await db.select().from(vendors).where(eq(vendors.id, chosenVendorId)).limit(1);
