@@ -4,7 +4,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/i18n/dict";
 
-type ShareData = { mess: { name: string; code: string }; ym: string; stats: { activeMembers: number; totalMeals: number; totalMarketPaisa: number; mealRatePaisa: number; byMember: { memberId: string; meals: number }[] } };
+type ShareData = {
+  mess: { id: string; name: string; code: string };
+  ym: string;
+  stats: { activeMembers: number; totalMeals: number; totalMarketPaisa: number; totalOtherPaisa: number; mealRatePaisa: number };
+  membersFinance: { memberId: string; fullName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string }[];
+};
 
 export default function SharePage() {
   const { token } = useParams<{ token: string }>();
@@ -56,9 +61,7 @@ export default function SharePage() {
       router.push(`/login?next=/share/${token}`);
       return;
     }
-    // need messId — fetch via share data includes mess.id? Use data.mess.id via API? For now fetch via /api/share
-    // we stored mess.id in data? Actually API returns mess.id, but we typed only name/code — extend
-    const messId = (data as unknown as { mess: { id: string } }).mess?.id;
+    const messId = data.mess.id;
     if (!messId) {
       setJoinMsg("Mess not found");
       return;
@@ -86,7 +89,29 @@ export default function SharePage() {
         <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">মোট মিল ({data.ym})</div><div className="text-lg font-bold">{data.stats.totalMeals}</div></div>
         <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">মিল রেট</div><div className="text-lg font-bold">{formatCurrency(data.stats.mealRatePaisa, "bn")}</div></div>
         <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">বাজার খরচ</div><div className="text-lg font-bold">{formatCurrency(data.stats.totalMarketPaisa, "bn")}</div></div>
-        <div className="bg-white border rounded-2xl p-4 md:col-span-2"><div className="text-xs text-zinc-500">প্রতি সদস্য মিল</div><div className="text-xs mt-1 space-y-1">{data.stats.byMember.slice(0, 10).map((m) => <div key={m.memberId} className="flex justify-between"><span>{m.memberId.slice(0, 6)}</span><span>{m.meals}</span></div>)}</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">মোট খরচ (বাজার+অন্যান্য)</div><div className="text-lg font-bold">{formatCurrency(data.stats.totalMarketPaisa + (data.stats.totalOtherPaisa || 0), "bn")}</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">অন্যান্য খরচ</div><div className="text-lg font-bold">{formatCurrency(data.stats.totalOtherPaisa || 0, "bn")}</div></div>
+      </div>
+
+      <div className="bg-white border rounded-2xl p-4">
+        <div className="font-semibold text-sm">প্রতি সদস্য — {data.ym} (নাম A-Z, মিল, খরচ, জমা, পাবে/দেবে)</div>
+        <div className="overflow-x-auto mt-3">
+          <table className="w-full text-xs">
+            <thead className="bg-zinc-50"><tr><th className="text-left p-2">নাম</th><th className="p-2">মিল</th><th className="p-2 text-right">মিল খরচ</th><th className="p-2 text-right">জমা</th><th className="p-2 text-right">ব্যালেন্স</th><th className="p-2 text-center">অবস্থা</th></tr></thead>
+            <tbody>
+              {data.membersFinance.map((m) => (
+                <tr key={m.memberId} className="border-t">
+                  <td className="p-2 font-medium">{m.fullName}</td>
+                  <td className="p-2 text-center">{m.totalMeals}</td>
+                  <td className="p-2 text-right">{formatCurrency(m.mealCostPaisa, "bn")}</td>
+                  <td className="p-2 text-right text-emerald-700">{formatCurrency(m.depositPaisa, "bn")}</td>
+                  <td className={`p-2 text-right font-semibold ${m.status === "due" ? "text-red-600" : m.status === "advance" ? "text-emerald-600" : ""}`}>{formatCurrency(m.balancePaisa, "bn")}</td>
+                  <td className="p-2 text-center"><span className={`rounded-full px-2 py-0.5 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{m.status === "due" ? "দেবে" : m.status === "advance" ? "পাবে" : "সমান"}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showPrompt && (
