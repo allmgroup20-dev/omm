@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 
 export default function MarketLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function MarketLayout({ children }: { children: React.ReactNode }
             <Link href="/" className="px-3 py-1.5 rounded-full hover:bg-zinc-50 whitespace-nowrap">হোম</Link>
             <Link href="/s" className="px-3 py-1.5 rounded-full border whitespace-nowrap">সিট খুঁজুন</Link>
             <Link href="/s?type=flat" className="px-3 py-1.5 rounded-full border whitespace-nowrap">ফ্ল্যাট</Link>
+            <LocaleSwitcher />
             <Link href="/dashboard" className="px-3 py-1.5 rounded-full bg-zinc-900 text-white whitespace-nowrap">ড্যাশবোর্ড</Link>
           </nav>
         </div>

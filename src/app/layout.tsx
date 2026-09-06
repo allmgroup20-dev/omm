@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LocaleProvider } from "@/i18n/provider";
+import { getServerLocale } from "@/i18n/server";
 
 export const metadata: Metadata = {
   title: "OMM — Our Mess Management | omm.jobayergroup.com",
@@ -13,11 +15,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }, // private app
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getServerLocale();
   return (
-    <html lang="bn" className="h-full antialiased">
+    <html lang={locale === "bn" ? "bn" : "en"} className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
-        {children}
+        <LocaleProvider initial={locale}>{children}</LocaleProvider>
       </body>
     </html>
   );

@@ -2,11 +2,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
 
 type Log = { id: string; action: string; entityType: string; entityId: string; actorId: string | null; beforeJson: string | null; afterJson: string | null; reason: string | null; createdAt: string };
 
 export default function AuditLogsPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useLocale();
   const [logs, setLogs] = useState<Log[]>([]);
   const [filter, setFilter] = useState("");
   const [msg, setMsg] = useState("");
@@ -25,13 +27,13 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-4">
-      <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← Overview</Link>
-      <h1 className="text-lg font-bold">Audit Logs — Financial Integrity</h1>
-      <p className="text-xs text-zinc-500">Tracks who, when, what, before/after, reason. Immutable — no delete. Critical for meal edit, expense, deposit, settlement, member removal, close/reopen.</p>
+      <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
+      <h1 className="text-lg font-bold">{t("audit.title")}</h1>
+      <p className="text-xs text-zinc-500">{t("audit.desc")}</p>
 
       <div className="flex gap-2 text-sm">
         <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border rounded-full px-3 py-1.5">
-          <option value="">All entities</option>
+          <option value="">{t("audit.filterAll")}</option>
           <option value="meal_record">meal_record</option>
           <option value="expense">expense</option>
           <option value="deposit">deposit</option>
@@ -39,7 +41,7 @@ export default function AuditLogsPage() {
           <option value="mess_member">mess_member</option>
           <option value="meal_lock">meal_lock</option>
         </select>
-        <button onClick={load} className="px-4 py-1.5 border rounded-full">Refresh</button>
+        <button onClick={load} className="px-4 py-1.5 border rounded-full">{t("common.refresh")}</button>
       </div>
 
       {msg && <div className="rounded-xl bg-red-50 border p-3 text-sm text-red-700">{msg}</div>}
@@ -47,7 +49,7 @@ export default function AuditLogsPage() {
       <div className="bg-white border rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead className="bg-zinc-50"><tr><th className="text-left p-2">Time</th><th className="text-left p-2">Actor</th><th className="text-left p-2">Action</th><th className="text-left p-2">Entity</th><th className="text-left p-2">Before → After</th><th className="text-left p-2">Reason</th></tr></thead>
+            <thead className="bg-zinc-50"><tr><th className="text-left p-2">{t("audit.time")}</th><th className="text-left p-2">{t("audit.actor")}</th><th className="text-left p-2">{t("audit.action")}</th><th className="text-left p-2">{t("audit.entity")}</th><th className="text-left p-2">{t("audit.change")}</th><th className="text-left p-2">{t("audit.reason")}</th></tr></thead>
             <tbody>
               {logs.map((l) => (
                 <tr key={l.id} className="border-t">
@@ -62,8 +64,8 @@ export default function AuditLogsPage() {
             </tbody>
           </table>
         </div>
-        {logs.length === 0 && !msg && <div className="p-6 text-center text-sm text-zinc-500">No audit logs yet — perform meal/expense/deposit edits to generate.</div>}
-        <div className="p-3 text-xs text-zinc-500 border-t">Audit logs cannot be deleted by normal users — immutable for compliance.</div>
+        {logs.length === 0 && !msg && <div className="p-6 text-center text-sm text-zinc-500">{t("audit.noLogs")}</div>}
+        <div className="p-3 text-xs text-zinc-500 border-t">{t("audit.immutable")}</div>
       </div>
     </div>
   );

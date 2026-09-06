@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { messes, messMembers, mealTypes, auditLogs } from "@/db/schema";
+import { messes, messMembers, mealTypes, marketCategories, marketProducts, auditLogs } from "@/db/schema";
 import { createMessSchema } from "@/lib/validators-mess";
 import { generateMessCode, slugify } from "@/lib/mess";
 import { validateChain } from "@/lib/bd-geo";
@@ -98,6 +98,47 @@ export async function POST(req: Request) {
         isActive: true,
         createdAt: now,
       });
+    }
+
+    // default market categories + common products (Bangla, editable later)
+    const defaultCats: { name: string; products: string[] }[] = [
+      { name: "চাল", products: ["চাল"] },
+      { name: "ডাল", products: ["মসুর ডাল", "মুগ ডাল"] },
+      { name: "মাছ", products: ["ইলিশ", "রুই", "কাতলা", "পাঙ্গাশ"] },
+      { name: "মাংস", products: ["গরুর মাংস", "মুরগি"] },
+      { name: "ডিম", products: ["ডিম"] },
+      { name: "সবজি", products: ["আলু", "পেঁয়াজ", "টমেটো", "বেগুন", "মরিচ"] },
+      { name: "মসলা", products: ["হলুদ", "মরিচ গুঁড়া", "ধনিয়া", "জিরা"] },
+      { name: "তেল", products: ["সয়াবিন তেল", "সরিষার তেল"] },
+      { name: "দুধ", products: ["দুধ"] },
+      { name: "অন্যান্য", products: [] },
+    ];
+    for (let i = 0; i < defaultCats.length; i++) {
+      const catId = nanoid();
+      const cat = defaultCats[i];
+      await db.insert(marketCategories).values({
+        id: catId,
+        messId,
+        parentId: null,
+        name: cat.name,
+        slug: slugify(cat.name),
+        level: 0,
+        sortOrder: i,
+        isActive: true,
+        createdAt: now,
+      });
+      for (const pname of cat.products) {
+        await db.insert(marketProducts).values({
+          id: nanoid(),
+          messId,
+          categoryId: catId,
+          name: pname,
+          slug: slugify(pname),
+          defaultUnit: "kg",
+          isArchived: false,
+          createdAt: now,
+        });
+      }
     }
 
     await db.insert(auditLogs).values({

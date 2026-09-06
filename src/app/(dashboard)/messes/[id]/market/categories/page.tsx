@@ -2,11 +2,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
 
 type Cat = { id: string; name: string; slug: string; parentId: string | null; level: number };
 
 export default function CategoriesPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useLocale();
   const [cats, setCats] = useState<Cat[]>([]);
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
@@ -24,7 +26,7 @@ export default function CategoriesPage() {
     const data = await res.json();
     if (!res.ok) setMsg(data.error);
     else {
-      setMsg(`Added ${data.category.name} (level ${data.category.level})`);
+      setMsg(`${t("common.success")} — ${data.category.name}`);
       setName("");
       setParentId("");
       load();
@@ -33,18 +35,18 @@ export default function CategoriesPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← Market Hub</Link>
-      <h1 className="text-lg font-bold">Market Categories — Hierarchical</h1>
-      <p className="text-xs text-zinc-500">যেমন: খাদ্য → চাল→মাছ→সবজি→মসলা → unlimited nested</p>
+      <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← {t("market.hub")}</Link>
+      <h1 className="text-lg font-bold">{t("market.catTitle")}</h1>
+      <p className="text-xs text-zinc-500">{t("market.catDesc")}</p>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
       <div className="bg-white border rounded-2xl p-5 space-y-3">
         <div className="flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Category name (e.g. চাল)" className="flex-1 border rounded-full px-4 py-2 text-sm" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("market.catNamePh")} className="flex-1 border rounded-full px-4 py-2 text-sm" />
           <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="border rounded-full px-3 py-2 text-sm max-w-[180px]">
-            <option value="">— Parent (root) —</option>
+            <option value="">{t("market.rootParent")}</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{"—".repeat(c.level)} {c.name}</option>)}
           </select>
-          <button onClick={add} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm">Add</button>
+          <button onClick={add} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm">{t("common.add")}</button>
         </div>
         <div className="space-y-1 max-h-[400px] overflow-auto">
           {cats.map((c) => (
@@ -54,7 +56,7 @@ export default function CategoriesPage() {
               <span className="text-xs text-zinc-500">({c.slug})</span>
             </div>
           ))}
-          {cats.length === 0 && <div className="text-center text-sm text-zinc-500 py-4">No categories</div>}
+          {cats.length === 0 && <div className="text-center text-sm text-zinc-500 py-4">{t("market.noData")}</div>}
         </div>
       </div>
     </div>

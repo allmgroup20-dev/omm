@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TurnstileWidget } from "@/components/turnstile";
 import { GoogleButton, OrDivider } from "@/components/google-button";
+import { useLocale } from "@/i18n/provider";
 
 export default function RegisterPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -46,29 +48,29 @@ export default function RegisterPage() {
       <div className="w-full max-w-md bg-white border rounded-[24px] p-8 shadow-sm">
         <div className="text-center">
           <div className="mx-auto w-10 h-10 rounded-xl bg-zinc-900 text-white grid place-items-center font-bold">OM</div>
-          <h1 className="mt-3 text-xl font-bold">অ্যাকাউন্ট তৈরি করুন</h1>
-          <p className="text-sm text-zinc-500">OMM — Our Mess Management</p>
+          <h1 className="mt-3 text-xl font-bold">{t("auth.registerTitle")}</h1>
+          <p className="text-sm text-zinc-500">{t("auth.tagline")}</p>
         </div>
         {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error}</div>}
         <div className="mt-6">
-          <GoogleButton text="Google দিয়ে রেজিস্টার করুন" />
+          <GoogleButton text={t("auth.googleRegister")} />
         </div>
         <div className="mt-4">
-          <OrDivider />
+          <OrDivider text={t("auth.orEmail")} />
         </div>
         <form onSubmit={submit} className="mt-4 space-y-4">
-          <input placeholder="পূর্ণ নাম *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input type="email" placeholder="ইমেইল *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input placeholder="মোবাইল (ঐচ্ছিক)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" />
-          <input type="password" placeholder="পাসওয়ার্ড *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input type="password" placeholder="পাসওয়ার্ড নিশ্চিত *" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
+          <input placeholder={`${t("auth.fullName")} *`} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
+          <input type="email" placeholder={`${t("auth.email")} *`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
+          <input placeholder={t("auth.phoneOptional")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" />
+          <input type="password" placeholder={`${t("auth.password")} *`} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
+          <input type="password" placeholder={`${t("auth.confirmPassword")} *`} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
           <input type="text" name="website" value={form.honeypot} onChange={(e) => setForm({ ...form, honeypot: e.target.value })} className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           {turnstileSiteKey ? <TurnstileWidget siteKey={turnstileSiteKey} onVerify={setTurnstileToken} /> : null}
-          <p className="text-xs text-zinc-500">কমপক্ষে ৮ অক্ষর, বড়/ছোট হাতের অক্ষর ও সংখ্যা থাকতে হবে।</p>
-          <button disabled={loading} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium hover:bg-black disabled:opacity-50">{loading ? "তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি"}</button>
+          <p className="text-xs text-zinc-500">{t("auth.passwordHint")}</p>
+          <button disabled={loading} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium hover:bg-black disabled:opacity-50">{loading ? t("auth.creating") : t("auth.registerBtn")}</button>
         </form>
         <p className="mt-4 text-center text-sm text-zinc-600">
-          ইতিমধ্যে অ্যাকাউন্ট আছে? <Link href="/login" className="font-medium text-zinc-900 underline">লগইন</Link>
+          {t("auth.hasAccount")} <Link href="/login" className="font-medium text-zinc-900 underline">{t("auth.loginBtn")}</Link>
         </p>
         <p className="mt-2 text-center">
           <Link href="/" className="text-xs text-zinc-500 hover:text-zinc-900">← হোমে ফিরুন</Link>

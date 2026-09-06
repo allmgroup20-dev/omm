@@ -2,11 +2,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
+import { formatNumber } from "@/i18n/dict";
 
 type MT = { id: string; name: string; slug: string; sortOrder: number; isActive: boolean };
 
 export default function MealTypesPage() {
   const { id } = useParams<{ id: string }>();
+  const { t, locale } = useLocale();
   const [types, setTypes] = useState<MT[]>([]);
   const [name, setName] = useState("");
   const [msg, setMsg] = useState("");
@@ -24,7 +27,7 @@ export default function MealTypesPage() {
     const data = await res.json();
     if (!res.ok) setMsg(data.error);
     else {
-      setMsg(`Added ${data.mealType.name}`);
+      setMsg(`${t("common.success")} — ${data.mealType.name}`);
       setName("");
       load();
     }
@@ -34,38 +37,38 @@ export default function MealTypesPage() {
     load();
   }
   async function archive(mt: MT) {
-    if (!confirm(`Archive ${mt.name}? History preserved.`)) return;
+    if (!confirm(`${t("meals.archive")} ${mt.name}? ${t("meals.archiveConfirm")}`)) return;
     await fetch(`/api/messes/${id}/meal-types/${mt.id}`, { method: "DELETE" });
     load();
   }
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <Link href={`/messes/${id}/meals`} className="text-sm text-zinc-500">← Meals</Link>
-      <h1 className="text-lg font-bold">Meal Types — {types.length} slots (configurable)</h1>
-      <p className="text-xs text-zinc-500">যেমন: ১ বেলা = Dinner, ২ বেলা = Lunch+Dinner, ৩ বেলা = Breakfast+Lunch+Dinner, বা Custom (Sehri/Iftar)</p>
+      <Link href={`/messes/${id}/meals`} className="text-sm text-zinc-500">← {t("meals.backDaily").replace("← ", "")}</Link>
+      <h1 className="text-lg font-bold">{t("meals.typesTitle")} — {formatNumber(types.length, locale)}</h1>
+      <p className="text-xs text-zinc-500">{t("meals.typeHint")}</p>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
       <div className="bg-white border rounded-2xl p-5 space-y-3">
         <div className="flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="নতুন Meal Type নাম (যেমন Snacks)" className="flex-1 border rounded-full px-4 py-2 text-sm" />
-          <button onClick={add} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm">Add</button>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("meals.newTypePh")} className="flex-1 border rounded-full px-4 py-2 text-sm" />
+          <button onClick={add} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm">{t("meals.addBtn")}</button>
         </div>
         <div className="space-y-2">
           {types.map((mt) => (
             <div key={mt.id} className="flex items-center justify-between border rounded-xl px-4 py-3">
               <div>
                 <div className="font-medium text-sm">{mt.name} <span className="text-xs text-zinc-500">({mt.slug})</span></div>
-                <div className="text-xs text-zinc-500">Order {mt.sortOrder} • {mt.isActive ? "Active" : "Archived"}</div>
+                <div className="text-xs text-zinc-500">{mt.sortOrder} • {mt.isActive ? t("status.active") : t("status.archived")}</div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => toggleActive(mt)} className="text-xs border rounded-full px-3 py-1">{mt.isActive ? "Deactivate" : "Activate"}</button>
-                <button onClick={() => archive(mt)} className="text-xs border rounded-full px-3 py-1 bg-amber-50">Archive</button>
+                <button onClick={() => toggleActive(mt)} className="text-xs border rounded-full px-3 py-1">{mt.isActive ? t("meals.deactivate") : t("meals.activateBtn")}</button>
+                <button onClick={() => archive(mt)} className="text-xs border rounded-full px-3 py-1 bg-amber-50">{t("meals.archive")}</button>
               </div>
             </div>
           ))}
-          {types.length === 0 && <div className="text-sm text-zinc-500 text-center py-4">No meal types</div>}
+          {types.length === 0 && <div className="text-sm text-zinc-500 text-center py-4">{t("meals.noTypes")}</div>}
         </div>
-        <p className="text-xs text-zinc-500">Archived types hidden from entry grid but historical records preserved. Never hard-deleted.</p>
+        <p className="text-xs text-zinc-500">{t("meals.archiveNote")}</p>
       </div>
     </div>
   );

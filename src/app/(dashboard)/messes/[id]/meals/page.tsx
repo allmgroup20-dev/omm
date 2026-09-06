@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
+import { formatNumber } from "@/i18n/dict";
 
 type MealType = { id: string; name: string; slug: string; isActive: boolean; sortOrder: number };
 type Member = { id: string; userId: string; fullName: string; status: string };
@@ -9,6 +11,7 @@ type RecordRow = { memberId: string; mealTypeId: string; quantityScaled: number 
 
 export default function MealsPage() {
   const { id } = useParams<{ id: string }>();
+  const { t, locale } = useLocale();
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [mealTypes, setMealTypes] = useState<MealType[]>([]);
@@ -32,7 +35,7 @@ export default function MealsPage() {
     const res = await fetch(`/api/messes/${id}/meals?date=${d}`);
     const data = await res.json();
     if (!res.ok) {
-      setMsg(data.error || "Load failed");
+      setMsg(data.error || t("errors.loadFail"));
       return;
     }
     setLocked(!!data.locked);
@@ -83,7 +86,7 @@ export default function MealsPage() {
     const prev = d.toISOString().slice(0, 10);
     const res = await fetch(`/api/messes/${id}/meals?date=${prev}`);
     const data = await res.json();
-    if (!res.ok) return setMsg("Previous day not found");
+    if (!res.ok) return setMsg(t("meals.prevNotFound"));
     const map: typeof grid = {};
     for (const r of data.meals as RecordRow[]) {
       if (!map[r.memberId]) map[r.memberId] = {};
@@ -107,9 +110,9 @@ export default function MealsPage() {
       const res = await fetch(`/api/messes/${id}/meals`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, entries }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || JSON.stringify(data));
-      setMsg(`Saved ${data.upserted} entries${data.errors?.length ? `, errors: ${data.errors.join("; ")}` : ""}`);
+      setMsg(`${t("common.success")} — ${formatNumber(data.upserted, locale)}${data.errors?.length ? `, errors: ${data.errors.join("; ")}` : ""}`);
     } catch (e: unknown) {
-      setMsg(e instanceof Error ? e.message : "Save failed");
+      setMsg(e instanceof Error ? e.message : t("errors.saveFail"));
     } finally {
       setSaving(false);
     }
@@ -119,11 +122,11 @@ export default function MealsPage() {
     if (locked) {
       const res = await fetch(`/api/messes/${id}/meals/locks?date=${date}`, { method: "DELETE" });
       if (res.ok) setLocked(false);
-      else setMsg("Unlock failed (manager only)");
+      else setMsg(t("meals.unlockFail"));
     } else {
       const res = await fetch(`/api/messes/${id}/meals/locks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date }) });
       if (res.ok) setLocked(true);
-      else setMsg("Lock failed");
+      else setMsg(t("meals.lockFail"));
     }
     loadDate(date);
   }
@@ -132,7 +135,7 @@ export default function MealsPage() {
     const res = await fetch(`/api/messes/${id}/meals/bulk`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, quantity: 1 }) });
     const data = await res.json();
     if (res.ok) {
-      setMsg(`Bulk set ${data.updated} cells to 1`);
+      setMsg(`${t("common.success")} — ${formatNumber(data.updated, locale)}`);
       loadDate(date);
     } else setMsg(data.error);
   }
@@ -140,40 +143,40 @@ export default function MealsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← Overview</Link>
+        <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
         <span className="text-sm text-zinc-400">|</span>
-        <Link href={`/messes/${id}/meals/matrix`} className="text-sm underline">Matrix View</Link>
-        <Link href={`/messes/${id}/meal-types`} className="text-sm underline">Meal Types</Link>
+        <Link href={`/messes/${id}/meals/matrix`} className="text-sm underline">{t("meals.matrixLink")}</Link>
+        <Link href={`/messes/${id}/meal-types`} className="text-sm underline">{t("meals.typesLink")}</Link>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-bold">দৈনিক মিল এন্ট্রি</h1>
+        <h1 className="text-lg font-bold">{t("meals.dailyTitle")}</h1>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="border rounded-full px-4 py-2 text-sm" />
       </div>
 
-      {(locked || closed) && <div className="rounded-xl border p-3 text-sm bg-amber-50">{locked ? "🔒 Locked date" : ""} {closed ? "📕 Month closed" : ""} — Save may require manager.</div>}
+      {(locked || closed) && <div className="rounded-xl border p-3 text-sm bg-amber-50">{locked ? t("meals.lockedMsg") : ""} {closed ? t("meals.closedMsg") : ""}{t("meals.saveNeedManager")}</div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
 
       <div className="bg-white border rounded-2xl p-4 space-y-3">
         <div className="flex flex-wrap gap-2 text-xs">
-          <button onClick={() => bulkSet(1)} className="border rounded-full px-3 py-1 hover:bg-zinc-50">Set all = 1</button>
-          <button onClick={() => bulkSet(0)} className="border rounded-full px-3 py-1 hover:bg-zinc-50">Clear all (0)</button>
-          <button onClick={bulkSetAllOne} className="border rounded-full px-3 py-1 hover:bg-zinc-50">Bulk API: all=1</button>
-          <button onClick={copyPrevDay} className="border rounded-full px-3 py-1 hover:bg-zinc-50">Copy previous day</button>
+          <button onClick={() => bulkSet(1)} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.setAll1")}</button>
+          <button onClick={() => bulkSet(0)} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.clearAll")}</button>
+          <button onClick={bulkSetAllOne} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.bulkApi")}</button>
+          <button onClick={copyPrevDay} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.copyPrev")}</button>
           {mealTypes.map((t) => (
             <button key={t.id} onClick={() => bulkSet(1, t.id)} className="border rounded-full px-3 py-1 bg-zinc-50">{t.name}=1</button>
           ))}
-          <button onClick={toggleLock} className="border rounded-full px-3 py-1 bg-amber-50">{locked ? "Unlock" : "Lock"} date</button>
+          <button onClick={toggleLock} className="border rounded-full px-3 py-1 bg-amber-50">{locked ? t("meals.unlock") : t("meals.lock")}</button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-2">Member</th>
+                <th className="text-left p-2">{t("meals.memberCol")}</th>
                 {mealTypes.map((t) => (
                   <th key={t.id} className="p-2 text-center font-medium">{t.name}</th>
                 ))}
-                <th className="p-2 text-center">Total</th>
+                <th className="p-2 text-center">{t("meals.totalCol")}</th>
               </tr>
             </thead>
             <tbody>
@@ -193,14 +196,14 @@ export default function MealsPage() {
               })}
             </tbody>
           </table>
-          {members.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">No active members. Add via Members page.</div>}
+          {members.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("meals.noActiveMembers")}</div>}
         </div>
 
         <div className="flex gap-2">
-          <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">{saving ? "Saving..." : "Save Meals"}</button>
-          <button onClick={() => loadDate(date)} className="px-6 rounded-full border bg-white text-sm">Reload</button>
+          <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">{saving ? t("meals.saving") : t("meals.saveBtn")}</button>
+          <button onClick={() => loadDate(date)} className="px-6 rounded-full border bg-white text-sm">{t("meals.reloadBtn")}</button>
         </div>
-        <p className="text-xs text-zinc-500">Quantity supports 0, 0.5, 1, 1.5... (mess precision). Negative blocked. Corrections audited.</p>
+        <p className="text-xs text-zinc-500">{t("meals.precisionNote")}</p>
       </div>
     </div>
   );

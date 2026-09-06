@@ -2,14 +2,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
 
 type Cat = { id: string; name: string };
 type Prod = { id: string; name: string; slug: string; categoryId: string | null; defaultUnit: string; isArchived: boolean };
 
-const UNITS = ["kg", "gram", "litre", "ml", "piece", "dozen", "packet", "bottle", "box", "custom"];
+const UNIT_CODES = ["kg", "gram", "litre", "ml", "piece", "dozen", "packet", "bottle", "box", "custom"] as const;
 
 export default function ProductsPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useLocale();
   const [cats, setCats] = useState<Cat[]>([]);
   const [prods, setProds] = useState<Prod[]>([]);
   const [name, setName] = useState("");
@@ -32,7 +34,7 @@ export default function ProductsPage() {
     const data = await res.json();
     if (!res.ok) setMsg(data.error);
     else {
-      setMsg(`Added ${data.product.name}`);
+      setMsg(`${t("common.success")} — ${data.product.name}`);
       setName("");
       load();
     }
@@ -40,30 +42,30 @@ export default function ProductsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← Market Hub</Link>
-      <h1 className="text-lg font-bold">Products</h1>
-      <p className="text-xs text-zinc-500">প্রতি category-তে product — যেমন মাছ → ইলিশ, রুই, কাতলা</p>
+      <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← {t("market.hub")}</Link>
+      <h1 className="text-lg font-bold">{t("market.prodTitle")}</h1>
+      <p className="text-xs text-zinc-500">{t("market.prodDesc")}</p>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
       <div className="bg-white border rounded-2xl p-5 space-y-3">
         <div className="grid grid-cols-12 gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Product name (e.g. ইলিশ)" className="col-span-5 border rounded-full px-4 py-2 text-sm" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("market.prodNamePh")} className="col-span-5 border rounded-full px-4 py-2 text-sm" />
           <select value={catId} onChange={(e) => setCatId(e.target.value)} className="col-span-4 border rounded-full px-3 py-2 text-sm">
-            <option value="">— Category —</option>
+            <option value="">— {t("market.category")} —</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select value={unit} onChange={(e) => setUnit(e.target.value)} className="col-span-2 border rounded-full px-3 py-2 text-sm">
-            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            {UNIT_CODES.map((u) => <option key={u} value={u}>{t(`units.${u}`)}</option>)}
           </select>
           <button onClick={add} className="col-span-1 px-2 py-2 rounded-full bg-zinc-900 text-white text-sm">+</button>
         </div>
         <div className="space-y-1 max-h-[400px] overflow-auto">
           {prods.map((p) => (
             <div key={p.id} className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
-              <span>{p.name} <span className="text-xs text-zinc-500">({p.defaultUnit})</span></span>
+              <span>{p.name} <span className="text-xs text-zinc-500">({t(`units.${p.defaultUnit}`)})</span></span>
               <span className="text-xs text-zinc-500">{cats.find((c) => c.id === p.categoryId)?.name || "—"}</span>
             </div>
           ))}
-          {prods.length === 0 && <div className="text-center text-sm text-zinc-500 py-4">No products</div>}
+          {prods.length === 0 && <div className="text-center text-sm text-zinc-500 py-4">{t("market.noProducts")}</div>}
         </div>
       </div>
     </div>
