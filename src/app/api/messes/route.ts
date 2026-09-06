@@ -6,6 +6,7 @@ import { createMessSchema } from "@/lib/validators-mess";
 import { generateMessCode, slugify } from "@/lib/mess";
 import { validateChain } from "@/lib/bd-geo";
 import { nanoid } from "nanoid";
+import { BD_CATEGORIES, BD_PRODUCTS } from "@/data/bd-mess-catalog";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
@@ -100,45 +101,36 @@ export async function POST(req: Request) {
       });
     }
 
-    // default market categories + common products (Bangla, editable later)
-    const defaultCats: { name: string; products: string[] }[] = [
-      { name: "চাল", products: ["চাল"] },
-      { name: "ডাল", products: ["মসুর ডাল", "মুগ ডাল"] },
-      { name: "মাছ", products: ["ইলিশ", "রুই", "কাতলা", "পাঙ্গাশ"] },
-      { name: "মাংস", products: ["গরুর মাংস", "মুরগি"] },
-      { name: "ডিম", products: ["ডিম"] },
-      { name: "সবজি", products: ["আলু", "পেঁয়াজ", "টমেটো", "বেগুন", "মরিচ"] },
-      { name: "মসলা", products: ["হলুদ", "মরিচ গুঁড়া", "ধনিয়া", "জিরা"] },
-      { name: "তেল", products: ["সয়াবিন তেল", "সরিষার তেল"] },
-      { name: "দুধ", products: ["দুধ"] },
-      { name: "অন্যান্য", products: [] },
-    ];
-    for (let i = 0; i < defaultCats.length; i++) {
+    // Bangladesh mess full catalog — auto per-mess copy (Bangla, selectable + custom add kept)
+    const catIdBySlug = new Map<string, string>();
+    for (const cat of BD_CATEGORIES) {
       const catId = nanoid();
-      const cat = defaultCats[i];
+      catIdBySlug.set(cat.slug, catId);
       await db.insert(marketCategories).values({
         id: catId,
         messId,
         parentId: null,
         name: cat.name,
-        slug: slugify(cat.name),
+        slug: cat.slug, // pre-slugified (Bangla-safe), no collision
         level: 0,
-        sortOrder: i,
+        sortOrder: cat.sortOrder,
         isActive: true,
         createdAt: now,
       });
-      for (const pname of cat.products) {
-        await db.insert(marketProducts).values({
-          id: nanoid(),
-          messId,
-          categoryId: catId,
-          name: pname,
-          slug: slugify(pname),
-          defaultUnit: "kg",
-          isArchived: false,
-          createdAt: now,
-        });
-      }
+    }
+    for (const prod of BD_PRODUCTS) {
+      const catId = catIdBySlug.get(prod.categorySlug);
+      if (!catId) continue;
+      await db.insert(marketProducts).values({
+        id: nanoid(),
+        messId,
+        categoryId: catId,
+        name: prod.name,
+        slug: prod.slug,
+        defaultUnit: prod.defaultUnit,
+        isArchived: false,
+        createdAt: now,
+      });
     }
 
     await db.insert(auditLogs).values({

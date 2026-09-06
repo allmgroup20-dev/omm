@@ -4,7 +4,7 @@ import { getRequestDb } from "@/db";
 import { marketProducts, marketCategories, messMembers, auditLogs } from "@/db/schema";
 import { productSchema } from "@/lib/validators-market";
 import { slugify } from "@/lib/mess";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -14,8 +14,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const rows = await db.select().from(marketProducts).where(eq(marketProducts.messId, id));
-  return NextResponse.json({ products: rows });
+  const perMess = await db.select().from(marketProducts).where(eq(marketProducts.messId, id));
+  const globals = await db.select().from(marketProducts).where(isNull(marketProducts.messId));
+  // dedupe by slug — per-mess wins, avoids duplicate for new messes; old messes with 0 per-mess fall back to globals
+  const bySlug = new Map<string, (typeof globals)[number]>();
+  for (const g of globals) bySlug.set(g.slug, g);
+  for (const r of perMess) bySlug.set(r.slug, r);
+  const products = perMess.length > 0 ? [...bySlug.values()] : globals;
+  return NextResponse.json({ products });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {

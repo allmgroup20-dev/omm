@@ -15,9 +15,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0]) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const rows = await db.select().from(marketCategories).where(eq(marketCategories.messId, id));
-  // also include global templates where messId is null
+  // include global templates where messId is null, but dedupe by slug (per-mess wins) to avoid duplicates for new messes
   const globals = await db.select().from(marketCategories).where(isNull(marketCategories.messId));
-  return NextResponse.json({ categories: [...globals, ...rows] });
+  const bySlug = new Map<string, (typeof globals)[number]>();
+  for (const g of globals) bySlug.set(g.slug, g);
+  for (const r of rows) bySlug.set(r.slug, r);
+  // If per-mess is empty (old mess created before catalog), fall back to globals
+  const categories = rows.length > 0 ? [...bySlug.values()] : globals;
+  // sort by sortOrder for stable UI (per-mess sortOrder wins via map overwrite above, globals already sorted)
+  categories.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  return NextResponse.json({ categories });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {

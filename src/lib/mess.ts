@@ -9,12 +9,14 @@ export function generateMessCode(): string {
 }
 
 export function slugify(name: string): string {
-  return name
+  const fallback = nanoid(6).toLowerCase().replace(/[^a-z0-9]/g, "x");
+  const s = name
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 40);
+  return s || `item-${fallback}`;
 }
 
 export function generateInviteCode(): string {
