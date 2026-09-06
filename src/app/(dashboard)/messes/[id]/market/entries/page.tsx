@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
-import { formatCurrency } from "@/i18n/dict";
+import { formatCurrency, formatDateBD } from "@/i18n/dict";
 
-type Entry = { id: string; date: string; vendorId: string | null; classification: string; paymentMethod: string; totalPaisa: number; discountPaisa: number; finalPaisa: number; status: string; items: { productNameSnapshot: string; quantityScaled: number; unit: string; totalPaisa: number }[] };
+type Entry = { id: string; date: string; vendorId: string | null; classification: string; paymentMethod: string; totalPaisa: number; transportPaisa: number; discountPaisa: number; finalPaisa: number; status: string; items: { productNameSnapshot: string; quantityScaled: number; unit: string; totalPaisa: number }[] };
 
 export default function EntriesPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,10 +35,11 @@ export default function EntriesPage() {
           <table className="w-full text-sm">
             <thead className="bg-zinc-50 border-b">
               <tr>
-                <th className="text-left p-3">তারিখ</th>
+                <th className="text-left p-3">তারিখ (DD-MM-YYYY)</th>
                 <th className="text-left p-3">শ্রেণি</th>
                 <th className="text-left p-3">আইটেম</th>
                 <th className="text-right p-3">মোট</th>
+                <th className="text-right p-3">গাড়ি ভাড়া</th>
                 <th className="text-right p-3">সর্বমোট</th>
                 <th className="text-center p-3">অবস্থা</th>
                 <th className="p-3">কাজ</th>
@@ -47,10 +48,11 @@ export default function EntriesPage() {
             <tbody>
               {entries.map((e) => (
                 <tr key={e.id} className="border-b last:border-0 hover:bg-zinc-50">
-                  <td className="p-3 font-mono text-xs">{e.date}</td>
+                  <td className="p-3 font-mono text-xs" title={e.date}>{formatDateBD(e.date, locale)}</td>
                   <td className="p-3 text-xs">{e.classification}</td>
                   <td className="p-3 text-xs">{e.items?.length || 0} • {e.items?.slice(0, 2).map((it) => it.productNameSnapshot).join(", ")}{e.items && e.items.length > 2 ? "…" : ""}</td>
                   <td className="p-3 text-right text-xs">{formatCurrency(e.totalPaisa, locale)}</td>
+                  <td className="p-3 text-right text-xs">{formatCurrency(e.transportPaisa || 0, locale)}</td>
                   <td className="p-3 text-right font-semibold text-xs">{formatCurrency(e.finalPaisa, locale)}</td>
                   <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status}</span></td>
                   <td className="p-3"><Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-3 py-1 hover:bg-white">দেখুন/Edit</Link></td>

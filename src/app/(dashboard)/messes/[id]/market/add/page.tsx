@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
-import { formatCurrency } from "@/i18n/dict";
+import { formatCurrency, formatDateBD } from "@/i18n/dict";
 
 type Row = {
   productSel: string; // product id | "custom" | ""
@@ -36,6 +36,7 @@ export default function AddMarketPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [discount, setDiscount] = useState("0");
+  const [transport, setTransport] = useState("0");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<Row[]>([{ ...EMPTY_ROW }]);
   const [msg, setMsg] = useState("");
@@ -141,7 +142,8 @@ export default function AddMarketPage() {
 
   const total = items.reduce((a, it) => a + (it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0)), 0);
   const discountNum = parseFloat(discount) || 0;
-  const final = Math.max(0, total - discountNum);
+  const transportNum = parseFloat(transport) || 0;
+  const final = Math.max(0, total + transportNum - discountNum);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -157,6 +159,7 @@ export default function AddMarketPage() {
           paymentMethod,
           vendorId: vendorId || null,
           discount: discountNum,
+          transport: transportNum,
           notes,
           items: items.map((it) => ({
             productName: it.productName,
@@ -187,12 +190,13 @@ export default function AddMarketPage() {
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       <form onSubmit={submit} className="bg-white border rounded-2xl p-6 space-y-4">
         <div className="grid md:grid-cols-3 gap-3">
-          <div><label className="text-xs">{t("market.date")}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /></div>
+          <div><label className="text-xs">{t("market.date")} (DD-MM-YYYY)</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /><div className="text-[11px] text-zinc-500 mt-1">{formatDateBD(date, locale)}</div></div>
           <div><label className="text-xs">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
           <div><label className="text-xs">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
         </div>
-        <div className="grid md:grid-cols-2 gap-3">
+        <div className="grid md:grid-cols-3 gap-3">
           <div><label className="text-xs">{t("market.vendor")}</label><select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">{t("market.noVendor")}</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
+          <div><label className="text-xs">{t("market.gariVara")}</label><input type="number" step="0.01" placeholder={t("market.gariVaraPh")} value={transport} onChange={(e) => setTransport(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" /></div>
           <div><label className="text-xs">{t("market.discount")}</label><input type="number" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
         </div>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("market.notesPh")} className="w-full border rounded-xl px-3 py-2 text-sm" rows={2} />
@@ -337,8 +341,8 @@ export default function AddMarketPage() {
           })}
         </div>
 
-        <div className="rounded-xl bg-zinc-900 text-white p-4 flex justify-between text-sm">
-          <span>{t("market.total")}: {formatCurrency(Math.round(total * 100), locale)} • {t("market.discount")}: {formatCurrency(Math.round(discountNum * 100), locale)}</span><span className="font-bold">{t("market.final")}: {formatCurrency(Math.round(final * 100), locale)}</span>
+        <div className="rounded-xl bg-zinc-900 text-white p-4 flex flex-wrap justify-between gap-2 text-sm">
+          <span>{t("market.total")}: {formatCurrency(Math.round(total * 100), locale)} + {t("market.gariVara")}: {formatCurrency(Math.round(transportNum * 100), locale)} - {t("market.discount")}: {formatCurrency(Math.round(discountNum * 100), locale)}</span><span className="font-bold">{t("market.final")}: {formatCurrency(Math.round(final * 100), locale)}</span>
         </div>
 
         <button disabled={saving} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">{saving ? t("market.saving") : t("market.saveBtn")}</button>

@@ -267,6 +267,8 @@
     "vendor": "Vendor",
     "noVendor": "— No vendor —",
     "discount": "Discount (BDT)",
+    "gariVara": "Transport (BDT)",
+    "gariVaraPh": "Van/Rickshaw fare",
     "notes": "Notes",
     "notesPh": "Notes (optional)",
     "items": "Items",

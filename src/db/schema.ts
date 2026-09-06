@@ -392,6 +392,7 @@ export const marketEntries = sqliteTable(
     vendorId: text("vendor_id").references(() => vendors.id, { onDelete: "restrict" }),
     paymentMethod: text("payment_method").notNull().default("cash"), // cash|bank|mobile|other
     totalPaisa: integer("total_paisa").notNull().default(0),
+    transportPaisa: integer("transport_paisa").notNull().default(0), // গাড়ি ভাড়া — market add dedicated
     discountPaisa: integer("discount_paisa").notNull().default(0),
     finalPaisa: integer("final_paisa").notNull().default(0),
     classification: text("classification").notNull().default("food"), // food|shared|non_food

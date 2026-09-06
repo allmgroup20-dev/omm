@@ -101,8 +101,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   }
 
+  const transportPaisa = Math.round((data.transport || 0) * 100);
   const discountPaisa = Math.round((data.discount || 0) * 100);
-  const finalPaisa = Math.max(0, totalPaisa - discountPaisa);
+  const finalPaisa = Math.max(0, totalPaisa + transportPaisa - discountPaisa);
 
   // idempotency check
   if (data.clientRefId) {
@@ -120,6 +121,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     vendorId: data.vendorId || null,
     paymentMethod: data.paymentMethod || "cash",
     totalPaisa,
+    transportPaisa,
     discountPaisa,
     finalPaisa,
     classification: data.classification || "food",
@@ -155,7 +157,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "create", entityType: "market_entry", entityId: entryId, afterJson: JSON.stringify({ totalPaisa, finalPaisa, items: itemRows.length }), createdAt: now });
+  await db.insert(auditLogs).values({ id: nanoid(), messId: id, actorId: user.id, action: "create", entityType: "market_entry", entityId: entryId, afterJson: JSON.stringify({ totalPaisa, transportPaisa, finalPaisa, items: itemRows.length }), createdAt: now });
 
   const entry = await db.select().from(marketEntries).where(eq(marketEntries.id, entryId)).limit(1);
   const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));

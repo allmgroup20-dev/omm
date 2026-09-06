@@ -46,6 +46,7 @@ export const marketEntrySchema = z.object({
   vendorName: z.string().max(60).optional().or(z.literal("")), // free form if no vendorId
   paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).default("cash").optional(),
   discount: z.number().min(0).max(1000000).optional().default(0), // BDT
+  transport: z.number().min(0).max(100000).optional().default(0), // গাড়ি ভাড়া BDT
   classification: z.enum(["food", "shared", "non_food"]).default("food").optional(),
   notes: z.string().max(500).optional().or(z.literal("")),
   referenceNumber: z.string().max(40).optional().or(z.literal("")),
@@ -58,6 +59,7 @@ export const marketEntryUpdateSchema = z.object({
   vendorId: z.string().optional().nullable(),
   paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).optional(),
   discount: z.number().min(0).max(1000000).optional(),
+  transport: z.number().min(0).max(100000).optional(),
   classification: z.enum(["food", "shared", "non_food"]).optional(),
   notes: z.string().max(500).optional().or(z.literal("")),
   referenceNumber: z.string().max(40).optional().or(z.literal("")),

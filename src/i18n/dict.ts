@@ -63,3 +63,12 @@ export function formatDate(iso: string, locale: Locale = defaultLocale): string 
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat(intlLocale[locale], { year: "numeric", month: "short", day: "numeric" }).format(d);
 }
+
+export function formatDateBD(iso: string, locale: Locale = defaultLocale): string {
+  const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const dd = new Intl.NumberFormat(intlLocale[locale], { minimumIntegerDigits: 2 }).format(d.getDate());
+  const mm = new Intl.NumberFormat(intlLocale[locale], { minimumIntegerDigits: 2 }).format(d.getMonth() + 1);
+  const yyyy = new Intl.NumberFormat(intlLocale[locale]).format(d.getFullYear());
+  return `${dd}-${mm}-${yyyy}`;
+}

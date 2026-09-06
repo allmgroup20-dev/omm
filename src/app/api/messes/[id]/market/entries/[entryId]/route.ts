@@ -55,9 +55,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (data.classification !== undefined) headerUpdates.classification = data.classification;
   if (data.notes !== undefined) headerUpdates.notes = data.notes?.trim() || null;
   if (data.referenceNumber !== undefined) headerUpdates.referenceNumber = data.referenceNumber?.trim() || null;
+  if (data.transport !== undefined) headerUpdates.transportPaisa = Math.round(data.transport * 100);
 
   // if items provided, recalc totals
   let newTotalPaisa = before.totalPaisa;
+  let newTransportPaisa = (before as unknown as { transportPaisa: number }).transportPaisa ?? 0;
+  if (data.transport !== undefined) newTransportPaisa = Math.round(data.transport * 100);
   let newDiscountPaisa = before.discountPaisa;
   let newFinalPaisa = before.finalPaisa;
   let itemRows: typeof marketEntryItems.$inferInsert[] | null = null;
@@ -92,14 +95,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     newTotalPaisa = totalPaisa;
     if (data.discount !== undefined) newDiscountPaisa = Math.round(data.discount * 100);
-    newFinalPaisa = Math.max(0, newTotalPaisa - newDiscountPaisa);
+    if (data.transport !== undefined) newTransportPaisa = Math.round(data.transport * 100);
+    newFinalPaisa = Math.max(0, newTotalPaisa + newTransportPaisa - newDiscountPaisa);
     headerUpdates.totalPaisa = newTotalPaisa;
+    headerUpdates.transportPaisa = newTransportPaisa;
     headerUpdates.discountPaisa = newDiscountPaisa;
     headerUpdates.finalPaisa = newFinalPaisa;
     itemRows = rows;
-  } else if (data.discount !== undefined) {
-    newDiscountPaisa = Math.round(data.discount * 100);
-    newFinalPaisa = Math.max(0, newTotalPaisa - newDiscountPaisa);
+  } else if (data.discount !== undefined || data.transport !== undefined) {
+    if (data.discount !== undefined) newDiscountPaisa = Math.round(data.discount * 100);
+    if (data.transport !== undefined) newTransportPaisa = Math.round(data.transport * 100);
+    newFinalPaisa = Math.max(0, newTotalPaisa + newTransportPaisa - newDiscountPaisa);
+    headerUpdates.transportPaisa = newTransportPaisa;
     headerUpdates.discountPaisa = newDiscountPaisa;
     headerUpdates.finalPaisa = newFinalPaisa;
   }
