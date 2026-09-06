@@ -15,13 +15,38 @@ export default function DepositsPage() {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [form, setForm] = useState({ memberId: "", date: new Date().toISOString().slice(0, 10), amount: "", paymentMethod: "cash", note: "" });
   const [msg, setMsg] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [mRes, dRes] = await Promise.all([fetch(`/api/messes/${id}/members`), fetch(`/api/messes/${id}/deposits`)]);
-    const mData = await mRes.json();
-    const dData = await dRes.json();
-    if (mRes.ok) setMembers(mData.members.map((m: { id: string; fullName: string }) => ({ id: m.id, fullName: m.fullName })));
-    if (dRes.ok) setDeposits(dData.deposits);
+    setLoading(true);
+    setLoadError("");
+    try {
+      const [mRes, dRes] = await Promise.all([
+        fetch(`/api/messes/${id}/members`, { credentials: "include" }),
+        fetch(`/api/messes/${id}/deposits`, { credentials: "include" }),
+      ]);
+      const mData = await mRes.json().catch(() => ({}));
+      const dData = await dRes.json().catch(() => ({}));
+      if (mRes.ok) {
+        setMembers(mData.members.map((m: { id: string; fullName: string }) => ({ id: m.id, fullName: m.fullName })));
+      } else {
+        const err = mData.error || `সদস্য লোড ব্যর্থ (${mRes.status})`;
+        setLoadError((prev) => prev ? `${prev} | ${err}` : err);
+        setMembers([]);
+      }
+      if (dRes.ok) setDeposits(dData.deposits || []);
+      else {
+        const err = dData.error || `জমা লোড ব্যর্থ (${dRes.status})`;
+        setLoadError((prev) => prev ? `${prev} | ${err}` : err);
+        setDeposits([]);
+      }
+      if (!mRes.ok && !dRes.ok) setLoadError("ডাটাবেস সংযোগ বা সেশন সমস্যা — পুনরায় লগইন করুন");
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "নেটওয়ার্ক ত্রুটি — আবার চেষ্টা করুন");
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => { load(); }, [id]);
 
@@ -46,6 +71,8 @@ export default function DepositsPage() {
     <div className="space-y-4 max-w-3xl mx-auto">
       <Link href={`/messes/${id}/finance`} className="text-sm text-zinc-500">← {t("finance.hub")}</Link>
       <h1 className="text-lg font-bold">{t("finance.depositTitle")}</h1>
+      {loading && <div className="rounded-xl border p-3 text-sm bg-white text-zinc-500">লোড হচ্ছে...</div>}
+      {loadError && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError} <button onClick={load} className="ml-2 underline">আবার চেষ্টা করুন</button> <Link href="/login" className="ml-2 underline">লগইন</Link></div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       <form onSubmit={submit} className="bg-white border rounded-2xl p-5 space-y-3">
         <div className="grid md:grid-cols-3 gap-3">
@@ -75,7 +102,8 @@ export default function DepositsPage() {
             ))}
           </tbody>
         </table>
-        {deposits.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
+        {deposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
+        {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">সদস্য তালিকা খালি — প্রথমে <Link href={`/messes/${id}/members`} className="underline">সদস্য যোগ করুন</Link></div>}
       </div>
     </div>
   );
