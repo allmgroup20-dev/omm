@@ -14,11 +14,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl font-bold">{t("dashboard.title")}</h1>
-        <div className="flex gap-2">
-          <Link href="/join" className="px-4 py-2 rounded-full border bg-white text-sm">{t("dashboard.joinWithCode")}</Link>
-          <Link href="/messes/new" className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm">{t("dashboard.newMess")}</Link>
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/join" className="px-5 py-3 rounded-full border bg-white text-sm min-h-[44px] inline-flex items-center justify-center">{t("dashboard.joinWithCode")}</Link>
+          <Link href="/messes/new" className="px-5 py-3 rounded-full bg-zinc-900 text-white text-sm min-h-[44px] inline-flex items-center justify-center">{t("dashboard.newMess")}</Link>
         </div>
       </div>
 
@@ -32,9 +32,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {rows.map((r) => (
-            <Link key={r.mess.id} href={`/messes/${r.mess.id}`} className="rounded-2xl border bg-white p-5 hover:shadow-sm transition">
+            <Link key={r.mess.id} href={`/messes/${r.mess.id}`} className="rounded-2xl border bg-white p-4 sm:p-5 hover:shadow-sm transition">
               <div className="flex items-center justify-between">
                 <span className="text-xs border rounded-full px-2 py-1 bg-zinc-50">{r.mess.code}</span>
                 <span className={`text-xs rounded-full px-2 py-1 ${r.member.role === "manager" ? "bg-zinc-900 text-white" : r.member.role === "assistant_manager" ? "bg-amber-100" : "bg-zinc-100"}`}>{r.member.role}</span>

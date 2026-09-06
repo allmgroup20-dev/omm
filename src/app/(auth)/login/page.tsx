@@ -37,8 +37,8 @@ function LoginInner() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-zinc-50 p-6">
-      <div className="w-full max-w-md bg-white border rounded-[24px] p-8 shadow-sm">
+    <div className="min-h-screen grid place-items-center bg-zinc-50 p-4 sm:p-6">
+      <div className="w-full max-w-md bg-white border rounded-[24px] p-6 sm:p-8 shadow-sm">
         <div className="text-center">
           <div className="mx-auto w-10 h-10 rounded-xl bg-zinc-900 text-white grid place-items-center font-bold">OM</div>
           <h1 className="mt-3 text-xl font-bold">{t("auth.loginTitle")}</h1>
@@ -52,9 +52,9 @@ function LoginInner() {
           <OrDivider text={t("auth.orEmail")} />
         </div>
         <form onSubmit={submit} className="mt-4 space-y-4">
-          <input type="email" placeholder={t("auth.email")} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input type="password" placeholder={t("auth.password")} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <button disabled={loading} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium hover:bg-black disabled:opacity-50">{loading ? t("auth.verifying") : t("auth.loginBtn")}</button>
+          <input type="email" placeholder={t("auth.email")} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" required />
+          <input type="password" placeholder={t("auth.password")} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" required />
+          <button disabled={loading} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium hover:bg-black disabled:opacity-50 min-h-[44px]">{loading ? t("auth.verifying") : t("auth.loginBtn")}</button>
         </form>
         <div className="mt-4 flex justify-between text-sm">
           <Link href="/forgot" className="text-zinc-600 hover:text-zinc-900">{t("auth.forgotLink")}</Link>

@@ -62,7 +62,7 @@ export default function SettingsForm({ mess, role }: { mess: Mess; role: string 
   }
 
   return (
-    <form onSubmit={submit} className="bg-white border rounded-2xl p-6 space-y-4">
+    <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-6 space-y-4">
       <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("settings.namePh")} className="w-full border rounded-xl px-4 py-3 text-sm" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("settings.descPh")} className="w-full border rounded-xl px-4 py-3 text-sm" rows={2} />
       <div className="rounded-xl border p-4 bg-zinc-50/50">

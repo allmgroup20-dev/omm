@@ -25,15 +25,16 @@ export default function CalendarPage() {
   return (
     <div className="space-y-4">
       <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← Overview</Link>
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg font-bold">Calendar — {year}-{String(month).padStart(2, "0")}</h1>
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="w-24 border rounded-full px-3 py-1.5 text-sm" />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="w-20 border rounded-full px-3 py-1.5 text-sm" />
-        <button onClick={load} className="px-4 py-1.5 border rounded-full text-sm">Go</button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <h1 className="text-lg font-bold flex-1 min-w-[140px]">Calendar — {year}-{String(month).padStart(2, "0")}</h1>
+        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+        <button onClick={load} className="px-6 py-3 border rounded-full text-sm min-h-[44px] bg-white">Go</button>
       </div>
 
-      <div className="bg-white border rounded-2xl p-4">
-        <div className="grid grid-cols-7 gap-1 text-xs">
+      <div className="bg-white border rounded-2xl p-3 sm:p-4 overflow-x-auto">
+        <div className="min-w-[560px]">
+          <div className="grid grid-cols-7 gap-1 text-xs">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <div key={d} className="text-center font-semibold p-2 bg-zinc-50 rounded-lg">{d}</div>
           ))}
@@ -49,12 +50,13 @@ export default function CalendarPage() {
             );
           })}
         </div>
-        <p className="text-xs text-zinc-500 mt-3">Each date shows total meals; special days (holiday/guest/party) will be overlayed here (future). Leap year handled: Feb {year} has {data.days === 29 ? "29 days ✓" : data.days === 28 ? "28 days" : data.days + " days"}.</p>
+          <p className="text-xs text-zinc-500 mt-3">Each date shows total meals; special days (holiday/guest/party) will be overlayed here (future). Leap year handled: Feb {year} has {data.days === 29 ? "29 days ✓" : data.days === 28 ? "28 days" : data.days + " days"}.</p>
+        </div>
       </div>
 
-      <div className="flex gap-2">
-        <Link href={`/messes/${id}/meals?date=${new Date().toISOString().slice(0, 10)}`} className="px-4 py-2 border rounded-full text-sm">Today Meals</Link>
-        <Link href={`/messes/${id}/meals/matrix`} className="px-4 py-2 border rounded-full text-sm">Matrix</Link>
+      <div className="flex gap-2 flex-wrap">
+        <Link href={`/messes/${id}/meals?date=${new Date().toISOString().slice(0, 10)}`} className="px-6 py-3 border rounded-full text-sm min-h-[44px] inline-flex items-center justify-center bg-white">Today Meals</Link>
+        <Link href={`/messes/${id}/meals/matrix`} className="px-6 py-3 border rounded-full text-sm min-h-[44px] inline-flex items-center justify-center bg-white">Matrix</Link>
       </div>
     </div>
   );

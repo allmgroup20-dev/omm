@@ -44,8 +44,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-zinc-50 p-6">
-      <div className="w-full max-w-md bg-white border rounded-[24px] p-8 shadow-sm">
+    <div className="min-h-screen grid place-items-center bg-zinc-50 p-4 sm:p-6">
+      <div className="w-full max-w-md bg-white border rounded-[24px] p-6 sm:p-8 shadow-sm">
         <div className="text-center">
           <div className="mx-auto w-10 h-10 rounded-xl bg-zinc-900 text-white grid place-items-center font-bold">OM</div>
           <h1 className="mt-3 text-xl font-bold">{t("auth.registerTitle")}</h1>
@@ -59,11 +59,11 @@ export default function RegisterPage() {
           <OrDivider text={t("auth.orEmail")} />
         </div>
         <form onSubmit={submit} className="mt-4 space-y-4">
-          <input placeholder={`${t("auth.fullName")} *`} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input type="email" placeholder={`${t("auth.email")} *`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input placeholder={t("auth.phoneOptional")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" />
-          <input type="password" placeholder={`${t("auth.password")} *`} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
-          <input type="password" placeholder={`${t("auth.confirmPassword")} *`} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" required />
+          <input placeholder={`${t("auth.fullName")} *`} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" required />
+          <input type="email" placeholder={`${t("auth.email")} *`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" required />
+          <input placeholder={t("auth.phoneOptional")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" />
+          <input type="password" placeholder={`${t("auth.password")} *`} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" required />
+          <input type="password" placeholder={`${t("auth.confirmPassword")} *`} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-zinc-900 min-h-[44px]" required />
           <input type="text" name="website" value={form.honeypot} onChange={(e) => setForm({ ...form, honeypot: e.target.value })} className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           {turnstileSiteKey ? <TurnstileWidget siteKey={turnstileSiteKey} onVerify={setTurnstileToken} /> : null}
           <p className="text-xs text-zinc-500">{t("auth.passwordHint")}</p>

@@ -46,7 +46,7 @@ export default function ExpensesPage() {
       <h1 className="text-lg font-bold">{t("expenses.title")}</h1>
 
       {dash && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-xl border bg-white p-4"><div className="text-xs text-zinc-500">{t("expenses.pending")}</div><div className="font-bold">{formatNumber(dash.counts.pending, locale)} • {formatCurrency(dash.totals.pendingPaisa, locale)}</div></div>
           <div className="rounded-xl border bg-white p-4"><div className="text-xs text-zinc-500">{t("expenses.approved")}</div><div className="font-bold text-emerald-700">{formatNumber(dash.counts.approved, locale)} • {formatCurrency(dash.totals.approvedPaisa, locale)}</div></div>
           <Link href={`/messes/${id}/expenses/categories`} className="rounded-xl border bg-white p-4 hover:bg-zinc-50"><div className="text-xs text-zinc-500">{t("expenses.categories")}</div><div className="font-bold">→</div></Link>
@@ -55,13 +55,15 @@ export default function ExpensesPage() {
 
       <div className="flex gap-2 text-sm flex-wrap">
         {(["all", "pending", "approved", "rejected", "cancelled"] as const).map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1 rounded-full border ${filter === s ? "bg-zinc-900 text-white" : "bg-white"}`}>{s === "all" ? t("expenses.all") : t(`expenses.${s}`)}</button>
+          <button key={s} onClick={() => setFilter(s)} className={`px-4 py-2 rounded-full border min-h-[44px] ${filter === s ? "bg-zinc-900 text-white border-zinc-900" : "bg-white"}`}>{s === "all" ? t("expenses.all") : t(`expenses.${s}`)}</button>
         ))}
       </div>
 
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("expenses.dateCol")}</th><th className="text-left p-3">{t("expenses.descCol")}</th><th className="text-right p-3">{t("expenses.amountCol")}</th><th className="text-center p-3">{t("expenses.statusCol")}</th><th className="text-right p-3">{t("expenses.actionCol")}</th></tr></thead>
+        <div className="overflow-x-auto -mx-0">
+          <div className="min-w-[600px]">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("expenses.dateCol")}</th><th className="text-left p-3">{t("expenses.descCol")}</th><th className="text-right p-3">{t("expenses.amountCol")}</th><th className="text-center p-3">{t("expenses.statusCol")}</th><th className="text-right p-3">{t("expenses.actionCol")}</th></tr></thead>
           <tbody>
             {expenses.map((e) => (
               <tr key={e.id} className="border-t">
@@ -72,15 +74,17 @@ export default function ExpensesPage() {
                 <td className="p-3 text-right flex gap-1 justify-end">
                   {e.status === "pending" && (
                     <>
-                      <button onClick={() => approve(e.id)} className="text-xs border rounded-full px-3 py-1 bg-emerald-50">{t("expenses.approve")}</button>
-                      <button onClick={() => reject(e.id)} className="text-xs border rounded-full px-3 py-1 bg-red-50">{t("expenses.reject")}</button>
+                      <button onClick={() => approve(e.id)} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">{t("expenses.approve")}</button>
+                      <button onClick={() => reject(e.id)} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">{t("expenses.reject")}</button>
                     </>
                   )}
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+            </table>
+          </div>
+        </div>
         {expenses.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("expenses.noExpenses")}</div>}
       </div>
       <p className="text-xs text-zinc-500">{t("expenses.thresholdNote")}</p>

@@ -13,7 +13,7 @@ export default async function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-4">
       <h1 className="text-xl font-bold">{t("profile.title")}</h1>
 
-      <div className="bg-white border rounded-2xl p-6 flex gap-4 items-center">
+      <div className="bg-white border rounded-2xl p-4 sm:p-6 flex gap-4 items-center">
         <div className="w-16 h-16 rounded-full bg-zinc-900 text-white grid place-items-center text-xl font-bold overflow-hidden">
           {user.profilePhoto ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -44,7 +44,7 @@ export default async function ProfilePage() {
       />
 
       <div className="grid md:grid-cols-2 gap-3">
-        <div className="bg-white border rounded-2xl p-5">
+        <div className="bg-white border rounded-2xl p-4 sm:p-5">
           <div className="font-semibold text-sm">{t("profile.security")}</div>
           <div className="mt-3 space-y-2 text-sm">
             <Link href="/profile/change-password" className="block border rounded-xl px-3 py-2 hover:bg-zinc-50">{t("profile.changePw")}</Link>
@@ -53,14 +53,14 @@ export default async function ProfilePage() {
             </form>
           </div>
         </div>
-        <div className="bg-white border rounded-2xl p-5">
+        <div className="bg-white border rounded-2xl p-4 sm:p-5">
           <div className="font-semibold text-sm">{t("profile.prefs")}</div>
           <div className="mt-3 text-sm text-zinc-600">{t("profile.prefsDesc")}</div>
           <div className="mt-2 text-xs text-zinc-500">{t("profile.prefCurrent")}</div>
         </div>
       </div>
 
-      <div className="bg-white border rounded-2xl p-5">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5">
         <div className="font-semibold text-sm">{t("profile.sessions")}</div>
         <p className="text-sm text-zinc-500 mt-1">{t("profile.sessionsDesc")}</p>
       </div>

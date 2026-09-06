@@ -39,7 +39,7 @@ export default function VendorsPage() {
       <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← {t("market.hub")}</Link>
       <h1 className="text-lg font-bold">{t("market.vendorTitle")}</h1>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
-      <div className="bg-white border rounded-2xl p-5 space-y-3">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="flex gap-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("market.shopNamePh")} className="flex-1 border rounded-full px-4 py-2 text-sm" />
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("market.phonePh")} className="w-32 border rounded-full px-4 py-2 text-sm" />

@@ -62,29 +62,29 @@ function SearchInner() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">সিট / রুম / ফ্ল্যাট খুঁজুন</h1>
 
-      <div className="bg-white border rounded-2xl p-4">
-        <div className="grid md:grid-cols-4 gap-3">
-          <input value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} placeholder="খুঁজুন (যেমন: মিরপুর, ২ সিট)" className="border rounded-full px-4 py-2 text-sm" />
-          <select value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value, district: "", upazila: "" })} className="border rounded-full px-3 py-2 text-sm">
+      <div className="bg-white border rounded-2xl p-3 sm:p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <input value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} placeholder="খুঁজুন (যেমন: মিরপুর, ২ সিট)" className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+          <select value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value, district: "", upazila: "" })} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]">
             <option value="">সব বিভাগ</option>
             {divisions.map((d) => (
               <option key={d.en} value={d.en}>{d.bn}</option>
             ))}
           </select>
-          <select value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value, upazila: "" })} className="border rounded-full px-3 py-2 text-sm" disabled={!filters.division}>
+          <select value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value, upazila: "" })} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" disabled={!filters.division}>
             <option value="">সব জেলা</option>
             {districts.map((d) => (
               <option key={d.en} value={d.en}>{d.bn}</option>
             ))}
           </select>
-          <select value={filters.upazila} onChange={(e) => setFilters({ ...filters, upazila: e.target.value })} className="border rounded-full px-3 py-2 text-sm" disabled={!filters.district}>
+          <select value={filters.upazila} onChange={(e) => setFilters({ ...filters, upazila: e.target.value })} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" disabled={!filters.district}>
             <option value="">সব উপজেলা</option>
             {upazilas.map((d) => (
               <option key={d.en} value={d.en}>{d.bn}</option>
             ))}
           </select>
-          <input value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} placeholder="এলাকা (মিরপুর, ধানমন্ডি)" className="border rounded-full px-4 py-2 text-sm" />
-          <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="border rounded-full px-3 py-2 text-sm">
+          <input value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} placeholder="এলাকা (মিরপুর, ধানমন্ডি)" className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+          <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]">
             <option value="">সব টাইপ</option>
             <option value="seat">সিট</option>
             <option value="bed">বেড</option>
@@ -93,14 +93,14 @@ function SearchInner() {
             <option value="mess">মেস</option>
             <option value="hostel">হোস্টেল</option>
           </select>
-          <input value={filters.rentMin} onChange={(e) => setFilters({ ...filters, rentMin: e.target.value })} placeholder="Min ৳" type="number" className="border rounded-full px-4 py-2 text-sm" />
-          <input value={filters.rentMax} onChange={(e) => setFilters({ ...filters, rentMax: e.target.value })} placeholder="Max ৳" type="number" className="border rounded-full px-4 py-2 text-sm" />
-          <select value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })} className="border rounded-full px-3 py-2 text-sm">
+          <input value={filters.rentMin} onChange={(e) => setFilters({ ...filters, rentMin: e.target.value })} placeholder="Min ৳" type="number" className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+          <input value={filters.rentMax} onChange={(e) => setFilters({ ...filters, rentMax: e.target.value })} placeholder="Max ৳" type="number" className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+          <select value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]">
             <option value="newest">নতুন</option>
             <option value="price_asc">কম ভাড়া</option>
             <option value="price_desc">বেশি ভাড়া</option>
           </select>
-          <button onClick={search} className="px-6 py-2 rounded-full bg-zinc-900 text-white text-sm">খুঁজুন</button>
+          <button onClick={search} className="px-6 py-3 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">খুঁজুন</button>
         </div>
         <p className="text-xs text-zinc-500 mt-2">Debounced server-side search, 20/page, cached 60s. Try: ঢাকা + সিট + 2000-5000</p>
       </div>
@@ -115,10 +115,10 @@ function SearchInner() {
       ) : (
         <>
           <div className="text-sm text-zinc-600">{total} টি লিস্টিং পাওয়া গেছে</div>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {listings.map((l) => (
-              <Link key={l.id} href={`/listings/${l.slug}`} className="rounded-2xl border bg-white overflow-hidden hover:shadow-sm transition">
-                <div className="h-44 bg-zinc-100 grid place-items-center text-zinc-400 text-xs">
+              <Link key={l.id} href={`/listings/${l.slug}`} className="rounded-2xl border bg-white overflow-hidden hover:shadow-sm transition flex flex-col">
+                <div className="aspect-[16/10] bg-zinc-100 grid place-items-center text-zinc-400 text-xs overflow-hidden">
                   {l.coverImage ? <img src={l.coverImage.url} alt={l.title} className="w-full h-full object-cover" loading="lazy" /> : "ছবি নেই"}
                 </div>
                 <div className="p-4">

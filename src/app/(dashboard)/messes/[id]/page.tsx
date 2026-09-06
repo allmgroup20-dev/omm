@@ -21,7 +21,7 @@ export default async function MessOverviewPage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-4">
       <Link href="/dashboard" className="text-sm text-zinc-500">{t("mess.backAll")}</Link>
-      <div className="rounded-2xl border bg-white p-6">
+      <div className="rounded-2xl border bg-white p-4 sm:p-6">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold">{m.name}</h1>
@@ -36,9 +36,9 @@ export default async function MessOverviewPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-white p-6">
+      <div className="rounded-2xl border bg-white p-4 sm:p-6">
         <h3 className="text-sm font-semibold">{t("mess.quickActions")}</h3>
-        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
           <Link href={`/messes/${id}/members`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">{t("mess.qaMembers")}</Link>
           <Link href={`/messes/${id}/meals`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">{t("mess.qaMeal")}</Link>
           <Link href={`/messes/${id}/market/add`} className="border rounded-xl p-3 text-center hover:bg-zinc-50">{t("mess.qaMarket")}</Link>

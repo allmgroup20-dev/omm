@@ -75,7 +75,7 @@ export default function ProfileEditForm({ user }: { user: User }) {
   }
 
   return (
-    <div className="bg-white border rounded-2xl p-5 sm:p-6 space-y-4">
+    <div className="bg-white border rounded-2xl p-4 sm:p-5 sm:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="font-semibold text-sm">{t("profile.editTitle")}</div>
         {!editing ? (

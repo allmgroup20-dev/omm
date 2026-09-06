@@ -96,7 +96,7 @@ export default function ListingForm({ initial, slug }: { initial?: Partial<Listi
     <form onSubmit={submit} className="space-y-5">
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
 
-      <div className="bg-white border rounded-2xl p-5 space-y-3">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="font-semibold text-sm">মূল তথ্য</div>
         <div>
           <label className="text-xs text-zinc-600">শিরোনাম *</label>
@@ -130,12 +130,12 @@ export default function ListingForm({ initial, slug }: { initial?: Partial<Listi
         </div>
       </div>
 
-      <div className="bg-white border rounded-2xl p-5 space-y-3">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="font-semibold text-sm">ঠিকানা (সরকারি তালিকা)</div>
         <AddressSelect value={form.geo} onChange={(geo) => set({ geo })} />
       </div>
 
-      <div className="bg-white border rounded-2xl p-5 space-y-3">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="font-semibold text-sm">বৈশিষ্ট্য</div>
         <div className="grid md:grid-cols-3 gap-3">
           <div>

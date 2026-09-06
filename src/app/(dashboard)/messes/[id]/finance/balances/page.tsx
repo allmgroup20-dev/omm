@@ -36,9 +36,9 @@ export default function BalancesPage() {
       <Link href={`/messes/${id}/finance`} className="text-sm text-zinc-500">← {t("finance.hub")}</Link>
       <h1 className="text-lg font-bold">{t("finance.balTitle")}</h1>
       <div className="flex gap-2 items-center flex-wrap">
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="w-24 border rounded-full px-3 py-1.5 text-sm" aria-label={t("reports.year")} />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="w-20 border rounded-full px-3 py-1.5 text-sm" aria-label={t("reports.month")} />
-        <button onClick={load} className="px-4 py-1.5 border rounded-full text-sm">{t("common.load")}</button>
+        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.year")} />
+        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.month")} />
+        <button onClick={load} className="px-6 py-3 border rounded-full text-sm min-h-[44px] bg-white">{t("common.load")}</button>
       </div>
 
       {data && (
@@ -49,8 +49,10 @@ export default function BalancesPage() {
           </div>
 
           <div className="bg-white border rounded-2xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("settlements.memberCol")}</th><th className="text-center p-3">{t("settlements.mealsCol")}</th><th className="text-right p-3">{t("settlements.mealCostCol")}</th><th className="text-right p-3">{t("finance.depositMonthCol")}</th><th className="text-center p-3">{t("finance.statusCol")}</th><th className="text-right p-3">{t("finance.balanceCol")}</th></tr></thead>
+            <div className="overflow-x-auto">
+              <div className="min-w-[680px]">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("settlements.memberCol")}</th><th className="text-center p-3">{t("settlements.mealsCol")}</th><th className="text-right p-3">{t("settlements.mealCostCol")}</th><th className="text-right p-3">{t("finance.depositMonthCol")}</th><th className="text-center p-3">{t("finance.statusCol")}</th><th className="text-right p-3">{t("finance.balanceCol")}</th></tr></thead>
               <tbody>
                 {data.members.map((m) => (
                   <tr key={m.memberId} className="border-t">
@@ -62,8 +64,10 @@ export default function BalancesPage() {
                     <td className="p-3 text-right font-bold">{formatCurrency(m.balancePaisa, locale)}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+                </table>
+              </div>
+            </div>
           </div>
           <p className="text-xs text-zinc-500">{t("finance.statusNote")}</p>
         </>

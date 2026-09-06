@@ -76,7 +76,7 @@ export default function CategoriesPage() {
       <h1 className="text-lg font-bold">{t("market.catTitle")}</h1>
       <p className="text-xs text-zinc-500">{t("market.catDesc")}</p>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
-      <div className="bg-white border rounded-2xl p-5 space-y-3">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="flex flex-wrap gap-2 items-end">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("market.catNamePh")} className="flex-1 min-w-[180px] border rounded-full px-4 py-2 text-sm" />
           <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="border rounded-full px-3 py-2 text-sm max-w-[160px]">
@@ -103,7 +103,7 @@ export default function CategoriesPage() {
       </div>
 
       {editing && (
-        <div className="bg-white border rounded-2xl p-5 space-y-3">
+        <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
           <div className="font-medium text-sm">Edit — {editing.name}</div>
           <div className="flex flex-wrap gap-2">
             <input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1 border rounded-full px-4 py-2 text-sm" />

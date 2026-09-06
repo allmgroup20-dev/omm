@@ -38,7 +38,7 @@ function JoinInner() {
 
   return (
     <div className="min-h-screen grid place-items-center bg-zinc-50 p-6">
-      <div className="w-full max-w-md bg-white border rounded-2xl p-6">
+      <div className="w-full max-w-md bg-white border rounded-2xl p-4 sm:p-6">
         <h1 className="text-xl font-bold text-center">মেসে যোগ দিন</h1>
         <p className="text-sm text-zinc-500 text-center mt-1">আমন্ত্রণ কোড বা লিংক টোকেন দিন</p>
         {error && <div className="mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}

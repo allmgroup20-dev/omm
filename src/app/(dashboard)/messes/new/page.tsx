@@ -66,7 +66,7 @@ export default function NewMessPage() {
       <h1 className="text-xl font-bold mt-2">{t("mess.newTitle")}</h1>
       <p className="text-sm text-zinc-500">{t("mess.newDesc")}</p>
       {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error}</div>}
-      <form onSubmit={submit} className="mt-6 bg-white border rounded-2xl p-6 space-y-4">
+      <form onSubmit={submit} className="mt-6 bg-white border rounded-2xl p-4 sm:p-6 space-y-4">
         <input placeholder={`${t("mess.namePh")} *`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm" required />
         <textarea placeholder={t("mess.descPh")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm" rows={2} />
         <div className="rounded-xl border p-4 bg-zinc-50/50">

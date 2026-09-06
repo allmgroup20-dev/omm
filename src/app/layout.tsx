@@ -1,7 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LocaleProvider } from "@/i18n/provider";
 import { getServerLocale } from "@/i18n/server";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: "#18181b",
+};
 
 export const metadata: Metadata = {
   title: "OMM — Our Mess Management | omm.jobayergroup.com",

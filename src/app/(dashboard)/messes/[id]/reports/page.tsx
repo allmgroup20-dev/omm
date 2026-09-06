@@ -52,7 +52,7 @@ export default function ReportsPage() {
       <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
       <h1 className="text-lg font-bold">{t("reports.title")}</h1>
 
-      <div className="bg-white border rounded-2xl p-5 flex flex-wrap gap-3 items-end">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 flex flex-wrap gap-3 items-end">
         <div><label className="text-xs">{t("reports.type")}</label><select value={type} onChange={(e) => setType(e.target.value)} className="w-full border rounded-full px-3 py-2 text-sm mt-1"><option value="daily">{t("reports.daily")}</option><option value="monthly">{t("reports.monthly")}</option><option value="yearly">{t("reports.yearly")}</option></select></div>
         {type === "daily" && <div><label className="text-xs">{t("common.date")}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>}
         {type !== "daily" && <div><label className="text-xs">{t("reports.year")}</label><input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="w-24 border rounded-full px-3 py-2 text-sm mt-1" /></div>}
@@ -66,7 +66,7 @@ export default function ReportsPage() {
       {msg && <div className="rounded-xl border p-3 text-sm bg-red-50 text-red-700">{msg}</div>}
 
       {data && (
-        <div className="bg-white border rounded-2xl p-5">
+        <div className="bg-white border rounded-2xl p-4 sm:p-5">
           <pre className="text-xs overflow-auto max-h-[500px] bg-zinc-50 p-4 rounded-xl">{JSON.stringify(data, null, 2)}</pre>
           <p className="text-xs text-zinc-500 mt-2">{t("reports.singleSource")}</p>
         </div>

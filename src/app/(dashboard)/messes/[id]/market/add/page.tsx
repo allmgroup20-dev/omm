@@ -202,15 +202,15 @@ export default function AddMarketPage() {
       <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← {t("market.hub")}</Link>
       <h1 className="text-lg font-bold">{t("market.addEntry")}</h1>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
-      <form onSubmit={submit} className="bg-white border rounded-2xl p-6 space-y-4">
-        <div className="grid md:grid-cols-3 gap-3">
-          <div><label className="text-xs">{t("market.date")} (DD-MM-YYYY)</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /><div className="text-[11px] text-zinc-500 mt-1">{formatDateBD(date, locale)}</div></div>
-          <div><label className="text-xs">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
-          <div><label className="text-xs">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
+      <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div><label className="text-xs font-medium">{t("market.date")} (DD-MM-YYYY)</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /><div className="text-[11px] text-zinc-500 mt-1">{formatDateBD(date, locale)}</div></div>
+          <div><label className="text-xs font-medium">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
+          <div className="sm:col-span-2 lg:col-span-1"><label className="text-xs font-medium">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
         </div>
-        <div className="grid md:grid-cols-4 gap-3">
-          <div className="md:col-span-2">
-            <label className="text-xs">কে বাজার করেছে * (একাধিক নির্বাচন)</label>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-2 col-span-1">
+            <label className="text-xs font-medium">কে বাজার করেছে * (একাধিক নির্বাচন)</label>
             <div className="border rounded-xl p-2 max-h-[110px] overflow-auto bg-white mt-1 space-y-1">
               {members.map((m) => (
                 <label key={m.id} className="flex items-center gap-2 text-sm">
@@ -289,8 +289,8 @@ export default function AddMarketPage() {
                     })()}
                   </div>
                 </div>
-                <div className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-6 md:col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 items-end">
+                  <div className="sm:col-span-1 lg:col-span-3">
                     <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? "(কেজি + গ্রাম)" : ""}</label>
                     {it.unit === "kg" ? (
                       <div className="flex gap-1">
@@ -328,9 +328,9 @@ export default function AddMarketPage() {
                       <input type="number" step="0.001" placeholder={t("market.quantity")} value={it.quantity} onChange={(e) => onQuantityChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
                     )}
                   </div>
-                  <div className="col-span-6 md:col-span-2">
+                  <div className="sm:col-span-1 lg:col-span-2">
                     <label className="text-[11px] text-zinc-500">{t("market.unit")}</label>
-                    <select value={it.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm bg-white min-w-[110px] truncate">
+                    <select value={it.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm bg-white truncate min-h-[44px]">
                       {UNIT_CODES.map((u) => (
                         <option key={u} value={u}>
                           {t(`units.${u}`)}
@@ -338,11 +338,11 @@ export default function AddMarketPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-span-6 md:col-span-3">
+                  <div className="sm:col-span-1 lg:col-span-3">
                     <label className="text-[11px] text-zinc-500">{t("market.unitPrice")}</label>
-                    <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
+                    <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white min-h-[44px]" required />
                   </div>
-                  <div className="col-span-6 md:col-span-3">
+                  <div className="sm:col-span-1 lg:col-span-3">
                     <label className="text-[11px] text-zinc-500">মোট (টাকা) — কপি-পেস্ট exact</label>
                     <input
                       type="number"
@@ -354,8 +354,8 @@ export default function AddMarketPage() {
                       title="২৪৬০ পেস্ট করলে ৫৬/৫৭ drift ছাড়া exact থাকবে"
                     />
                   </div>
-                  <div className="col-span-12 md:col-span-1 flex justify-end">
-                    <button type="button" onClick={() => removeRow(idx)} className="w-full md:w-auto text-xs border rounded-lg bg-white px-3 py-2.5">
+                  <div className="col-span-1 sm:col-span-2 lg:col-span-1 flex justify-end">
+                    <button type="button" onClick={() => removeRow(idx)} className="w-full lg:w-auto text-xs border rounded-lg bg-white px-4 py-3 min-h-[44px]">
                       {t("market.remove")}
                     </button>
                   </div>

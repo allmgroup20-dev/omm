@@ -13,10 +13,10 @@ export function Button({ variant = "default", size = "md", className, ...props }
     destructive: "bg-red-600 text-white hover:bg-red-700",
   };
   const sizes: Record<Size, string> = {
-    sm: "px-3 py-1 text-xs",
-    md: "px-4 py-2 text-sm",
-    lg: "px-6 py-3 text-sm",
-    icon: "w-8 h-8 p-0",
+    sm: "px-4 py-2 text-xs min-h-[44px]",
+    md: "px-5 py-2.5 text-sm min-h-[44px]",
+    lg: "px-6 py-3 text-sm min-h-[44px]",
+    icon: "w-10 h-10 p-0 min-h-[44px] min-w-[44px]",
   };
   return <button className={cn(base, variants[variant], sizes[size], className)} {...props} />;
 }

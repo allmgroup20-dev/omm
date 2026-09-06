@@ -54,7 +54,7 @@ export default function AddExpensePage() {
       <Link href={`/messes/${id}/expenses`} className="text-sm text-zinc-500">← {t("expenses.title")}</Link>
       <h1 className="text-lg font-bold">{t("expenses.addTitle")}</h1>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
-      <form onSubmit={submit} className="bg-white border rounded-2xl p-6 space-y-4">
+      <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-6 space-y-4">
         <div className="grid md:grid-cols-2 gap-3">
           <div><label className="text-xs">{t("expenses.dateCol")} *</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /></div>
           <div><label className="text-xs">{t("expenses.amountCol")} *</label><input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" placeholder={t("expenses.amountPh")} required /></div>

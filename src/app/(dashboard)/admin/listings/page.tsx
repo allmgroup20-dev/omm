@@ -28,14 +28,16 @@ export default function AdminListingsPage() {
     <div className="space-y-4">
       <Link href="/admin" className="text-sm text-zinc-500">← Admin</Link>
       <h1 className="text-lg font-bold">Moderation Queue</h1>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {["pending", "published", "rejected", "archived"].map((s) => (
-          <button key={s} onClick={() => setStatus(s)} className={`px-3 py-1 rounded-full border text-sm ${status === s ? "bg-zinc-900 text-white" : "bg-white"}`}>{s}</button>
+          <button key={s} onClick={() => setStatus(s)} className={`px-4 py-2 rounded-full border text-sm min-h-[44px] ${status === s ? "bg-zinc-900 text-white border-zinc-900" : "bg-white"}`}>{s}</button>
         ))}
       </div>
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">Title</th><th className="text-left p-3">Location</th><th className="text-right p-3">Price</th><th className="text-center p-3">Status</th><th className="text-right p-3">Actions</th></tr></thead>
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">Title</th><th className="text-left p-3">Location</th><th className="text-right p-3">Price</th><th className="text-center p-3">Status</th><th className="text-right p-3">Actions</th></tr></thead>
           <tbody>
             {listings.map((l) => (
               <tr key={l.id} className="border-t">
@@ -46,15 +48,17 @@ export default function AdminListingsPage() {
                 <td className="p-3 text-right flex gap-1 justify-end">
                   {status === "pending" && (
                     <>
-                      <button onClick={() => moderate(l.id, "approve")} className="text-xs border rounded-full px-3 py-1 bg-emerald-50">Approve</button>
-                      <button onClick={() => moderate(l.id, "reject")} className="text-xs border rounded-full px-3 py-1 bg-red-50">Reject</button>
+                      <button onClick={() => moderate(l.id, "approve")} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">Approve</button>
+                      <button onClick={() => moderate(l.id, "reject")} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">Reject</button>
                     </>
                   )}
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+            </table>
+          </div>
+        </div>
         {listings.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">No {status} listings</div>}
       </div>
     </div>

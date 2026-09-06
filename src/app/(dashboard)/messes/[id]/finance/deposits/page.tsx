@@ -74,22 +74,24 @@ export default function DepositsPage() {
       {loading && <div className="rounded-xl border p-3 text-sm bg-white text-zinc-500">লোড হচ্ছে...</div>}
       {loadError && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError} <button onClick={load} className="ml-2 underline">আবার চেষ্টা করুন</button> <Link href="/login" className="ml-2 underline">লগইন</Link></div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
-      <form onSubmit={submit} className="bg-white border rounded-2xl p-5 space-y-3">
-        <div className="grid md:grid-cols-3 gap-3">
-          <div><label className="text-xs">{t("finance.memberLabel")} *</label><select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required><option value="">{t("finance.selectMember")}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}</select></div>
-          <div><label className="text-xs">{t("common.date")}</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /></div>
-          <div><label className="text-xs">{t("finance.amountLabel")} *</label><input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /></div>
+      <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div><label className="text-xs font-medium">{t("finance.memberLabel")} *</label><select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required><option value="">{t("finance.selectMember")}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}</select></div>
+          <div><label className="text-xs font-medium">{t("common.date")}</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /></div>
+          <div className="sm:col-span-2 lg:col-span-1"><label className="text-xs font-medium">{t("finance.amountLabel")} *</label><input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /></div>
         </div>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div><label className="text-xs">{t("finance.paymentLabel")}</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
-          <div><label className="text-xs">{t("finance.noteLabel")}</label><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" placeholder={t("finance.notePh")} /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label className="text-xs font-medium">{t("finance.paymentLabel")}</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
+          <div><label className="text-xs font-medium">{t("finance.noteLabel")}</label><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.notePh")} /></div>
         </div>
         <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm">{t("finance.addBtn")}</button>
       </form>
 
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("finance.memberLabel")}</th><th className="text-right p-3">{t("finance.amountCol")}</th><th className="text-center p-3">{t("finance.methodCol")}</th><th className="text-center p-3">{t("common.status")}</th></tr></thead>
+        <div className="overflow-x-auto">
+          <div className="min-w-[560px]">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("finance.memberLabel")}</th><th className="text-right p-3">{t("finance.amountCol")}</th><th className="text-center p-3">{t("finance.methodCol")}</th><th className="text-center p-3">{t("common.status")}</th></tr></thead>
           <tbody>
             {deposits.map((d) => (
               <tr key={d.id} className="border-t">
@@ -100,8 +102,10 @@ export default function DepositsPage() {
                 <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${d.status === "active" ? "bg-emerald-100" : "bg-zinc-200"}`}>{t(`status.${d.status}`)}</span></td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+            </table>
+          </div>
+        </div>
         {deposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
         {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">সদস্য তালিকা খালি — প্রথমে <Link href={`/messes/${id}/members`} className="underline">সদস্য যোগ করুন</Link></div>}
       </div>

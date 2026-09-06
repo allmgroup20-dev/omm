@@ -48,7 +48,7 @@ export default function MealTypesPage() {
       <h1 className="text-lg font-bold">{t("meals.typesTitle")} — {formatNumber(types.length, locale)}</h1>
       <p className="text-xs text-zinc-500">{t("meals.typeHint")}</p>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
-      <div className="bg-white border rounded-2xl p-5 space-y-3">
+      <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="flex gap-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("meals.newTypePh")} className="flex-1 border rounded-full px-4 py-2 text-sm" />
           <button onClick={add} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm">{t("meals.addBtn")}</button>
