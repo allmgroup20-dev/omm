@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { marketEntries, marketEntryItems, messMembers, vendors, marketProducts, auditLogs, users } from "@/db/schema";
+import { marketEntries, marketEntryItems, marketEntryPurchasers, messMembers, vendors, marketProducts, auditLogs, users } from "@/db/schema";
 import { marketEntrySchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -21,34 +21,46 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const purchasedByQ = url.searchParams.get("purchasedBy");
 
   let rows;
-  if (date) {
-    const conds: ReturnType<typeof eq>[] = [eq(marketEntries.messId, id), eq(marketEntries.date, date) as never];
-    if (purchasedByQ) conds.push(eq(marketEntries.purchasedBy, purchasedByQ) as never);
-    rows = await db.select().from(marketEntries).where(and(...conds));
-  } else if (purchasedByQ) {
-    rows = await db.select().from(marketEntries).where(and(eq(marketEntries.messId, id), eq(marketEntries.purchasedBy, purchasedByQ))).orderBy(desc(marketEntries.createdAt)).limit(limit).offset(offset);
+  if (purchasedByQ) {
+    // find entryIds via junction + legacy purchasedBy
+    const viaJunction = await db.select({ entryId: marketEntryPurchasers.entryId }).from(marketEntryPurchasers).where(eq(marketEntryPurchasers.memberId, purchasedByQ));
+    const viaLegacy = await db.select({ id: marketEntries.id }).from(marketEntries).where(and(eq(marketEntries.messId, id), eq(marketEntries.purchasedBy, purchasedByQ)));
+    const idSet = new Set<string>([...viaJunction.map((r) => r.entryId), ...viaLegacy.map((r) => r.id)]);
+    const ids = [...idSet];
+    if (ids.length === 0) return NextResponse.json({ entries: [], total: 0 });
+    const conds: ReturnType<typeof eq>[] = [eq(marketEntries.messId, id) as never, inArray(marketEntries.id, ids) as never];
+    if (date) conds.push(eq(marketEntries.date, date) as never);
+    rows = await db.select().from(marketEntries).where(and(...conds)).orderBy(desc(marketEntries.createdAt)).limit(limit).offset(offset);
+    if (date) rows = rows.filter((r) => r.date === date);
+  } else if (date) {
+    rows = await db.select().from(marketEntries).where(and(eq(marketEntries.messId, id), eq(marketEntries.date, date)));
   } else {
     rows = await db.select().from(marketEntries).where(eq(marketEntries.messId, id)).orderBy(desc(marketEntries.createdAt)).limit(limit).offset(offset);
   }
-  // fetch items + purchaser display name for each entry
+  // fetch items + purchaser display names (multi) for each entry
   const withItems = await Promise.all(
     rows.map(async (entry) => {
       const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entry.id));
-      let purchaserName: string | null = null;
+      const purchaserRows = await db.select().from(marketEntryPurchasers).where(eq(marketEntryPurchasers.entryId, entry.id));
+      const purchaserIds: string[] = purchaserRows.length ? purchaserRows.map((r) => r.memberId) : entry.purchasedBy ? [entry.purchasedBy] : [];
+      const purchaserNames: string[] = [];
       let purchaserIsPlaceholder = false;
-      if (entry.purchasedBy) {
-        const mem = await db.select().from(messMembers).where(eq(messMembers.id, entry.purchasedBy)).limit(1);
+      for (const pid of purchaserIds) {
+        const mem = await db.select().from(messMembers).where(eq(messMembers.id, pid)).limit(1);
         if (mem[0]) {
+          let name: string | null = null;
           if (mem[0].userId) {
             const u = await db.select().from(users).where(eq(users.id, mem[0].userId)).limit(1);
-            purchaserName = u[0]?.fullName || mem[0].displayName || "সদস্য";
+            name = u[0]?.fullName || mem[0].displayName || "সদস্য";
           } else {
-            purchaserName = mem[0].displayName || "সদস্য";
+            name = mem[0].displayName || "সদস্য";
             purchaserIsPlaceholder = true;
           }
+          if (name) purchaserNames.push(name);
         }
       }
-      return { ...entry, items, purchaserName, purchaserIsPlaceholder };
+      const purchaserName = purchaserNames[0] || null;
+      return { ...entry, items, purchaserName, purchaserNames, purchaserIds, purchaserIsPlaceholder };
     }),
   );
   return NextResponse.json({ entries: withItems, total: rows.length });
@@ -67,10 +79,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
-  // validate purchasedBy if given
-  if (data.purchasedBy) {
-    const mem = await db.select().from(messMembers).where(and(eq(messMembers.id, data.purchasedBy), eq(messMembers.messId, id))).limit(1);
-    if (!mem[0]) return NextResponse.json({ error: "Purchaser not in mess" }, { status: 400 });
+  // validate purchasedBy (1..10 members)
+  const pids = (data.purchasedBy as unknown as string[]) || [];
+  for (const pid of pids) {
+    const mem = await db.select().from(messMembers).where(and(eq(messMembers.id, pid), eq(messMembers.messId, id))).limit(1);
+    if (!mem[0]) return NextResponse.json({ error: `Purchaser not in mess: ${pid}` }, { status: 400 });
   }
   if (data.vendorId) {
     const v = await db.select().from(vendors).where(and(eq(vendors.id, data.vendorId), eq(vendors.messId, id))).limit(1);
@@ -136,7 +149,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     id: entryId,
     messId: id,
     date: data.date,
-    purchasedBy: data.purchasedBy || null,
+    purchasedBy: pids[0] || null,
     vendorId: data.vendorId || null,
     paymentMethod: data.paymentMethod || "cash",
     totalPaisa,
@@ -153,6 +166,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     createdAt: now,
     updatedAt: now,
   });
+  for (const pid of pids) {
+    await db.insert(marketEntryPurchasers).values({ entryId, memberId: pid, createdAt: now });
+  }
 
   for (const ir of itemRows) {
     await db.insert(marketEntryItems).values({

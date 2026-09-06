@@ -431,6 +431,20 @@ export const marketEntryItems = sqliteTable(
   (t) => [index("idx_market_items_entry").on(t.entryId)],
 );
 
+export const marketEntryPurchasers = sqliteTable(
+  "market_entry_purchasers",
+  {
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => marketEntries.id, { onDelete: "cascade" }),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => messMembers.id, { onDelete: "restrict" }),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("uq_entry_purchaser").on(t.entryId, t.memberId), index("idx_entry_purchasers_member").on(t.memberId)],
+);
+
 // ---------- SHOPPING LIST & INVENTORY ----------
 
 export const shoppingLists = sqliteTable(

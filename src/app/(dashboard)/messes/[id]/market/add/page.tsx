@@ -32,7 +32,7 @@ export default function AddMarketPage() {
   const [classification, setClassification] = useState("food");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [vendorId, setVendorId] = useState("");
-  const [purchasedBy, setPurchasedBy] = useState("");
+  const [purchasedBy, setPurchasedBy] = useState<string[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [members, setMembers] = useState<{ id: string; displayName: string }[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -52,7 +52,7 @@ export default function AddMarketPage() {
       if (d.members) {
         const ms = d.members.filter((m: { status: string }) => m.status === "active").map((m: { id: string; fullName: string; displayName: string }) => ({ id: m.id, displayName: m.fullName || m.displayName }));
         setMembers(ms);
-        if (ms[0] && !purchasedBy) setPurchasedBy(ms[0].id);
+        if (ms[0] && purchasedBy.length === 0) setPurchasedBy([ms[0].id]);
       }
     }).catch(() => {});
   }, [id]);
@@ -168,7 +168,7 @@ export default function AddMarketPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date,
-          purchasedBy: purchasedBy || null,
+          purchasedBy: purchasedBy.length ? purchasedBy : undefined,
           classification,
           paymentMethod,
           vendorId: vendorId || null,
@@ -209,7 +209,19 @@ export default function AddMarketPage() {
           <div><label className="text-xs">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
         </div>
         <div className="grid md:grid-cols-4 gap-3">
-          <div><label className="text-xs">কে বাজার করেছে *</label><select value={purchasedBy} onChange={(e) => setPurchasedBy(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required><option value="">— বেছে নিন —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
+          <div className="md:col-span-2">
+            <label className="text-xs">কে বাজার করেছে * (একাধিক নির্বাচন)</label>
+            <div className="border rounded-xl p-2 max-h-[110px] overflow-auto bg-white mt-1 space-y-1">
+              {members.map((m) => (
+                <label key={m.id} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={purchasedBy.includes(m.id)} onChange={(e) => setPurchasedBy((prev) => (e.target.checked ? [...prev, m.id] : prev.filter((x) => x !== m.id)))} />
+                  <span>{m.displayName}</span>
+                </label>
+              ))}
+              {members.length === 0 && <div className="text-xs text-zinc-500">কোনো সদস্য নেই</div>}
+            </div>
+            {purchasedBy.length === 0 && <div className="text-xs text-red-500 mt-1">কমপক্ষে একজন বেছে নিন</div>}
+          </div>
           <div><label className="text-xs">{t("market.vendor")}</label><select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">{t("market.noVendor")}</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
           <div><label className="text-xs">{t("market.gariVara")}</label><input type="number" step="0.01" placeholder={t("market.gariVaraPh")} value={transport} onChange={(e) => setTransport(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" /></div>
           <div><label className="text-xs">{t("market.discount")}</label><input type="number" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>

@@ -16,7 +16,7 @@ export default function EntryDetailPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [msg, setMsg] = useState("");
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ date: "", classification: "food", paymentMethod: "cash", discount: "0", transport: "0", purchasedBy: "", notes: "" });
+  const [form, setForm] = useState({ date: "", classification: "food", paymentMethod: "cash", discount: "0", transport: "0", purchasedBy: [] as string[], notes: "" });
   const [members, setMembers] = useState<{ id: string; displayName: string }[]>([]);
 
   async function load() {
@@ -25,7 +25,8 @@ export default function EntryDetailPage() {
     if (res.ok) {
       setEntry(data.entry);
       setItems(data.items);
-      setForm({ date: data.entry.date, classification: data.entry.classification, paymentMethod: data.entry.paymentMethod, discount: (data.entry.discountPaisa / 100).toString(), transport: ((data.entry.transportPaisa || 0) / 100).toString(), purchasedBy: data.entry.purchasedBy || "", notes: data.entry.notes || "" });
+      const pIds = (data.entry.purchaserIds as string[]) || (data.entry.purchasedBy ? [data.entry.purchasedBy] : []);
+      setForm({ date: data.entry.date, classification: data.entry.classification, paymentMethod: data.entry.paymentMethod, discount: (data.entry.discountPaisa / 100).toString(), transport: ((data.entry.transportPaisa || 0) / 100).toString(), purchasedBy: pIds, notes: data.entry.notes || "" });
     } else setMsg(data.error);
   }
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function EntryDetailPage() {
       <h1 className="text-lg font-bold">এন্ট্রি {entry.id.slice(0, 8)} — {formatDateBD(entry.date, locale)}</h1>
       <div className="bg-white border rounded-2xl p-4 space-y-2 text-sm">
         <div className="flex justify-between"><span>তারিখ (DD-MM-YYYY)</span><span className="font-mono">{formatDateBD(entry.date, locale)}</span></div>
-        <div className="flex justify-between"><span>কে বাজার করেছে</span><span className="font-medium">{(entry as unknown as { purchaserName: string | null }).purchaserName || "—"}</span></div>
+        <div className="flex justify-between"><span>কে বাজার করেছে</span><span className="font-medium">{((entry as unknown as { purchaserNames?: string[]; purchaserName: string | null }).purchaserNames?.length ? (entry as unknown as { purchaserNames: string[] }).purchaserNames.join(", ") : (entry as unknown as { purchaserName: string | null }).purchaserName) || "—"}</span></div>
         <div className="flex justify-between"><span>অবস্থা</span><span className={`rounded-full px-2 py-0.5 text-xs ${entry.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{entry.status}</span></div>
         <div className="flex justify-between"><span>মোট</span><span>{formatCurrency(entry.totalPaisa, locale)}</span></div>
         <div className="flex justify-between"><span>গাড়ি ভাড়া</span><span>{formatCurrency(entry.transportPaisa || 0, locale)}</span></div>
@@ -96,7 +97,7 @@ export default function EntryDetailPage() {
           <div className="space-y-3">
             <div className="grid md:grid-cols-2 gap-3">
               <div><label className="text-xs">তারিখ (DD-MM-YYYY)</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /><div className="text-[11px] text-zinc-500 mt-1">{form.date ? formatDateBD(form.date, locale) : ""}</div></div>
-              <div><label className="text-xs">কে বাজার করেছে *</label><select value={form.purchasedBy} onChange={(e) => setForm({ ...form, purchasedBy: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">— বেছে নিন —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
+              <div><label className="text-xs">কে বাজার করেছে * (একাধিক)</label><div className="border rounded-xl p-2 max-h-[120px] overflow-auto bg-white mt-1 space-y-1">{members.map((m) => <label key={m.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.purchasedBy.includes(m.id)} onChange={(e) => setForm({ ...form, purchasedBy: e.target.checked ? [...form.purchasedBy, m.id] : form.purchasedBy.filter((x) => x !== m.id) })} /><span>{m.displayName}</span></label>)} {members.length === 0 && <div className="text-xs text-zinc-500">কোনো সদস্য নেই</div>}</div></div>
               <div><label className="text-xs">শ্রেণি</label><select value={form.classification} onChange={(e) => setForm({ ...form, classification: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="food">খাদ্য</option><option value="shared">যৌথ</option><option value="non_food">অখাদ্য</option></select></div>
               <div><label className="text-xs">পেমেন্ট</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">নগদ (ক্যাশ)</option><option value="bank">ব্যাংক</option><option value="mobile">মোবাইল</option><option value="other">অন্যান্য</option></select></div>
               <div><label className="text-xs">গাড়ি ভাড়া (টাকা)</label><input type="number" step="0.01" value={form.transport} onChange={(e) => setForm({ ...form, transport: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" placeholder="যেমন ৪০" /></div>

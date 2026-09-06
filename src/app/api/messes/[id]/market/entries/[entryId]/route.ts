@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { marketEntries, marketEntryItems, messMembers, vendors, auditLogs, users } from "@/db/schema";
+import { marketEntries, marketEntryItems, marketEntryPurchasers, messMembers, vendors, auditLogs, users } from "@/db/schema";
 import { marketEntryUpdateSchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -18,17 +18,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!entry[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
   const audits = await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, "market_entry"), eq(auditLogs.entityId, entryId)));
-  let purchaserName: string | null = null;
-  if (entry[0].purchasedBy) {
-    const mem = await db.select().from(messMembers).where(eq(messMembers.id, entry[0].purchasedBy)).limit(1);
+  const purchaserRows = await db.select().from(marketEntryPurchasers).where(eq(marketEntryPurchasers.entryId, entryId));
+  const purchaserIds: string[] = purchaserRows.length ? purchaserRows.map((r) => r.memberId) : entry[0].purchasedBy ? [entry[0].purchasedBy] : [];
+  const purchaserNames: string[] = [];
+  for (const pid of purchaserIds) {
+    const mem = await db.select().from(messMembers).where(eq(messMembers.id, pid)).limit(1);
     if (mem[0]) {
       if (mem[0].userId) {
         const u = await db.select().from(users).where(eq(users.id, mem[0].userId)).limit(1);
-        purchaserName = u[0]?.fullName || mem[0].displayName || null;
-      } else purchaserName = mem[0].displayName || null;
+        purchaserNames.push(u[0]?.fullName || mem[0].displayName || "সদস্য");
+      } else purchaserNames.push(mem[0].displayName || "সদস্য");
     }
   }
-  return NextResponse.json({ entry: { ...entry[0], purchaserName }, items, audits });
+  return NextResponse.json({ entry: { ...entry[0], purchaserName: purchaserNames[0] || null, purchaserNames, purchaserIds }, items, audits });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; entryId: string }> }) {
@@ -62,9 +64,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     headerUpdates.vendorId = data.vendorId;
   }
   if (data.purchasedBy !== undefined) {
-    const mem = await db.select().from(messMembers).where(and(eq(messMembers.id, data.purchasedBy), eq(messMembers.messId, id))).limit(1);
-    if (!mem[0]) return NextResponse.json({ error: "Purchaser not in mess" }, { status: 400 });
-    headerUpdates.purchasedBy = data.purchasedBy;
+    const pids = data.purchasedBy as unknown as string[];
+    for (const pid of pids) {
+      const mem = await db.select().from(messMembers).where(and(eq(messMembers.id, pid), eq(messMembers.messId, id))).limit(1);
+      if (!mem[0]) return NextResponse.json({ error: `Purchaser not in mess: ${pid}` }, { status: 400 });
+    }
+    headerUpdates.purchasedBy = pids[0] || null;
+    // junction will be updated after header
   }
   if (data.paymentMethod !== undefined) headerUpdates.paymentMethod = data.paymentMethod;
   if (data.classification !== undefined) headerUpdates.classification = data.classification;
@@ -134,6 +140,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (Object.keys(headerUpdates).length > 1 || itemRows) {
     await db.update(marketEntries).set(headerUpdates as never).where(eq(marketEntries.id, entryId));
+    if (data.purchasedBy !== undefined) {
+      const pids = data.purchasedBy as unknown as string[];
+      await db.delete(marketEntryPurchasers).where(eq(marketEntryPurchasers.entryId, entryId));
+      for (const pid of pids) await db.insert(marketEntryPurchasers).values({ entryId, memberId: pid, createdAt: now });
+    }
     if (itemRows) {
       await db.delete(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
       for (const r of itemRows) await db.insert(marketEntryItems).values(r as never);

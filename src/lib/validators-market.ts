@@ -39,10 +39,12 @@ export const marketEntryItemSchema = z
     if (v.unitPrice == null && v.total == null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "unitPrice or total required", path: ["unitPrice"] });
   });
 
+const purchasedByField = z.union([z.string().min(1), z.array(z.string().min(1)).min(1).max(10)]).transform((v) => (Array.isArray(v) ? v : [v]));
+
 export const marketEntrySchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    purchasedBy: z.string().min(1, "ক্রেতা বেছে নিন"), // who did bazaar — required
+    purchasedBy: purchasedByField, // who did bazaar — 1..10 members
     vendorId: z.string().optional().nullable(),
     vendorName: z.string().max(60).optional().or(z.literal("")), // free form if no vendorId
     paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).default("cash").optional(),
@@ -63,7 +65,7 @@ export const marketEntrySchema = z
 export const marketEntryUpdateSchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    purchasedBy: z.string().min(1).optional(),
+    purchasedBy: z.union([z.string().min(1), z.array(z.string().min(1)).min(1).max(10)]).optional().transform((v) => (v == null ? undefined : Array.isArray(v) ? v : [v])),
     vendorId: z.string().optional().nullable(),
     paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).optional(),
     discount: z.number().min(0).max(1000000).optional(),
