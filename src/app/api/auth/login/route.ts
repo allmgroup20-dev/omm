@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { loginSchema } from "@/lib/validators";
-import { verifyPassword, createSessionToken, sessionCookie } from "@/lib/auth";
+import { verifyPassword, createSessionToken, sessionCookie, hashToken } from "@/lib/auth";
 import { getRequestDb } from "@/db";
 import { users, sessions, loginHistory } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   await db.insert(sessions).values({
     id: nanoid(),
     userId: user.id,
-    tokenHash: token.slice(0, 32),
+    tokenHash: hashToken(token),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: now,
     ip,

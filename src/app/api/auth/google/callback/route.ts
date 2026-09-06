@@ -5,7 +5,7 @@ import { exchangeCodeForProfile, googleConfig, isGoogleConfigured } from "@/lib/
 import { getRequestDb } from "@/db";
 import { users, sessions, loginHistory } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { hashPassword, createSessionToken, sessionCookie } from "@/lib/auth";
+import { hashPassword, createSessionToken, sessionCookie, hashToken } from "@/lib/auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 // GET /api/auth/google/callback?code=...&state=... (public)
@@ -115,7 +115,7 @@ export async function GET(req: Request) {
     await db.insert(sessions).values({
       id: nanoid(),
       userId,
-      tokenHash: token.slice(0, 32),
+      tokenHash: hashToken(token),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: now,
       ip,

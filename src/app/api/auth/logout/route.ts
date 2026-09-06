@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, getCookieName, verifySessionToken } from "@/lib/auth";
+import { clearSessionCookie, getCookieName, verifySessionToken, hashToken } from "@/lib/auth";
 import { getRequestDb } from "@/db";
 import { sessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -13,9 +13,8 @@ export async function POST(req: Request) {
     if (payload) {
       try {
         const db = await getRequestDb();
-        // best-effort delete sessions for this token prefix
-        // we stored slice(0,32) as hash, so try to delete matching
-        const hash = token.slice(0, 32);
+        // tokens now stored via hashToken(fullToken) — unique per JWT (jti)
+        const hash = hashToken(token);
         await db.delete(sessions).where(eq(sessions.tokenHash, hash));
       } catch {}
     }

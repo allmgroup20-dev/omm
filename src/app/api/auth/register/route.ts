@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { registerSchema } from "@/lib/validators";
-import { hashPassword, validatePasswordPolicy, createSessionToken, sessionCookie } from "@/lib/auth";
+import { hashPassword, validatePasswordPolicy, createSessionToken, sessionCookie, hashToken } from "@/lib/auth";
 import { getRequestDb } from "@/db";
 import { users, sessions, loginHistory } from "@/db/schema";
 import { nanoid } from "nanoid";
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     await db.insert(sessions).values({
       id: nanoid(),
       userId: id,
-      tokenHash: token.slice(0, 32), // simple hash placeholder
+      tokenHash: hashToken(token),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: now,
       ip,
