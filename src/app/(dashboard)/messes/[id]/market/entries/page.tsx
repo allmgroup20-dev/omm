@@ -58,6 +58,32 @@ export default function EntriesPage() {
     }
   }
 
+  async function deleteOne(entryId: string) {
+    if (!confirm("এই এন্ট্রি ডিলিট (void) করবেন? ভুল এন্ট্রি বাতিল হবে, history থাকবে")) return;
+    const res = await fetch(`/api/messes/${id}/market/entries/${entryId}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(data.error || "Delete failed — manager/assistant required");
+    else {
+      setMsg("Deleted (voided)");
+      load();
+    }
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    if (!confirm(`${selected.size} টি এন্ট্রি একসাথে ডিলিট (void) করবেন?`)) return;
+    let ok = 0;
+    let fail = 0;
+    for (const eid of [...selected]) {
+      const res = await fetch(`/api/messes/${id}/market/entries/${eid}`, { method: "DELETE" });
+      if (res.ok) ok++;
+      else fail++;
+    }
+    setMsg(`Deleted ${ok} — ${fail ? fail + " failed (manager only)" : "done"}`);
+    setSelected(new Set());
+    load();
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← {t("market.hub")}</Link>
@@ -71,6 +97,7 @@ export default function EntriesPage() {
         <div><label className="text-xs">কে বাজার করেছে</label><select value={filterPurchaser} onChange={(e) => setFilterPurchaser(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">— সবাই —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
         <button onClick={() => { setFilterDate(""); setFilterPurchaser(""); }} className="px-4 py-2 border rounded-full text-sm">Clear</button>
         {selected.size >= 2 && <button onClick={mergeSelected} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm">Merge ({selected.size}) → একটিতে</button>}
+        {selected.size > 0 && <button onClick={deleteSelected} className="px-4 py-2 rounded-full bg-red-600 text-white text-sm">Delete ({selected.size})</button>}
         {selected.size > 0 && <button onClick={() => setSelected(new Set())} className="px-4 py-2 border rounded-full text-sm">Clear Select</button>}
       </div>
       {filterDate && entries.length > 0 && (
@@ -118,8 +145,8 @@ export default function EntriesPage() {
                     <td className="p-3 text-right text-xs">{formatCurrency(e.totalPaisa, locale)}</td>
                     <td className="p-3 text-right text-xs">{formatCurrency(e.transportPaisa || 0, locale)}</td>
                     <td className="p-3 text-right font-semibold text-xs">{formatCurrency(e.finalPaisa, locale)}</td>
-                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status}</span></td>
-                    <td className="p-3"><Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-3 py-1 hover:bg-white">দেখুন/Edit</Link></td>
+                  <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status}</span></td>
+                  <td className="p-3 flex gap-1"><Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-3 py-1 hover:bg-white">দেখুন/Edit</Link><button onClick={() => deleteOne(e.id)} className="text-xs border rounded-full px-2 py-1 hover:bg-red-50 text-red-600">✕</button></td>
                   </tr>
                 );
               })}

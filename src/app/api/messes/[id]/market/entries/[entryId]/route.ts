@@ -176,7 +176,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
-  if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can void" }, { status: 403 });
+  if (!access[0] || !["manager", "assistant_manager"].includes(access[0].role)) return NextResponse.json({ error: "Only manager/assistant can void" }, { status: 403 });
 
   const entry = await db.select().from(marketEntries).where(and(eq(marketEntries.id, entryId), eq(marketEntries.messId, id))).limit(1);
   if (!entry[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
