@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { marketEntries, marketEntryItems, messMembers, vendors, auditLogs } from "@/db/schema";
+import { marketEntries, marketEntryItems, messMembers, vendors, auditLogs, users } from "@/db/schema";
 import { marketEntryUpdateSchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -18,7 +18,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!entry[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entryId));
   const audits = await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, "market_entry"), eq(auditLogs.entityId, entryId)));
-  return NextResponse.json({ entry: entry[0], items, audits });
+  let purchaserName: string | null = null;
+  if (entry[0].purchasedBy) {
+    const mem = await db.select().from(messMembers).where(eq(messMembers.id, entry[0].purchasedBy)).limit(1);
+    if (mem[0]) {
+      if (mem[0].userId) {
+        const u = await db.select().from(users).where(eq(users.id, mem[0].userId)).limit(1);
+        purchaserName = u[0]?.fullName || mem[0].displayName || null;
+      } else purchaserName = mem[0].displayName || null;
+    }
+  }
+  return NextResponse.json({ entry: { ...entry[0], purchaserName }, items, audits });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; entryId: string }> }) {
@@ -50,6 +60,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (!v[0]) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
     headerUpdates.vendorId = data.vendorId;
+  }
+  if (data.purchasedBy !== undefined) {
+    const mem = await db.select().from(messMembers).where(and(eq(messMembers.id, data.purchasedBy), eq(messMembers.messId, id))).limit(1);
+    if (!mem[0]) return NextResponse.json({ error: "Purchaser not in mess" }, { status: 400 });
+    headerUpdates.purchasedBy = data.purchasedBy;
   }
   if (data.paymentMethod !== undefined) headerUpdates.paymentMethod = data.paymentMethod;
   if (data.classification !== undefined) headerUpdates.classification = data.classification;

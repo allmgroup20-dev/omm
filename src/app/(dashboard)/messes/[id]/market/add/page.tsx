@@ -32,7 +32,9 @@ export default function AddMarketPage() {
   const [classification, setClassification] = useState("food");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [vendorId, setVendorId] = useState("");
+  const [purchasedBy, setPurchasedBy] = useState("");
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [members, setMembers] = useState<{ id: string; displayName: string }[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [discount, setDiscount] = useState("0");
@@ -46,6 +48,13 @@ export default function AddMarketPage() {
     fetch(`/api/messes/${id}/market/vendors`).then((r) => r.json()).then((d) => { if (d.vendors) setVendors(d.vendors); }).catch(() => {});
     fetch(`/api/messes/${id}/market/categories`).then((r) => r.json()).then((d) => { if (d.categories) setCategories(d.categories); }).catch(() => {});
     fetch(`/api/messes/${id}/market/products`).then((r) => r.json()).then((d) => { if (d.products) setProducts(d.products); }).catch(() => {});
+    fetch(`/api/messes/${id}/members`).then((r) => r.json()).then((d) => {
+      if (d.members) {
+        const ms = d.members.filter((m: { status: string }) => m.status === "active").map((m: { id: string; fullName: string; displayName: string }) => ({ id: m.id, displayName: m.fullName || m.displayName }));
+        setMembers(ms);
+        if (ms[0] && !purchasedBy) setPurchasedBy(ms[0].id);
+      }
+    }).catch(() => {});
   }, [id]);
 
   function updateItem(idx: number, patch: Partial<Row>) {
@@ -159,6 +168,7 @@ export default function AddMarketPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date,
+          purchasedBy: purchasedBy || null,
           classification,
           paymentMethod,
           vendorId: vendorId || null,
@@ -198,7 +208,8 @@ export default function AddMarketPage() {
           <div><label className="text-xs">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
           <div><label className="text-xs">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
         </div>
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-4 gap-3">
+          <div><label className="text-xs">কে বাজার করেছে *</label><select value={purchasedBy} onChange={(e) => setPurchasedBy(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required><option value="">— বেছে নিন —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
           <div><label className="text-xs">{t("market.vendor")}</label><select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">{t("market.noVendor")}</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
           <div><label className="text-xs">{t("market.gariVara")}</label><input type="number" step="0.01" placeholder={t("market.gariVaraPh")} value={transport} onChange={(e) => setTransport(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" /></div>
           <div><label className="text-xs">{t("market.discount")}</label><input type="number" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>

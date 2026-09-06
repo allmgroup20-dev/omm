@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { marketEntries, marketEntryItems, messMembers, vendors, marketProducts, auditLogs } from "@/db/schema";
+import { marketEntries, marketEntryItems, messMembers, vendors, marketProducts, auditLogs, users } from "@/db/schema";
 import { marketEntrySchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -18,18 +18,37 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const limit = Math.min(Number(url.searchParams.get("limit") || 50), 200);
   const offset = Number(url.searchParams.get("offset") || 0);
   const date = url.searchParams.get("date");
+  const purchasedByQ = url.searchParams.get("purchasedBy");
 
   let rows;
   if (date) {
-    rows = await db.select().from(marketEntries).where(and(eq(marketEntries.messId, id), eq(marketEntries.date, date)));
+    const conds: ReturnType<typeof eq>[] = [eq(marketEntries.messId, id), eq(marketEntries.date, date) as never];
+    if (purchasedByQ) conds.push(eq(marketEntries.purchasedBy, purchasedByQ) as never);
+    rows = await db.select().from(marketEntries).where(and(...conds));
+  } else if (purchasedByQ) {
+    rows = await db.select().from(marketEntries).where(and(eq(marketEntries.messId, id), eq(marketEntries.purchasedBy, purchasedByQ))).orderBy(desc(marketEntries.createdAt)).limit(limit).offset(offset);
   } else {
     rows = await db.select().from(marketEntries).where(eq(marketEntries.messId, id)).orderBy(desc(marketEntries.createdAt)).limit(limit).offset(offset);
   }
-  // fetch items for each entry
+  // fetch items + purchaser display name for each entry
   const withItems = await Promise.all(
     rows.map(async (entry) => {
       const items = await db.select().from(marketEntryItems).where(eq(marketEntryItems.entryId, entry.id));
-      return { ...entry, items };
+      let purchaserName: string | null = null;
+      let purchaserIsPlaceholder = false;
+      if (entry.purchasedBy) {
+        const mem = await db.select().from(messMembers).where(eq(messMembers.id, entry.purchasedBy)).limit(1);
+        if (mem[0]) {
+          if (mem[0].userId) {
+            const u = await db.select().from(users).where(eq(users.id, mem[0].userId)).limit(1);
+            purchaserName = u[0]?.fullName || mem[0].displayName || "সদস্য";
+          } else {
+            purchaserName = mem[0].displayName || "সদস্য";
+            purchaserIsPlaceholder = true;
+          }
+        }
+      }
+      return { ...entry, items, purchaserName, purchaserIsPlaceholder };
     }),
   );
   return NextResponse.json({ entries: withItems, total: rows.length });

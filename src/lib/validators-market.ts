@@ -42,7 +42,7 @@ export const marketEntryItemSchema = z
 export const marketEntrySchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    purchasedBy: z.string().min(1).optional(), // messMemberId
+    purchasedBy: z.string().min(1, "ক্রেতা বেছে নিন"), // who did bazaar — required
     vendorId: z.string().optional().nullable(),
     vendorName: z.string().max(60).optional().or(z.literal("")), // free form if no vendorId
     paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).default("cash").optional(),
@@ -63,6 +63,7 @@ export const marketEntrySchema = z
 export const marketEntryUpdateSchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    purchasedBy: z.string().min(1).optional(),
     vendorId: z.string().optional().nullable(),
     paymentMethod: z.enum(["cash", "bank", "mobile", "other"]).optional(),
     discount: z.number().min(0).max(1000000).optional(),

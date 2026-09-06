@@ -408,6 +408,7 @@ export const marketEntries = sqliteTable(
   (t) => [
     index("idx_market_entries_mess_date").on(t.messId, t.date),
     index("idx_market_entries_vendor").on(t.vendorId),
+    index("idx_market_entries_purchasedBy").on(t.purchasedBy),
   ],
 );
 
