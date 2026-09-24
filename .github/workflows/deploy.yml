@@ -82,6 +82,8 @@ jobs:
           # Ensure D1/KV/R2 already created via `wrangler d1 create` etc. (see DEPLOYMENT.md)
 
       - name: Run D1 migrations (profile google_sub)
+        # Already applied to production D1 — keep going even if it errors (e.g. duplicate column).
+        continue-on-error: true
         uses: cloudflare/wrangler-action@v3
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
