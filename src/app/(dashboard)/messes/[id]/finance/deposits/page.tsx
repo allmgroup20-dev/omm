@@ -6,7 +6,7 @@ import { useLocale } from "@/i18n/provider";
 import { formatCurrency } from "@/i18n/dict";
 
 type Member = { id: string; fullName: string };
-type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null };
+type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null; transactionId?: string | null };
 
 export default function DepositsPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +17,9 @@ export default function DepositsPage() {
   const [msg, setMsg] = useState("");
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Deposit | null>(null);
+  const [editForm, setEditForm] = useState({ memberId: "", date: "", amount: "", paymentMethod: "cash", note: "", reason: "" });
+  const [editBusy, setEditBusy] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -67,6 +70,68 @@ export default function DepositsPage() {
     }
   }
 
+  function openEdit(d: Deposit) {
+    setEditing(d);
+    setEditForm({
+      memberId: d.memberId,
+      date: d.date,
+      amount: String(d.amountPaisa / 100),
+      paymentMethod: d.paymentMethod,
+      note: d.note || "",
+      reason: "",
+    });
+    setMsg("");
+  }
+
+  async function submitEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (editForm.reason.trim().length < 3) {
+      setMsg(t("finance.reasonPh"));
+      return;
+    }
+    setEditBusy(true);
+    setMsg("");
+    const res = await fetch(`/api/messes/${id}/deposits/${editing.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        memberId: editForm.memberId,
+        date: editForm.date,
+        amount: parseFloat(editForm.amount) || 0,
+        paymentMethod: editForm.paymentMethod,
+        note: editForm.note,
+        reason: editForm.reason.trim(),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setEditBusy(false);
+    if (!res.ok) {
+      setMsg(data.error || t("errors.saveFail"));
+      return;
+    }
+    setMsg(`${t("finance.editDone")} — ${t("finance.balanceCol")}: ${formatCurrency(data.balancePaisa, locale)}`);
+    setEditing(null);
+    load();
+  }
+
+  async function voidDeposit(d: Deposit) {
+    if (!window.confirm(t("finance.voidConfirm"))) return;
+    const reason = window.prompt(t("finance.voidReasonPh") || "reason") || "";
+    setMsg("");
+    const res = await fetch(`/api/messes/${id}/deposits/${d.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "voided", reason }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(data.error || t("errors.saveFail"));
+    else {
+      setMsg(t("finance.voidDone"));
+      load();
+    }
+  }
+
   return (
     <div className="space-y-4 max-w-3xl mx-auto">
       <Link href={`/messes/${id}/finance`} className="text-sm text-zinc-500">← {t("finance.hub")}</Link>
@@ -89,9 +154,9 @@ export default function DepositsPage() {
 
       <div className="bg-white border rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <div className="min-w-[560px]">
+          <div className="min-w-[680px]">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("finance.memberLabel")}</th><th className="text-right p-3">{t("finance.amountCol")}</th><th className="text-center p-3">{t("finance.methodCol")}</th><th className="text-center p-3">{t("common.status")}</th></tr></thead>
+              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("finance.memberLabel")}</th><th className="text-right p-3">{t("finance.amountCol")}</th><th className="text-center p-3">{t("finance.methodCol")}</th><th className="text-center p-3">{t("common.status")}</th><th className="text-center p-3">{t("common.actions")}</th></tr></thead>
           <tbody>
             {deposits.map((d) => (
               <tr key={d.id} className="border-t">
@@ -100,6 +165,14 @@ export default function DepositsPage() {
                 <td className="p-3 text-right font-medium">{formatCurrency(d.amountPaisa, locale)}</td>
                 <td className="p-3 text-center text-xs">{{ cash: t("market.payCash"), bank: t("market.payBank"), mobile: t("market.payMobile"), other: t("market.payOther") }[d.paymentMethod] || d.paymentMethod}</td>
                 <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${d.status === "active" ? "bg-emerald-100" : "bg-zinc-200"}`}>{t(`status.${d.status}`)}</span></td>
+                <td className="p-3 text-center whitespace-nowrap">
+                  {d.status === "active" ? (
+                    <span className="inline-flex gap-2">
+                      <button onClick={() => openEdit(d)} className="text-xs border rounded-full px-3 py-1.5 hover:bg-zinc-50">✏️ {t("common.edit")}</button>
+                      <button onClick={() => voidDeposit(d)} className="text-xs border rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50">{t("finance.voidBtn")}</button>
+                    </span>
+                  ) : <span className="text-xs text-zinc-400">—</span>}
+                </td>
               </tr>
             ))}
             </tbody>
@@ -109,6 +182,26 @@ export default function DepositsPage() {
         {deposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
         {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">সদস্য তালিকা খালি — প্রথমে <Link href={`/messes/${id}/members`} className="underline">সদস্য যোগ করুন</Link></div>}
       </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" onClick={() => !editBusy && setEditing(null)}>
+          <form onSubmit={submitEdit} onClick={(e) => e.stopPropagation()} className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 space-y-3 max-h-[92vh] overflow-y-auto">
+            <h2 className="text-base font-bold">{t("finance.editTitle")} — {formatCurrency(editing.amountPaisa, locale)}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2"><label className="text-xs font-medium">{t("finance.memberLabel")} *</label><select value={editForm.memberId} onChange={(e) => setEditForm({ ...editForm, memberId: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required><option value="">{t("finance.selectMember")}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}</select></div>
+              <div><label className="text-xs font-medium">{t("common.date")}</label><input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /></div>
+              <div><label className="text-xs font-medium">{t("finance.amountLabel")} *</label><input type="number" step="0.01" min="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /></div>
+              <div><label className="text-xs font-medium">{t("finance.paymentLabel")}</label><select value={editForm.paymentMethod} onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
+              <div><label className="text-xs font-medium">{t("finance.noteLabel")}</label><input value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.notePh")} /></div>
+              <div className="sm:col-span-2"><label className="text-xs font-medium">{t("finance.reasonLabel")}</label><input value={editForm.reason} onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.reasonPh")} required minLength={3} /></div>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setEditing(null)} disabled={editBusy} className="flex-1 rounded-full border py-3 text-sm">{t("common.cancel")}</button>
+              <button type="submit" disabled={editBusy} className="flex-1 rounded-full bg-zinc-900 text-white py-3 text-sm disabled:opacity-50">{editBusy ? t("finance.saving") : t("finance.updateBtn")}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
