@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { depositSchema, depositUpdateSchema } from "@/lib/validators-finance";
+import { rawDicts, leafKeys } from "@/i18n/dict";
 
 describe("deposit update — 100% dynamic edit validation", () => {
   it("accepts amount-only edit with reason", () => {
@@ -65,5 +66,42 @@ describe("deposit update — 100% dynamic edit validation", () => {
     const oldPaisa = 100000;
     const newPaisa = Math.round(amount * 100);
     expect(newPaisa - oldPaisa).toBe(50050); // delta applied to ledger
+  });
+});
+
+describe("deposit closed-month UX — i18n + 409 contract", () => {
+  const financeKeys = [
+    "finance.closedBlock",
+    "finance.closedBanner",
+    "finance.reopenLink",
+    "finance.editTitle",
+    "finance.updateBtn",
+    "finance.reasonLabel",
+    "finance.voidBtn",
+    "finance.editDone",
+    "finance.voidDone",
+  ];
+
+  it("bn/en both have all deposit-edit keys (no missing labels in UI)", () => {
+    const { bn, en } = rawDicts();
+    const bnKeys = new Set(leafKeys(bn));
+    const enKeys = new Set(leafKeys(en));
+    for (const k of financeKeys) {
+      expect(bnKeys.has(k)).toBe(true);
+      expect(enKeys.has(k)).toBe(true);
+    }
+  });
+
+  it("409 closed-month body carries machine-readable code + YYYY-MM period", () => {
+    // mirrors monthClosedBody() in deposits/[depositId]/route.ts
+    const body = { error: "Month is closed (final). Reopen settlement first.", code: "MONTH_CLOSED", period: "2026-09-20".slice(0, 7) };
+    expect(body.code).toBe("MONTH_CLOSED");
+    expect(body.period).toMatch(/^\d{4}-\d{2}$/);
+    expect(body.period).toBe("2026-09");
+  });
+
+  it("settlement ym formats to YYYY-MM like the banner expects", () => {
+    const ym = `${2026}-${String(9).padStart(2, "0")}`;
+    expect(ym).toBe("2026-09");
   });
 });

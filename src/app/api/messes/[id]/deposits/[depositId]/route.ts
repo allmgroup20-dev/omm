@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { deposits, messMembers, ledgerEntries, auditLogs, monthlySettlements } from "@/db/schema";
+import { deposits, messMembers, ledgerEntries, auditLogs, monthlySettlements, closingPeriods } from "@/db/schema";
 import { depositUpdateSchema } from "@/lib/validators-finance";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -40,12 +40,25 @@ async function isMonthClosed(db: Awaited<ReturnType<typeof getRequestDb>>, messI
   const year = Number(dateStr.slice(0, 4));
   const month = Number(dateStr.slice(5, 7));
   if (!year || !month) return false;
-  const rows = await db
-    .select()
-    .from(monthlySettlements)
-    .where(and(eq(monthlySettlements.messId, messId), eq(monthlySettlements.year, year), eq(monthlySettlements.month, month)))
-    .limit(1);
-  return rows[0]?.status === "final";
+  // Either lock counts: final settlement OR closed period (close/reopen set both, but check both for safety)
+  const [settRows, closeRows] = await Promise.all([
+    db
+      .select()
+      .from(monthlySettlements)
+      .where(and(eq(monthlySettlements.messId, messId), eq(monthlySettlements.year, year), eq(monthlySettlements.month, month)))
+      .limit(1),
+    db
+      .select()
+      .from(closingPeriods)
+      .where(and(eq(closingPeriods.messId, messId), eq(closingPeriods.year, year), eq(closingPeriods.month, month)))
+      .limit(1),
+  ]);
+  return settRows[0]?.status === "final" || closeRows[0]?.status === "closed";
+}
+
+/** 409 body for closed-month blocks — UI renders a Reopen link from `period`. */
+function monthClosedBody(dateStr: string, message: string) {
+  return { error: message, code: "MONTH_CLOSED", period: dateStr.slice(0, 7) };
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; depositId: string }> }) {
@@ -68,7 +81,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!["voided", "reversed"].includes(status)) return NextResponse.json({ error: "status must be voided/reversed" }, { status: 400 });
 
     if (await isMonthClosed(db, id, before[0].date)) {
-      return NextResponse.json({ error: "Month is closed (final). Reopen settlement first." }, { status: 409 });
+      return NextResponse.json(monthClosedBody(before[0].date, "Month is closed (final). Reopen settlement first."), { status: 409 });
     }
 
     const now = new Date().toISOString();
@@ -116,10 +129,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // closed-month guard on BOTH old and new dates
   if (await isMonthClosed(db, id, prev.date)) {
-    return NextResponse.json({ error: "Original month is closed (final). Reopen settlement first." }, { status: 409 });
+    return NextResponse.json(monthClosedBody(prev.date, "Original month is closed (final). Reopen settlement first."), { status: 409 });
   }
   if (newDate !== prev.date && (await isMonthClosed(db, id, newDate))) {
-    return NextResponse.json({ error: "Target month is closed (final). Reopen settlement first." }, { status: 409 });
+    return NextResponse.json(monthClosedBody(newDate, "Target month is closed (final). Reopen settlement first."), { status: 409 });
   }
 
   const newPaymentMethod = data.paymentMethod ?? prev.paymentMethod;

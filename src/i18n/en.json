@@ -380,6 +380,8 @@
     "voidDone": "Deposit voided",
     "editDone": "Deposit updated",
     "closedBlock": "Month is closed — reopen settlement first",
+    "closedBanner": "🔒 Deposits of closed months can't be edited/voided — reopen settlement first:",
+    "reopenLink": "Go to Settlements →",
     "amountCol": "Amount",
     "methodCol": "Method",
     "noDeposits": "No deposits yet",

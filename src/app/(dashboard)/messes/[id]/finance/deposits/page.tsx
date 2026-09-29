@@ -20,17 +20,23 @@ export default function DepositsPage() {
   const [editing, setEditing] = useState<Deposit | null>(null);
   const [editForm, setEditForm] = useState({ memberId: "", date: "", amount: "", paymentMethod: "cash", note: "", reason: "" });
   const [editBusy, setEditBusy] = useState(false);
+  const [lockedPeriods, setLockedPeriods] = useState<string[]>([]);
+  function addLockedPeriod(p: string) {
+    setLockedPeriods((prev) => (prev.includes(p) ? prev : [...prev, p].sort()));
+  }
 
   async function load() {
     setLoading(true);
     setLoadError("");
     try {
-      const [mRes, dRes] = await Promise.all([
+      const [mRes, dRes, sRes] = await Promise.all([
         fetch(`/api/messes/${id}/members`, { credentials: "include" }),
         fetch(`/api/messes/${id}/deposits`, { credentials: "include" }),
+        fetch(`/api/messes/${id}/settlements`, { credentials: "include" }),
       ]);
       const mData = await mRes.json().catch(() => ({}));
       const dData = await dRes.json().catch(() => ({}));
+      const sData = await sRes.json().catch(() => ({}));
       if (mRes.ok) {
         setMembers(mData.members.map((m: { id: string; fullName: string }) => ({ id: m.id, fullName: m.fullName })));
       } else {
@@ -45,6 +51,13 @@ export default function DepositsPage() {
         setDeposits([]);
       }
       if (!mRes.ok && !dRes.ok) setLoadError("ডাটাবেস সংযোগ বা সেশন সমস্যা — পুনরায় লগইন করুন");
+      // closed (final) settlement months → deposits there can't be edited until reopen
+      if (sRes.ok && Array.isArray(sData.settlements)) {
+        const finals = sData.settlements
+          .filter((s: { status: string }) => s.status === "final")
+          .map((s: { year: number; month: number }) => `${s.year}-${String(s.month).padStart(2, "0")}`);
+        if (finals.length) setLockedPeriods((prev) => [...new Set([...prev, ...finals])].sort());
+      }
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "নেটওয়ার্ক ত্রুটি — আবার চেষ্টা করুন");
     } finally {
@@ -107,6 +120,7 @@ export default function DepositsPage() {
     const data = await res.json().catch(() => ({}));
     setEditBusy(false);
     if (!res.ok) {
+      if (data.code === "MONTH_CLOSED" && data.period) addLockedPeriod(data.period);
       setMsg(data.error || t("errors.saveFail"));
       return;
     }
@@ -125,7 +139,10 @@ export default function DepositsPage() {
       body: JSON.stringify({ status: "voided", reason }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(data.error || t("errors.saveFail"));
+    if (!res.ok) {
+      if (data.code === "MONTH_CLOSED" && data.period) addLockedPeriod(data.period);
+      setMsg(data.error || t("errors.saveFail"));
+    }
     else {
       setMsg(t("finance.voidDone"));
       load();
@@ -139,6 +156,12 @@ export default function DepositsPage() {
       {loading && <div className="rounded-xl border p-3 text-sm bg-white text-zinc-500">লোড হচ্ছে...</div>}
       {loadError && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError} <button onClick={load} className="ml-2 underline">আবার চেষ্টা করুন</button> <Link href="/login" className="ml-2 underline">লগইন</Link></div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
+      {lockedPeriods.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          {t("finance.closedBanner")} <b>{lockedPeriods.join(", ")}</b>{" "}
+          <Link href={`/messes/${id}/settlements`} className="ml-1 underline font-medium">{t("finance.reopenLink")}</Link>
+        </div>
+      )}
       <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div><label className="text-xs font-medium">{t("finance.memberLabel")} *</label><select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required><option value="">{t("finance.selectMember")}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}</select></div>
