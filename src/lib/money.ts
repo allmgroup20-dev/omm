@@ -83,3 +83,16 @@ export function classifyDashboardViewer(opts: {
   if (opts.memberOk && !opts.isGuest && opts.hasTarget) return "member";
   return "outsider";
 }
+
+/**
+ * Entry-list visibility: active members always; members marked left stay
+ * visible till their effective leave date (month-end supported), then drop.
+ */
+export function isMemberVisibleForEntry(
+  m: { status?: string; leftAt?: string | null },
+  todayIso: string = new Date().toISOString().slice(0, 10),
+): boolean {
+  if (!m.status || m.status === "active") return true;
+  if (m.status === "left" && m.leftAt && m.leftAt.slice(0, 10) >= todayIso) return true;
+  return false;
+}

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { expenses, expenseCategories, messMembers, messes, auditLogs } from "@/db/schema";
 import { expenseSchema } from "@/lib/validators-expense";
+import { isMonthClosed } from "@/lib/meal-helpers";
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -41,6 +42,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const data = parsed.data;
   const amountPaisa = Math.round(data.amount * 100);
   if (amountPaisa <= 0) return NextResponse.json({ error: "Amount must be >0" }, { status: 400 });
+
+  // closed month: members blocked, manager/assistant may still post (audited via auditLogs below)
+  if (await isMonthClosed(id, data.date) && !["manager", "assistant_manager"].includes(access[0].role)) {
+    return NextResponse.json({ error: "Month is closed. Only manager can add." }, { status: 423 });
+  }
 
   // validate category
   if (data.categoryId) {

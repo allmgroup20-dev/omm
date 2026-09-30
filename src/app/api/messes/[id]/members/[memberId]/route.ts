@@ -30,7 +30,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (data.role !== undefined) updates.role = data.role;
   if (data.status !== undefined) {
     updates.status = data.status;
-    if (["left", "archived"].includes(data.status)) updates.leftAt = now;
+    if (["left", "archived"].includes(data.status)) {
+      // effective leave date (month-end supported); defaults to now
+      updates.leftAt = data.leftAt || now;
+    } else if (data.status === "active") {
+      // reactivating clears stale leave date so window logic works
+      updates.leftAt = null;
+    }
   }
   if (data.isPrimaryManager !== undefined) updates.isPrimaryManager = data.isPrimaryManager;
   if (data.permissionsJson !== undefined) updates.permissionsJson = data.permissionsJson;

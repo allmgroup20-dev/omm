@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { monthlySettlements, memberSettlements, messMembers, users } from "@/db/schema";
+import { monthlySettlements, memberSettlements, messMembers, users, settlementAdjustments } from "@/db/schema";
 import { memberDisplayName } from "@/lib/mess";
 import { and, eq } from "drizzle-orm";
 
@@ -19,9 +19,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .innerJoin(messMembers, eq(memberSettlements.memberId, messMembers.id))
     .leftJoin(users, eq(messMembers.userId, users.id))
     .where(eq(memberSettlements.settlementId, settlementId));
+  const adjustments = await db.select().from(settlementAdjustments).where(eq(settlementAdjustments.settlementId, settlementId));
 
   return NextResponse.json({
     settlement: sett[0],
+    adjustments,
     members: members.map((r) => ({
       id: r.ms.id,
       memberId: r.ms.memberId,

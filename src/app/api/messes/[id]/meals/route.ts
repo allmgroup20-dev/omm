@@ -78,7 +78,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
   if (await isMonthClosed(id, commonDate)) {
-    if (access[0].role !== "manager") return NextResponse.json({ error: "Month is closed. Only manager can edit." }, { status: 423 });
+    if (!["manager", "assistant_manager"].includes(access[0].role)) return NextResponse.json({ error: "Month is closed. Only manager can edit." }, { status: 423 });
   }
 
   const precision = await getMessPrecision(id);

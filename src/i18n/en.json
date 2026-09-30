@@ -189,6 +189,7 @@
     "markLeft": "Mark Left",
     "activate": "Activate",
     "statusConfirm": "Change status?",
+    "leaveTiming": "Keep in lists till month-end? (OK = till month-end, Cancel = leave now)",
     "noMembers": "No members",
     "historyNote": "History is preserved — left members are never hard-deleted.",
     "backOverview": "← Overview"
@@ -438,6 +439,15 @@
     "closingCol": "Closing",
     "formulaNote": "Closing = Previous + Deposit − MealCost − Allocated • Positive=Advance, Negative=Due",
     "backList": "← Settlements",
+    "dispCol": "Advance Action",
+    "carryBtn": "Carry to Next",
+    "refundBtn": "Refund Cash",
+    "dispCarried": "Carried",
+    "dispRefunded": "Refunded",
+    "dispPending": "Pending",
+    "carryConfirm": "Carry this advance to next month?",
+    "refundConfirm": "Refund this advance in cash?",
+    "dispNotePh": "Note (optional)",
     "closeWarn": "Closing shows validation warnings (missing meals, pending expenses), then locks on manager confirm. Reopen is audited."
   },
   "reports": {

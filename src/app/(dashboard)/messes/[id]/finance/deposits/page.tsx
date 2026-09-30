@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency } from "@/i18n/dict";
+import { isMemberVisibleForEntry } from "@/lib/money";
 
 type Member = { id: string; fullName: string };
 type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null; transactionId?: string | null };
@@ -38,7 +39,10 @@ export default function DepositsPage() {
       const dData = await dRes.json().catch(() => ({}));
       const sData = await sRes.json().catch(() => ({}));
       if (mRes.ok) {
-        setMembers(mData.members.map((m: { id: string; fullName: string }) => ({ id: m.id, fullName: m.fullName })));
+        const today = new Date().toISOString().slice(0, 10);
+        const visible = (mData.members as { id: string; fullName: string; status?: string; leftAt?: string | null }[])
+          .filter((m) => isMemberVisibleForEntry(m, today));
+        setMembers(visible.map((m) => ({ id: m.id, fullName: m.fullName })));
       } else {
         const err = mData.error || `সদস্য লোড ব্যর্থ (${mRes.status})`;
         setLoadError((prev) => prev ? `${prev} | ${err}` : err);

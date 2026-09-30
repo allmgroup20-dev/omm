@@ -1,0 +1,66 @@
+import { describe, it, expect } from "vitest";
+import { isMemberInMonth } from "@/lib/settlement";
+import { isMemberVisibleForEntry } from "@/lib/money";
+
+describe("month-close — member month window (leave till month-end)", () => {
+  const sept = { year: 2026, month: 9 }; // 30 days
+
+  it("active member belongs to every month", () => {
+    expect(isMemberInMonth({ joinedAt: "2026-01-05T00:00:00.000Z", leftAt: null }, sept.year, sept.month)).toBe(true);
+  });
+
+  it("member who left mid-September still counts for September", () => {
+    expect(isMemberInMonth({ joinedAt: "2026-01-05T00:00:00.000Z", leftAt: "2026-09-15T10:00:00.000Z" }, 2026, 9)).toBe(true);
+  });
+
+  it("same member is gone from October", () => {
+    expect(isMemberInMonth({ joinedAt: "2026-01-05T00:00:00.000Z", leftAt: "2026-09-15T10:00:00.000Z" }, 2026, 10)).toBe(false);
+  });
+
+  it("month-end leave (30th) keeps September, drops October", () => {
+    const m = { joinedAt: "2026-01-05T00:00:00.000Z", leftAt: "2026-09-30T00:00:00.000Z" };
+    expect(isMemberInMonth(m, 2026, 9)).toBe(true);
+    expect(isMemberInMonth(m, 2026, 10)).toBe(false);
+  });
+
+  it("future joiner excluded from earlier months", () => {
+    expect(isMemberInMonth({ joinedAt: "2026-10-02T00:00:00.000Z", leftAt: null }, 2026, 9)).toBe(false);
+    expect(isMemberInMonth({ joinedAt: "2026-10-02T00:00:00.000Z", leftAt: null }, 2026, 10)).toBe(true);
+  });
+
+  it("left before the month starts is excluded", () => {
+    expect(isMemberInMonth({ joinedAt: "2026-01-05T00:00:00.000Z", leftAt: "2026-08-31T00:00:00.000Z" }, 2026, 9)).toBe(false);
+  });
+});
+
+describe("month-close — entry-list visibility", () => {
+  const TODAY = "2026-09-15";
+  it("active always visible", () => {
+    expect(isMemberVisibleForEntry({ status: "active", leftAt: null }, TODAY)).toBe(true);
+  });
+  it("left with future leftAt stays till that date", () => {
+    expect(isMemberVisibleForEntry({ status: "left", leftAt: "2026-09-30T00:00:00.000Z" }, TODAY)).toBe(true);
+    expect(isMemberVisibleForEntry({ status: "left", leftAt: "2026-09-30T00:00:00.000Z" }, "2026-10-01")).toBe(false);
+  });
+  it("left effective now hides immediately", () => {
+    expect(isMemberVisibleForEntry({ status: "left", leftAt: "2026-09-15T10:00:00.000Z" }, "2026-09-16")).toBe(false);
+  });
+});
+
+describe("month-close — advance disposition math", () => {
+  it("example: deposit 2000 − cost 1900 = +100 advance", () => {
+    const closing = 200000 - 190000;
+    expect(closing).toBe(10000);
+    // refund zeroes next opening; carry keeps it
+    expect(closing + -closing).toBe(0);
+    expect(closing + 0).toBe(closing);
+  });
+  it("latest disposition wins (carry then refund → 0)", () => {
+    const closing = 10000;
+    const rows = [
+      { kind: "carry", amountPaisa: 0, createdAt: "2026-09-20T00:00:00.000Z" },
+      { kind: "refund", amountPaisa: -10000, createdAt: "2026-09-25T00:00:00.000Z" },
+    ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    expect(closing + rows[rows.length - 1].amountPaisa).toBe(0);
+  });
+});

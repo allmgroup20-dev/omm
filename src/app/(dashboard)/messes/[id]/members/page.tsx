@@ -82,7 +82,17 @@ export default function MembersPage() {
   }
   async function updateStatus(memberId: string, status: string) {
     if (!confirm(t("members.statusConfirm"))) return;
-    const res = await fetch(`/api/messes/${id}/members/${memberId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    const body: Record<string, string> = { status };
+    if (status === "left") {
+      // effective date: keep in lists till month-end, or leave right now
+      const keepTillEnd = confirm(t("members.leaveTiming"));
+      if (keepTillEnd) {
+        const now = new Date();
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        body.leftAt = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+      }
+    }
+    const res = await fetch(`/api/messes/${id}/members/${memberId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) alert(data.error);
     else load();

@@ -1,10 +1,27 @@
 import { getRequestDb } from "@/db";
-import { messes, messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, memberSettlements } from "@/db/schema";
+import { messes, messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, memberSettlements, settlementAdjustments } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { calcMealRate } from "./money";
 
 export type CostingModel = "food_only" | "food_plus_expenses" | "custom";
 export type Allocation = "equal" | "meal_proportional" | "member_specific" | "custom";
+
+/**
+ * Month-membership window: joined on/before month-end AND (never left OR
+ * left on/after month-start). A member marked left mid-month stays visible
+ * and counted till month-end, then drops from new months automatically.
+ */
+export function isMemberInMonth(
+  m: { joinedAt: string; leftAt: string | null },
+  year: number,
+  month: number,
+): boolean {
+  const mm = String(month).padStart(2, "0");
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const monthStart = `${year}-${mm}-01`;
+  const monthEnd = `${year}-${mm}-${daysInMonth}`;
+  return (m.joinedAt || "").slice(0, 10) <= monthEnd && (!m.leftAt || m.leftAt.slice(0, 10) >= monthStart);
+}
 
 export async function computeSettlement(messId: string, year: number, month: number) {
   const db = await getRequestDb();
@@ -20,7 +37,9 @@ export async function computeSettlement(messId: string, year: number, month: num
 
   // fetch
   const members = await db.select().from(messMembers).where(eq(messMembers.messId, messId));
-  const activeMembers = members.filter((m) => m.status === "active" || m.status === "left" || m.status === "archived"); // historical
+  // Month-window scoping (see isMemberInMonth): left members stay in past
+  // months till month-end, and vanish from new months automatically.
+  const activeMembers = members.filter((m) => isMemberInMonth(m, year, month));
 
   const marketRows = await db.select().from(marketEntries).where(eq(marketEntries.messId, messId));
   const expRows = await db.select().from(expenses).where(eq(expenses.messId, messId));
@@ -59,6 +78,11 @@ export async function computeSettlement(messId: string, year: number, month: num
       const memSett = await db.select().from(memberSettlements).where(eq(memberSettlements.settlementId, last.id));
       const found = memSett.find((ms) => ms.memberId === m.id);
       if (found) prevBalance = found.closingBalancePaisa;
+      // advance dispositions on the previous settlement (carry confirm = 0,
+      // refund = −closing): latest row per member wins
+      const adjRows = await db.select().from(settlementAdjustments).where(eq(settlementAdjustments.settlementId, last.id));
+      const mine = adjRows.filter((a) => a.memberId === m.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      if (mine.length) prevBalance += mine[mine.length - 1].amountPaisa;
     } else {
       // No previous settlement: use ledger balance before month (credits - meal costs not yet accounted)
       // For simplicity, use ledger current balance minus month deposits + month mealCost? But for first month, 0

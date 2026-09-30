@@ -706,6 +706,7 @@ export const settlementAdjustments = sqliteTable(
       .notNull()
       .references(() => messMembers.id, { onDelete: "restrict" }),
     amountPaisa: integer("amount_paisa").notNull(),
+    kind: text("kind").notNull().default("adjustment"), // carry|refund|adjustment (advance disposition)
     reason: text("reason").notNull(),
     createdBy: text("created_by").references(() => users.id),
     createdAt: text("created_at").notNull(),

@@ -56,6 +56,8 @@ export const createInvitationSchema = z.object({
 export const updateMemberSchema = z.object({
   role: z.enum(["member", "assistant_manager", "manager"]).optional(),
   status: z.enum(["active", "inactive", "suspended", "left", "archived"]).optional(),
+  // effective leave date (YYYY-MM-DD) — e.g. month-end; defaults to now when leaving
+  leftAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   isPrimaryManager: z.boolean().optional(),
   permissionsJson: z.string().optional(),
 });
