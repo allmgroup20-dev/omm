@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isShareTokenValid, pickValidShareToken, shareUrl } from "@/lib/share";
+import { isShareTokenValid, pickValidShareToken, shareUrl, dataUrlToBlob, TRANSPARENT_PNG } from "@/lib/share";
 
 const NOW = "2026-09-30T10:00:00.000Z";
 
@@ -39,5 +39,25 @@ describe("dashboard share — token reuse", () => {
   it("builds absolute share URL without double slash", () => {
     expect(shareUrl("https://omm.jobayergroup.com", "abc123")).toBe("https://omm.jobayergroup.com/share/abc123");
     expect(shareUrl("https://omm.jobayergroup.com/", "abc123")).toBe("https://omm.jobayergroup.com/share/abc123");
+  });
+});
+
+describe("screenshot — dataUrlToBlob without fetch", () => {
+  it("converts the transparent placeholder to a PNG blob", () => {
+    const blob = dataUrlToBlob(TRANSPARENT_PNG);
+    expect(blob.type).toBe("image/png");
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it("round-trips binary content exactly", () => {
+    // "hi" -> aGk= ; verifies chunked decoding, not just headers
+    const blob = dataUrlToBlob("data:image/png;base64,aGk=");
+    expect(blob.type).toBe("image/png");
+    expect(blob.size).toBe(2);
+  });
+
+  it("rejects malformed input instead of hanging", () => {
+    expect(() => dataUrlToBlob("not-a-data-url")).toThrow();
+    expect(() => dataUrlToBlob("data:image/png,abcdef")).toThrow(); // missing ;base64
   });
 });

@@ -7,7 +7,7 @@ import { Drawer } from "@/components/ui/drawers";
 import { classifyDashboardViewer } from "@/lib/money";
 import { useLocale } from "@/i18n/provider";
 import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
-import { pickValidShareToken, shareUrl } from "@/lib/share";
+import { pickValidShareToken, shareUrl, dataUrlToBlob, TRANSPARENT_PNG } from "@/lib/share";
 
 type Stats = {
   activeMembers: number;
@@ -175,17 +175,35 @@ export default function PublicDashboardPage() {
     setShareBusy(true);
     setShareMsg("");
     try {
-      const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(node, {
-        pixelRatio: 2,
+      let toPng: (node: HTMLElement, options?: Record<string, unknown>) => Promise<string>;
+      try {
+        ({ toPng } = await import("html-to-image"));
+      } catch {
+        throw new Error("লাইব্রেরি লোড হয়নি — নেট চেক করে আবার চেষ্টা করুন");
+      }
+      const opts = {
         cacheBust: true,
-        filter: (n) => !(n instanceof HTMLElement && n.dataset.shareIgnore === "true"),
-      });
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], `mess-dashboard-${ym}.png`, { type: "image/png" });
+        imagePlaceholder: TRANSPARENT_PNG,
+        filter: (n: unknown) => !(n instanceof HTMLElement && (n as HTMLElement).dataset.shareIgnore === "true"),
+      };
+      let dataUrl: string;
+      try {
+        dataUrl = await toPng(node, { ...opts, pixelRatio: 2 });
+      } catch {
+        // low-memory phones: retry at 1x before giving up
+        dataUrl = await toPng(node, { ...opts, pixelRatio: 1 });
+      }
+      const blob = dataUrlToBlob(dataUrl);
+      const file = new File([blob], `mess-dashboard-${ym}.png`, { type: blob.type || "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Manager Dashboard — ${ym}` });
-        setShareMsg("স্ক্রিনশট শেয়ার করা হয়েছে");
+        try {
+          await navigator.share({ files: [file], title: `Manager Dashboard — ${ym}` });
+          setShareMsg("স্ক্রিনশট শেয়ার করা হয়েছে");
+        } catch (e) {
+          // user dismissed the share sheet — not an error
+          if (e instanceof Error && e.name !== "AbortError") throw e;
+          setShareMsg("");
+        }
       } else {
         const a = document.createElement("a");
         a.href = dataUrl;
@@ -194,7 +212,7 @@ export default function PublicDashboardPage() {
         setShareMsg("ছবি ডাউনলোড হয়েছে — গ্যালারি থেকে শেয়ার করুন");
       }
     } catch (e) {
-      setShareMsg(e instanceof Error ? e.message : "স্ক্রিনশট ব্যর্থ — আবার চেষ্টা করুন");
+      setShareMsg(e instanceof Error ? e.message : "ছবি তৈরি হয়নি — আবার চেষ্টা করুন");
     } finally {
       setShareBusy(false);
     }
