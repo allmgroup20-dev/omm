@@ -4,6 +4,7 @@ import { getRequestDb } from "@/db";
 import { messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
+import { monthlyNetBalance } from "@/lib/money";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -73,12 +74,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const mealRatePaisa = finance.mealRatePaisa;
 
   const totalDeposits = deps.filter((r) => r.status === "active").reduce((a, r) => a + r.amountPaisa, 0);
-  // due/advance via balances API logic simplified: use ledger last balance per member
+  // due/advance: monthly net per member (month deposits − month meal cost),
+  // same formula as finance/balances. Ledger running balances are deposit-only
+  // (no meal_cost postings), so they must NOT be used for due/advance here.
   const perMemberBalances: Record<string, number> = {};
   for (const m of members) {
-    const ledgerForMember = ledgers.filter((r) => r.memberId === m.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    const bal = ledgerForMember.length ? ledgerForMember[ledgerForMember.length - 1].balancePaisa : 0;
-    perMemberBalances[m.id] = bal;
+    const mealsScaled = mealRows
+      .filter((r) => r.memberId === m.id && r.date.startsWith(`${ym}-`))
+      .reduce((a, r) => a + r.quantityScaled, 0);
+    const mealCostPaisa = Math.round((mealsScaled * mealRatePaisa) / 100);
+    const monthDepositPaisa = ledgers
+      .filter((r) => r.memberId === m.id && r.type === "deposit" && r.date.startsWith(`${ym}-`))
+      .reduce((a, r) => a + r.creditPaisa, 0);
+    perMemberBalances[m.id] = monthlyNetBalance(monthDepositPaisa, mealCostPaisa);
   }
   const totalDue = Object.values(perMemberBalances).filter((b) => b < 0).reduce((a, b) => a + Math.abs(b), 0);
   const totalAdvance = Object.values(perMemberBalances).filter((b) => b > 0).reduce((a, b) => a + b, 0);

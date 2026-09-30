@@ -41,3 +41,36 @@ export function calcMealRate(totalCostPaisa: number, totalMealsScaled: number): 
   // rate paisa per 1 meal = totalCostPaisa * 100 / totalMealsScaled
   return Math.round((totalCostPaisa * 100) / totalMealsScaled);
 }
+
+/**
+ * Monthly member balance = month deposits − month meal cost (all in paisa).
+ * + = advance (extra deposited), − = due (to collect), 0 = settled.
+ * Previous-month carry + other-expense allocation live on the settlement page,
+ * NOT here — ledger running balances are deposit-only (no meal_cost postings).
+ */
+export function monthlyNetBalance(depositPaisa: number, mealCostPaisa: number): number {
+  return depositPaisa - mealCostPaisa;
+}
+
+export function netBalanceStatus(netPaisa: number): "advance" | "due" | "settled" {
+  if (netPaisa > 0) return "advance";
+  if (netPaisa < 0) return "due";
+  return "settled";
+}
+
+/**
+ * Dashboard viewer classification (join prompt is ONLY for guests).
+ * - no account → "guest" (30s login/register nag allowed)
+ * - logged in + member of this mess → "member" (never nagged)
+ * - logged in + not a member → "outsider" (inline join button only, never nagged)
+ */
+export function classifyDashboardViewer(opts: {
+  hasUser: boolean;
+  memberOk: boolean;
+  isGuest: boolean;
+  hasTarget: boolean;
+}): "guest" | "member" | "outsider" {
+  if (!opts.hasUser) return "guest";
+  if (opts.memberOk && !opts.isGuest && opts.hasTarget) return "member";
+  return "outsider";
+}

@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Drawer } from "@/components/ui/drawers";
+import { classifyDashboardViewer } from "@/lib/money";
 
 type Stats = {
   activeMembers: number;
@@ -47,6 +48,7 @@ export default function PublicDashboardPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [user, setUser] = useState<{ id: string } | null>(null);
+  const [membership, setMembership] = useState<"unknown" | "guest" | "member" | "outsider">("unknown");
   const [showPrompt, setShowPrompt] = useState(false);
   const [joinMsg, setJoinMsg] = useState("");
   const [balances, setBalances] = useState<{ members: BalanceMember[]; mealRatePaisa: number; totals: { totalMeals: number; totalMarketPaisa: number; totalOtherPaisa: number } } | null>(null);
@@ -59,25 +61,52 @@ export default function PublicDashboardPage() {
 
   async function checkUser() {
     const r = await fetch("/api/auth/me").catch(() => null);
+    let u: { id: string } | null = null;
     if (r && r.ok) {
       const j = await r.json();
-      setUser(j.user || null);
-    } else setUser(null);
+      u = j.user || null;
+    }
+    setUser(u);
+    return u;
+  }
+
+  // Classify viewer: guest (no account) | member (in this mess) | outsider (logged in, not a member).
+  // Join nag prompt is ONLY for guests — members/outsiders are never nagged.
+  async function classifyViewer(u: { id: string } | null) {
+    if (!u) { setMembership("guest"); return; }
+    const mr = await fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).catch(() => null);
+    if (!mr || !mr.ok) { setMembership("outsider"); return; }
+    const d = await mr.json().catch(() => ({}));
+    setMembership(classifyDashboardViewer({
+      hasUser: true,
+      memberOk: true,
+      isGuest: !!d.guest,
+      hasTarget: !!d.targetMemberId && !d.error,
+    }));
+    if (!d.error && !d.guest && d.targetMemberId) setMemberDash(d);
   }
 
   useEffect(() => {
     fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); setDailyTrend(d.dailyTrend || []); } });
-    fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) setMemberDash(d); });
+    fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error && !d.guest) setMemberDash(d); });
     const [y, m] = ym.split("-").map(Number);
     fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`).then((r) => r.json()).then((d) => { if (!d.error) setBalances(d); });
   }, [id, ym]);
 
   useEffect(() => {
-    checkUser();
+    let cancelled = false;
+    (async () => {
+      const u = await checkUser();
+      if (!cancelled) classifyViewer(u);
+    })();
     const t = setTimeout(() => setShowPrompt(true), 30000);
-    const iv = setInterval(async () => { await checkUser(); setShowPrompt(true); }, 30000);
-    return () => { clearTimeout(t); clearInterval(iv); };
-  }, []);
+    const iv = setInterval(async () => {
+      const u = await checkUser();
+      if (!cancelled) classifyViewer(u);
+      setShowPrompt(true);
+    }, 30000);
+    return () => { cancelled = true; clearTimeout(t); clearInterval(iv); };
+  }, [id, ym]);
 
   async function requestJoin() {
     if (!user) { router.push(`/login?next=/messes/${id}/dashboard`); return; }
@@ -178,7 +207,7 @@ export default function PublicDashboardPage() {
                     <td className="py-3 px-2 text-center"><button onClick={() => setDrawer({ type: "member", member: m })} className="font-semibold hover:underline">{m.totalMeals}</button></td>
                     <td className="py-3 px-2 text-right font-mono text-xs">{fmt(m.mealCostPaisa)}</td>
                     <td className="py-3 px-2 text-right font-mono text-xs text-emerald-700">{fmt(m.depositPaisa)}</td>
-                    <td className="py-3 px-2 text-right font-mono text-xs font-semibold">{fmt(m.balancePaisa)}</td>
+                    <td className={`py-3 px-2 text-right font-mono text-xs font-semibold ${m.balancePaisa < 0 ? "text-red-600" : m.balancePaisa > 0 ? "text-emerald-700" : "text-zinc-500"}`}>{fmt(m.balancePaisa)}</td>
                     <td className="py-3 px-2 text-center"><span className={`inline-flex text-[11px] font-medium rounded-full px-2.5 py-1 ${m.status === "due" ? "bg-red-50 text-red-700 border border-red-200" : m.status === "advance" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-700 border"}`}>{m.status === "due" ? "বকেয়া" : m.status === "advance" ? "অগ্রিম" : "settled"}</span></td>
                   </tr>
                 ))}</tbody>
@@ -204,11 +233,17 @@ export default function PublicDashboardPage() {
             <div className="rounded-2xl border bg-white p-5 space-y-3">
               <div className="font-semibold text-sm">দ্রুত কাজ</div>
               <div className="text-xs text-zinc-500">{user ? `লগইন: ${user.id.slice(0,6)}` : "অতিথি — ৩০s পর লগইন প্রম্পট"}</div>
+              {membership === "outsider" && (
+                <div className="space-y-2">
+                  {joinMsg && <div className="rounded-xl border p-2 text-xs bg-zinc-50 break-all">{joinMsg}</div>}
+                  <button onClick={requestJoin} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm">Join Request পাঠান</button>
+                </div>
+              )}
             </div>
           </div>
         </>
       )}
-      {showPrompt && (
+      {showPrompt && membership === "guest" && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-3">
             <div className="font-semibold">এই মেসের মেম্বার হতে চান?</div>
