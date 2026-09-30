@@ -25,6 +25,18 @@ type BalanceMember = { memberId: string; userId: string | null; displayName: str
 
 function fmt(n: number) { return `৳${(n / 100).toFixed(2)}`; }
 
+function statusPill(status: string) {
+  return `inline-flex text-[11px] font-medium rounded-full px-2.5 py-1 ${status === "due" ? "bg-red-50 text-red-700 border border-red-200" : status === "advance" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-700 border"}`;
+}
+
+function statusLabel(status: string) {
+  return status === "due" ? "বকেয়া" : status === "advance" ? "অগ্রিম" : "settled";
+}
+
+function balanceColor(v: number) {
+  return v < 0 ? "text-red-600" : v > 0 ? "text-emerald-700" : "text-zinc-500";
+}
+
 function KpiCard({ icon, label, value, sub, onClick, accent }: { icon: string; label: string; value: string; sub: string; onClick: () => void; accent?: string }) {
   return (
     <button onClick={onClick} className={`text-left rounded-2xl border bg-white p-5 hover:shadow-sm hover:border-zinc-300 transition w-full group ${accent || ""}`}>
@@ -157,14 +169,14 @@ export default function PublicDashboardPage() {
   const monthLabel = (() => { const [yy, mm] = ym.split("-"); const d = new Date(Number(yy), Number(mm) - 1, 1); return d.toLocaleDateString("bn-BD", { month: "long", year: "numeric" }); })();
 
   return (
-    <div className="space-y-5 max-w-[1100px] mx-auto p-6">
+    <div className="space-y-4 sm:space-y-5 max-w-[1100px] mx-auto p-3 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[20px] font-bold tracking-tight">Manager Dashboard</h1>
           <div className="text-xs text-zinc-500 mt-1">চলমান মাস: <span className="font-medium text-zinc-700">{monthLabel} ({ym})</span> • এক নজরে পুরো মাসের সারাংশ — পাবলিক, প্রতি 30s লগইন প্রম্পট</div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white" />
+          <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white max-w-full" />
           <Link href={`/messes/${id}`} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50">Overview</Link>
           <Link href={`/messes/${id}/analytics`} className="px-4 py-2 rounded-full text-sm bg-zinc-900 text-white">Analytics →</Link>
         </div>
@@ -196,29 +208,52 @@ export default function PublicDashboardPage() {
             <span className="text-zinc-300">•</span>
             <span className="text-red-600">বকেয়া <b>{fmt(stats.totalDuePaisa)}</b></span>
           </div>
-          <div className="rounded-2xl border bg-white p-5">
+          <div className="rounded-2xl border bg-white p-3 sm:p-5">
             <div className="font-semibold text-sm">👥 সদস্য হিসাব — {ym}</div>
-            <div className="overflow-x-auto mt-4 -mx-1">
-              <table className="w-full text-sm">
+            {/* Desktop/tablet: full table */}
+            <div className="hidden sm:block overflow-x-auto mt-4">
+              <table className="w-full text-sm min-w-[560px]">
                 <thead><tr className="text-[11px] text-zinc-500 border-b"><th className="text-left font-medium py-2 px-2">সদস্য</th><th className="text-center font-medium py-2 px-2">মিল</th><th className="text-right font-medium py-2 px-2">মিল খরচ</th><th className="text-right font-medium py-2 px-2">জমা</th><th className="text-right font-medium py-2 px-2">ব্যালেন্স</th><th className="text-center font-medium py-2 px-2">অবস্থা</th></tr></thead>
                 <tbody>{(balances?.members || []).map((m) => (
                   <tr key={m.memberId} className="border-b last:border-0 hover:bg-zinc-50/70">
-                    <td className="py-3 px-2"><button onClick={() => setDrawer({ type: "member", member: m })} className="flex items-center gap-2.5 text-left group"><span className="w-8 h-8 rounded-full bg-zinc-900 text-white grid place-items-center text-xs font-semibold shrink-0">{m.displayName.trim().charAt(0).toUpperCase()}</span><span className="font-medium group-hover:underline text-[13px]">{m.displayName}</span></button></td>
-                    <td className="py-3 px-2 text-center"><button onClick={() => setDrawer({ type: "member", member: m })} className="font-semibold hover:underline">{m.totalMeals}</button></td>
+                    <td className="py-3 px-2"><button onClick={() => setDrawer({ type: "member", member: m })} className="flex items-center gap-2.5 text-left group min-w-0 min-h-0"><span className="w-8 h-8 rounded-full bg-zinc-900 text-white grid place-items-center text-xs font-semibold shrink-0">{m.displayName.trim().charAt(0).toUpperCase()}</span><span className="font-medium group-hover:underline text-[13px]">{m.displayName}</span></button></td>
+                    <td className="py-3 px-2 text-center"><button onClick={() => setDrawer({ type: "member", member: m })} className="font-semibold hover:underline min-w-0 min-h-0">{m.totalMeals}</button></td>
                     <td className="py-3 px-2 text-right font-mono text-xs">{fmt(m.mealCostPaisa)}</td>
                     <td className="py-3 px-2 text-right font-mono text-xs text-emerald-700">{fmt(m.depositPaisa)}</td>
-                    <td className={`py-3 px-2 text-right font-mono text-xs font-semibold ${m.balancePaisa < 0 ? "text-red-600" : m.balancePaisa > 0 ? "text-emerald-700" : "text-zinc-500"}`}>{fmt(m.balancePaisa)}</td>
-                    <td className="py-3 px-2 text-center"><span className={`inline-flex text-[11px] font-medium rounded-full px-2.5 py-1 ${m.status === "due" ? "bg-red-50 text-red-700 border border-red-200" : m.status === "advance" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-700 border"}`}>{m.status === "due" ? "বকেয়া" : m.status === "advance" ? "অগ্রিম" : "settled"}</span></td>
+                    <td className={`py-3 px-2 text-right font-mono text-xs font-semibold ${balanceColor(m.balancePaisa)}`}>{fmt(m.balancePaisa)}</td>
+                    <td className="py-3 px-2 text-center"><span className={statusPill(m.status)}>{statusLabel(m.status)}</span></td>
                   </tr>
                 ))}</tbody>
               </table>
-              {(!balances || balances.members.length === 0) && <div className="p-8 text-center text-xs text-zinc-500">এই মাসে হিসাব নেই — মিল/বাজার/জমা যোগ করুন</div>}
             </div>
+            {/* Mobile: compact cards, no sideways scroll */}
+            <div className="sm:hidden mt-3 space-y-2">
+              {(balances?.members || []).map((m) => (
+                <button key={m.memberId} onClick={() => setDrawer({ type: "member", member: m })} className="w-full text-left rounded-xl border bg-white px-3 py-2.5 space-y-1.5 active:bg-zinc-50">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-xs font-semibold shrink-0">{m.displayName.trim().charAt(0).toUpperCase()}</span>
+                      <span className="font-medium text-[13px] truncate">{m.displayName}</span>
+                    </span>
+                    <span className={`${statusPill(m.status)} shrink-0`}>{statusLabel(m.status)}</span>
+                  </span>
+                  <span className="flex items-center justify-between gap-2 text-xs text-zinc-600">
+                    <span className="truncate">{m.totalMeals} মিল • খরচ {fmt(m.mealCostPaisa)}</span>
+                    <span className="shrink-0">জমা {fmt(m.depositPaisa)}</span>
+                  </span>
+                  <span className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-zinc-500">ব্যালেন্স</span>
+                    <span className={`font-mono font-bold ${balanceColor(m.balancePaisa)}`}>{fmt(m.balancePaisa)}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {(!balances || balances.members.length === 0) && <div className="p-8 text-center text-xs text-zinc-500">এই মাসে হিসাব নেই — মিল/বাজার/জমা যোগ করুন</div>}
           </div>
-          <div className="grid lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 rounded-2xl border bg-white p-5">
+          <div className="grid lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="lg:col-span-2 min-w-0 rounded-2xl border bg-white p-3 sm:p-5">
               <div className="font-semibold text-sm">দৈনিক খরচ — {ym}</div>
-              <div className="h-[200px] mt-3">
+              <div className="h-[180px] sm:h-[200px] mt-3">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyTrend} onClick={(e: unknown) => { const ev = e as { activeLabel?: string } | null; if (ev?.activeLabel) { const full = `${ym}-${ev.activeLabel}`; window.location.href = `/messes/${id}/market/entries?date=${full}`; } }}>
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
@@ -230,7 +265,7 @@ export default function PublicDashboardPage() {
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="rounded-2xl border bg-white p-5 space-y-3">
+            <div className="min-w-0 rounded-2xl border bg-white p-3 sm:p-5 space-y-3">
               <div className="font-semibold text-sm">দ্রুত কাজ</div>
               <div className="text-xs text-zinc-500">{user ? `লগইন: ${user.id.slice(0,6)}` : "অতিথি — ৩০s পর লগইন প্রম্পট"}</div>
               {membership === "outsider" && (
@@ -263,7 +298,7 @@ export default function PublicDashboardPage() {
         <div className="space-y-2">{(balances?.members || []).slice().sort((a, b) => b.totalMeals - a.totalMeals).map((m) => <button key={m.memberId} onClick={() => setDrawer({ type: "member", member: m })} className="w-full flex items-center justify-between rounded-xl border bg-white px-3 py-2.5 hover:bg-zinc-50 text-left"><span className="flex items-center gap-2.5"><span className="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-xs">{m.displayName.charAt(0).toUpperCase()}</span><span className="text-sm font-medium">{m.displayName}</span></span><span className="text-sm font-bold">{m.totalMeals} মিল</span></button>)} {!balances?.members.length && <div className="text-sm text-zinc-500">মিল নেই</div>}</div>
       </Drawer>
       <Drawer open={drawer?.type === "deposits"} onClose={() => setDrawer(null)} title={`মোট জমা — ${ym}`} subtitle={`${fmt(stats?.totalDepositPaisa || 0)}`}>
-        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (drawerData.deposits?.length ? <div className="space-y-2">{drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50/60 px-3 py-2"><span className="text-sm">{d.displayName} • <span className="text-xs text-zinc-500">{d.date}</span></span><span className="text-sm font-semibold text-emerald-700">{fmt(d.amountPaisa)}</span></div>)}<a href={`/messes/${id}/finance/deposits`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50">জমা পেজ →</a></div> : <div className="space-y-2">{(balances?.members || []).filter((m) => m.depositPaisa > 0).map((m) => <div key={m.memberId} className="flex justify-between rounded-xl border px-3 py-2"><span className="text-sm">{m.displayName}</span><span className="text-sm font-semibold text-emerald-700">{fmt(m.depositPaisa)}</span></div>)}{!(balances?.members || []).some((m) => m.depositPaisa > 0) && <div className="text-sm text-zinc-500">এই মাসে জমা নেই</div>}</div>)}
+        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (drawerData.deposits?.length ? <div className="space-y-2">{drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between items-center gap-2 rounded-xl border bg-emerald-50/60 px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{d.displayName} • <span className="text-xs text-zinc-500">{d.date}</span></span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(d.amountPaisa)}</span></div>)}<a href={`/messes/${id}/finance/deposits`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50">জমা পেজ →</a></div> : <div className="space-y-2">{(balances?.members || []).filter((m) => m.depositPaisa > 0).map((m) => <div key={m.memberId} className="flex justify-between items-center gap-2 rounded-xl border px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{m.displayName}</span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(m.depositPaisa)}</span></div>)}{!(balances?.members || []).some((m) => m.depositPaisa > 0) && <div className="text-sm text-zinc-500">এই মাসে জমা নেই</div>}</div>)}
       </Drawer>
       <Drawer open={drawer?.type === "rate"} onClose={() => setDrawer(null)} title="মিল রেট — হিসাব" subtitle="খরচ ÷ মিল">
         <div className="rounded-2xl border bg-zinc-50 p-4 space-y-2 text-sm"><div className="flex justify-between"><span className="text-zinc-600">মোট বাজার</span><b>{fmt(stats?.monthMarketPaisa || 0)}</b></div><div className="flex justify-between"><span className="text-zinc-600">অন্যান্য</span><b>{fmt(stats?.monthOtherPaisa || 0)}</b></div><div className="flex justify-between"><span className="text-zinc-600">সর্বমোট খরচ</span><b>{fmt(stats?.monthTotalPaisa || 0)}</b></div><div className="border-t pt-2 flex justify-between"><span className="text-zinc-600">মোট মিল</span><b>{totalMeals}</b></div><div className="flex justify-between text-emerald-700"><span>মিল রেট</span><b>{fmt(stats?.mealRatePaisa || 0)} = বাজার ÷ মিল</b></div></div>
