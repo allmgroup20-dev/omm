@@ -19,11 +19,9 @@ type Stats = {
   monthMarketPaisa: number;
   monthOtherPaisa: number;
   monthTotalPaisa: number;
-  totalDepositPaisa: number;
+  monthDepositPaisa: number;
   totalDuePaisa: number;
   totalAdvancePaisa: number;
-  lifetimeMarketPaisa: number;
-  lifetimeOtherPaisa: number;
   cashInHandPaisa: number;
 };
 
@@ -301,7 +299,7 @@ export default function PublicDashboardPage() {
             <KpiCard icon="🛒" label="মোট বাজার" value={fmt(stats.monthMarketPaisa)} sub={`${monthLabel} • ক্লিক করে কী কী বাজার হয়েছে দেখুন`} onClick={() => setDrawer({ type: "market" })} />
             <KpiCard icon="🍚" label="মোট মিল" value={`${totalMeals} টি`} sub={`${stats.activeMembers} জন • গড় ${(totalMeals && stats.activeMembers) ? (totalMeals / stats.activeMembers).toFixed(1) : "0"} / জন • ক্লিক করে per-member`} onClick={() => setDrawer({ type: "meals" })} />
             <KpiCard icon="⚖️" label="মিল রেট" value={fmt(stats.mealRatePaisa)} sub={`বাজার ${fmt(stats.monthMarketPaisa)} ÷ ${totalMeals} মিল • ক্লিক করে ফর্মুলা`} onClick={() => setDrawer({ type: "rate" })} />
-            <KpiCard icon="💰" label="মোট জমা" value={fmt(stats.totalDepositPaisa)} sub={`${balances?.members.filter((m) => m.depositPaisa > 0).length || 0} জন জমা দিয়েছে • ক্লিক করে তালিকা`} onClick={() => setDrawer({ type: "deposits" })} />
+            <KpiCard icon="💰" label="মোট জমা" value={fmt(stats.monthDepositPaisa)} sub={`${balances?.members.filter((m) => m.depositPaisa > 0).length || 0} জন জমা দিয়েছে • ক্লিক করে তালিকা`} onClick={() => setDrawer({ type: "deposits" })} />
           </div>
           <button onClick={() => setDrawer({ type: "cash" })} className="w-full text-left rounded-2xl border bg-white px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs hover:border-zinc-300 transition">
             <span className={stats.cashInHandPaisa < 0 ? "text-red-600" : "text-emerald-700"}>{t("dashboard.cashInHand")} <b>{fmt(stats.cashInHandPaisa)}</b></span>
@@ -460,7 +458,7 @@ export default function PublicDashboardPage() {
       <Drawer open={drawer?.type === "meals"} onClose={() => setDrawer(null)} title={`মোট মিল — ${ym}`} subtitle={`${totalMeals} মিল • ${balances?.members.length || 0} জন`}>
         <div className="space-y-2">{(balances?.members || []).slice().sort((a, b) => b.totalMeals - a.totalMeals).map((m) => <button key={m.memberId} onClick={() => setDrawer({ type: "member", member: m })} className="w-full flex items-center justify-between rounded-xl border bg-white px-3 py-2.5 hover:bg-zinc-50 text-left"><span className="flex items-center gap-2.5"><span className="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-xs">{m.displayName.charAt(0).toUpperCase()}</span><span className="text-sm font-medium">{m.displayName}</span></span><span className="text-sm font-bold">{m.totalMeals} মিল</span></button>)} {!balances?.members.length && <div className="text-sm text-zinc-500">মিল নেই</div>}</div>
       </Drawer>
-      <Drawer open={drawer?.type === "deposits"} onClose={() => setDrawer(null)} title={`মোট জমা — ${ym}`} subtitle={`${fmt(stats?.totalDepositPaisa || 0)}`}>
+      <Drawer open={drawer?.type === "deposits"} onClose={() => setDrawer(null)} title={`মোট জমা — ${ym}`} subtitle={`${fmt(stats?.monthDepositPaisa || 0)}`}>
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (drawerData.deposits?.length ? <div className="space-y-2">{drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between items-center gap-2 rounded-xl border bg-emerald-50/60 px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{d.displayName} • <span className="text-xs text-zinc-500">{d.date}</span></span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(d.amountPaisa)}</span></div>)}<a href={`/messes/${id}/finance/deposits`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50">জমা পেজ →</a></div> : <div className="space-y-2">{(balances?.members || []).filter((m) => m.depositPaisa > 0).map((m) => <div key={m.memberId} className="flex justify-between items-center gap-2 rounded-xl border px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{m.displayName}</span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(m.depositPaisa)}</span></div>)}{!(balances?.members || []).some((m) => m.depositPaisa > 0) && <div className="text-sm text-zinc-500">এই মাসে জমা নেই</div>}</div>)}
       </Drawer>
       <Drawer open={drawer?.type === "rate"} onClose={() => setDrawer(null)} title="মিল রেট — হিসাব" subtitle="খরচ ÷ মিল">
@@ -468,9 +466,9 @@ export default function PublicDashboardPage() {
       </Drawer>
       <Drawer open={drawer?.type === "cash"} onClose={() => setDrawer(null)} title={t("dashboard.cashTitle")} subtitle={`${fmt(stats?.cashInHandPaisa || 0)}`}>
         <div className="rounded-2xl border bg-zinc-50 p-4 space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashDeposits")}</span><b className="text-emerald-700">+ {fmt(stats?.totalDepositPaisa || 0)}</b></div>
-          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashMarket")}</span><b>− {fmt(stats?.lifetimeMarketPaisa || 0)}</b></div>
-          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashOther")}</span><b>− {fmt(stats?.lifetimeOtherPaisa || 0)}</b></div>
+          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashDeposits")}</span><b className="text-emerald-700">+ {fmt(stats?.monthDepositPaisa || 0)}</b></div>
+          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashMarket")}</span><b>− {fmt(stats?.monthMarketPaisa || 0)}</b></div>
+          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashOther")}</span><b>− {fmt(stats?.monthOtherPaisa || 0)}</b></div>
           <div className="border-t pt-2 flex justify-between"><span className="font-medium">{t("dashboard.cashInHand")}</span><b className={(stats?.cashInHandPaisa || 0) < 0 ? "text-red-600" : "text-emerald-700"}>{fmt(stats?.cashInHandPaisa || 0)}</b></div>
         </div>
       </Drawer>

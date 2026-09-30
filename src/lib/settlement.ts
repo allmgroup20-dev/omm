@@ -23,6 +23,13 @@ export function isMemberInMonth(
   return (m.joinedAt || "").slice(0, 10) <= monthEnd && (!m.leftAt || m.leftAt.slice(0, 10) >= monthStart);
 }
 
+/** Shared by settlement, balances and dashboard: only members in this month. */
+export function filterMembersForMonth<
+  T extends { joinedAt: string; leftAt: string | null },
+>(members: T[], year: number, month: number): T[] {
+  return members.filter((m) => isMemberInMonth(m, year, month));
+}
+
 export async function computeSettlement(messId: string, year: number, month: number) {
   const db = await getRequestDb();
   const messRows = await db.select().from(messes).where(eq(messes.id, messId)).limit(1);
@@ -39,7 +46,7 @@ export async function computeSettlement(messId: string, year: number, month: num
   const members = await db.select().from(messMembers).where(eq(messMembers.messId, messId));
   // Month-window scoping (see isMemberInMonth): left members stay in past
   // months till month-end, and vanish from new months automatically.
-  const activeMembers = members.filter((m) => isMemberInMonth(m, year, month));
+  const activeMembers = filterMembersForMonth(members, year, month);
 
   const marketRows = await db.select().from(marketEntries).where(eq(marketEntries.messId, messId));
   const expRows = await db.select().from(expenses).where(eq(expenses.messId, messId));

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa } from "@/lib/money";
+import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa, sumMonthDeposits } from "@/lib/money";
 import { rawDicts, leafKeys } from "@/i18n/dict";
+import { filterMembersForMonth } from "@/lib/settlement";
 
 describe("manager dashboard — monthly net balance (deposit − meal cost)", () => {
   it("advance when deposit exceeds meal cost", () => {
@@ -84,5 +85,39 @@ describe("manager dashboard — cash in hand (lifetime deposits − lifetime spe
       expect(bnKeys.has(k)).toBe(true);
       expect(enKeys.has(k)).toBe(true);
     }
+  });
+});
+
+describe("dashboard month isolation — fresh start every month", () => {
+  const deposits = [
+    { status: "active", date: "2026-09-05", amountPaisa: 500000 },
+    { status: "active", date: "2026-09-20", amountPaisa: 300000 },
+    { status: "voided", date: "2026-09-21", amountPaisa: 999000 },
+    { status: "active", date: "2026-10-02", amountPaisa: 200000 },
+  ];
+
+  it("September total excludes October deposits and voided rows", () => {
+    expect(sumMonthDeposits(deposits, "2026-09")).toBe(800000);
+  });
+
+  it("October starts fresh — September deposits never leak in", () => {
+    expect(sumMonthDeposits(deposits, "2026-10")).toBe(200000);
+  });
+
+  it("empty month shows zero, not lifetime", () => {
+    expect(sumMonthDeposits(deposits, "2026-11")).toBe(0);
+  });
+
+  it("left member stays in September, vanishes in October", () => {
+    const members = [
+      { id: "a", joinedAt: "2026-01-01T00:00:00.000Z", leftAt: null },
+      { id: "b", joinedAt: "2026-01-01T00:00:00.000Z", leftAt: "2026-09-30T00:00:00.000Z" },
+    ];
+    expect(filterMembersForMonth(members, 2026, 9).map((m) => m.id)).toEqual(["a", "b"]);
+    expect(filterMembersForMonth(members, 2026, 10).map((m) => m.id)).toEqual(["a"]);
+  });
+
+  it("monthly cash = month deposits − month spend", () => {
+    expect(cashInHandPaisa(200000, 150000, 20000)).toBe(30000);
   });
 });

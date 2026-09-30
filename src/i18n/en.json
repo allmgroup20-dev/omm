@@ -121,7 +121,7 @@
     "role": "Role",
     "account": "Account",
     "cashInHand": "Cash in Hand",
-    "cashTitle": "Cash Breakdown — Lifetime",
+    "cashTitle": "Cash Breakdown — This Month",
     "cashDeposits": "Total Deposits",
     "cashMarket": "Total Market",
     "cashOther": "Other Expenses"

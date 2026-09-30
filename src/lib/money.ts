@@ -59,12 +59,26 @@ export function netBalanceStatus(netPaisa: number): "advance" | "due" | "settled
 }
 
 /**
- * Cash in hand right now (lifetime): all active deposits minus all spending
- * (active market + approved other expenses). All in paisa.
- * Negative = deficit (manager paid out of pocket).
+ * Cash in hand = deposits minus spending (market + other), all in paisa.
+ * Scope-agnostic: pass lifetime figures for lifetime cash, or month figures
+ * for the monthly surplus. Negative = deficit.
  */
 export function cashInHandPaisa(totalDepositPaisa: number, lifetimeMarketPaisa: number, lifetimeOtherPaisa: number): number {
   return totalDepositPaisa - lifetimeMarketPaisa - lifetimeOtherPaisa;
+}
+
+/**
+ * Month-scoped deposit sum: a month's report shows only that month's active
+ * deposits (fresh start — previous months never leak in).
+ */
+export function sumMonthDeposits(
+  rows: { status: string; date: string; amountPaisa: number }[],
+  ym: string,
+): number {
+  const prefix = `${ym}-`;
+  return rows
+    .filter((r) => r.status === "active" && r.date.startsWith(prefix))
+    .reduce((a, r) => a + r.amountPaisa, 0);
 }
 
 /**

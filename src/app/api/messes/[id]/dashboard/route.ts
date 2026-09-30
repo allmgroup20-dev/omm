@@ -4,7 +4,8 @@ import { getRequestDb } from "@/db";
 import { messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, messes } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
-import { monthlyNetBalance, cashInHandPaisa } from "@/lib/money";
+import { monthlyNetBalance, cashInHandPaisa, sumMonthDeposits } from "@/lib/money";
+import { filterMembersForMonth } from "@/lib/settlement";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -75,16 +76,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const finance = await computeMonthlyFinance(id, year, month);
   const mealRatePaisa = finance.mealRatePaisa;
 
-  const totalDeposits = deps.filter((r) => r.status === "active").reduce((a, r) => a + r.amountPaisa, 0);
-  // Cash in hand (lifetime): everything collected minus everything spent.
-  const lifetimeMarketPaisa = markets.filter((r) => r.status === "active").reduce((a, r) => a + r.finalPaisa, 0);
-  const lifetimeOtherPaisa = exps.filter((r) => r.status === "approved").reduce((a, r) => a + r.amountPaisa, 0);
-  const cashInHand = cashInHandPaisa(totalDeposits, lifetimeMarketPaisa, lifetimeOtherPaisa);
+  // Month-scoped deposits: a month's report shows only that month (fresh start).
+  const monthDepositPaisa = sumMonthDeposits(deps, ym);
+  // Cash in hand (this month): month collections minus month spending.
+  const cashInHand = cashInHandPaisa(monthDepositPaisa, monthMarketTotal, monthOtherTotal);
   // due/advance: monthly net per member (month deposits − month meal cost),
   // same formula as finance/balances. Ledger running balances are deposit-only
   // (no meal_cost postings), so they must NOT be used for due/advance here.
   const perMemberBalances: Record<string, number> = {};
-  for (const m of members) {
+  for (const m of filterMembersForMonth(members, year, month)) {
     const mealsScaled = mealRows
       .filter((r) => r.memberId === m.id && r.date.startsWith(`${ym}-`))
       .reduce((a, r) => a + r.quantityScaled, 0);
@@ -144,11 +144,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       monthMarketPaisa: monthMarketTotal,
       monthOtherPaisa: monthOtherTotal,
       monthTotalPaisa: monthExpenseTotal,
-      totalDepositPaisa: totalDeposits,
+      monthDepositPaisa,
       totalDuePaisa: totalDue,
       totalAdvancePaisa: totalAdvance,
-      lifetimeMarketPaisa,
-      lifetimeOtherPaisa,
       cashInHandPaisa: cashInHand,
     },
     insights,

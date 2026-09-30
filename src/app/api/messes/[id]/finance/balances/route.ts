@@ -5,6 +5,7 @@ import { messMembers, ledgerEntries, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, netBalanceStatus } from "@/lib/money";
+import { filterMembersForMonth } from "@/lib/settlement";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,7 +22,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const month = Number(url.searchParams.get("month"));
   if (!year || !month) return NextResponse.json({ error: "year and month required" }, { status: 400 });
 
-  const members = await db.select().from(messMembers).where(eq(messMembers.messId, id));
+  // Month-window scoping: left members stay till month-end, vanish next month.
+  const members = filterMembersForMonth(
+    await db.select().from(messMembers).where(eq(messMembers.messId, id)),
+    year,
+    month,
+  );
   const finance = await computeMonthlyFinance(id, year, month);
   const { mealRatePaisa } = finance;
 
