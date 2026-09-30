@@ -27,7 +27,7 @@ export function Drawer({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div data-share-ignore="true" className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" onClick={onClose} aria-hidden />
       <div className="relative w-[92%] max-w-[560px] h-full bg-white rounded-l-2xl shadow-xl flex flex-col animate-[slideIn_0.22s_ease]">
         <div className="shrink-0 border-b px-5 py-4 flex items-start justify-between gap-3">

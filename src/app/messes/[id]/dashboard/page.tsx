@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -7,6 +7,7 @@ import { Drawer } from "@/components/ui/drawers";
 import { classifyDashboardViewer } from "@/lib/money";
 import { useLocale } from "@/i18n/provider";
 import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
+import { pickValidShareToken, shareUrl } from "@/lib/share";
 
 type Stats = {
   activeMembers: number;
@@ -77,6 +78,9 @@ export default function PublicDashboardPage() {
   const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash"; member?: BalanceMember }>(null);
   const [drawerData, setDrawerData] = useState<{ marketEntries?: MarketDrawerEntry[]; vendorMap?: Record<string, string>; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
+  const [shareMsg, setShareMsg] = useState("");
+  const [shareBusy, setShareBusy] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   function toggleDate(ds: string) {
     setExpandedDates((prev) => (prev.includes(ds) ? prev.filter((d) => d !== ds) : [...prev, ds]));
   }
@@ -138,6 +142,64 @@ export default function PublicDashboardPage() {
     else { setJoinMsg("Request sent — manager will approve"); setTimeout(() => setShowPrompt(false), 2000); }
   }
 
+  async function shareLink() {
+    setShareBusy(true);
+    setShareMsg("");
+    try {
+      let token: string | null = null;
+      const listed = await fetch(`/api/messes/${id}/share`).then((r) => r.json().catch(() => ({})));
+      if (Array.isArray(listed.tokens)) token = pickValidShareToken(listed.tokens);
+      if (!token) {
+        const created = await fetch(`/api/messes/${id}/share`, { method: "POST" }).then((r) => r.json().catch(() => ({})));
+        if (created.token) token = created.token as string;
+        else throw new Error(created.error || "শেয়ার লিংক বানানো যায়নি");
+      }
+      const url = shareUrl(window.location.origin, token);
+      if (navigator.share) {
+        await navigator.share({ title: `Manager Dashboard — ${ym}`, url });
+        setShareMsg("শেয়ার করা হয়েছে");
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareMsg(`লিংক কপি হয়েছে: ${url}`);
+      }
+    } catch (e) {
+      setShareMsg(e instanceof Error ? e.message : "শেয়ার ব্যর্থ — আবার চেষ্টা করুন");
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
+  async function shareShot() {
+    const node = contentRef.current;
+    if (!node) return;
+    setShareBusy(true);
+    setShareMsg("");
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,
+        cacheBust: true,
+        filter: (n) => !(n instanceof HTMLElement && n.dataset.shareIgnore === "true"),
+      });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `mess-dashboard-${ym}.png`, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Manager Dashboard — ${ym}` });
+        setShareMsg("স্ক্রিনশট শেয়ার করা হয়েছে");
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `mess-dashboard-${ym}.png`;
+        a.click();
+        setShareMsg("ছবি ডাউনলোড হয়েছে — গ্যালারি থেকে শেয়ার করুন");
+      }
+    } catch (e) {
+      setShareMsg(e instanceof Error ? e.message : "স্ক্রিনশট ব্যর্থ — আবার চেষ্টা করুন");
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (!drawer) return;
     const [y, m] = ym.split("-").map(Number);
@@ -186,18 +248,23 @@ export default function PublicDashboardPage() {
   const monthLabel = (() => { const [yy, mm] = ym.split("-"); const d = new Date(Number(yy), Number(mm) - 1, 1); return d.toLocaleDateString("bn-BD", { month: "long", year: "numeric" }); })();
 
   return (
-    <div className="space-y-4 sm:space-y-5 max-w-[1100px] mx-auto p-3 sm:p-6">
+    <div ref={contentRef} className="space-y-4 sm:space-y-5 max-w-[1100px] mx-auto p-3 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[20px] font-bold tracking-tight">Manager Dashboard</h1>
-          <div className="text-xs text-zinc-500 mt-1">চলমান মাস: <span className="font-medium text-zinc-700">{monthLabel} ({ym})</span> • এক নজরে পুরো মাসের সারাংশ — পাবলিক, প্রতি 30s লগইন প্রম্পট</div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white max-w-full" />
-          <Link href={`/messes/${id}`} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50">Overview</Link>
-          <Link href={`/messes/${id}/analytics`} className="px-4 py-2 rounded-full text-sm bg-zinc-900 text-white">Analytics →</Link>
+          <Link href={`/messes/${id}`} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] inline-flex items-center">Overview</Link>
+          {membership === "member" && (
+            <>
+              <button onClick={shareLink} disabled={shareBusy} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] disabled:opacity-50">🔗 শেয়ার লিংক</button>
+              <button onClick={shareShot} disabled={shareBusy} className="px-4 py-2 rounded-full text-sm bg-zinc-900 text-white min-h-[44px] disabled:opacity-50">{shareBusy ? "তৈরি হচ্ছে..." : "📸 শেয়ার স্ক্রিনশট"}</button>
+            </>
+          )}
         </div>
       </div>
+      {shareMsg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{shareMsg}</div>}
 
       {!stats ? <div className="bg-white border rounded-2xl p-10 text-center text-sm">লোড হচ্ছে...</div> : (
         <>
@@ -298,7 +365,7 @@ export default function PublicDashboardPage() {
         </>
       )}
       {showPrompt && membership === "guest" && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+        <div data-share-ignore="true" className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-3">
             <div className="font-semibold">এই মেসের মেম্বার হতে চান?</div>
             <p className="text-sm text-zinc-600">প্রতি ৩০ সেকেন্ডে অ্যাকাউন্ট খুলতে বলা হচ্ছে — লগইন/রেজিস্টার করলে এই মেসে join request যাবে, ম্যানেজার approve করলে মেম্বার হবেন</p>
