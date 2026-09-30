@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Drawer } from "@/components/ui/drawers";
 import { classifyDashboardViewer } from "@/lib/money";
+import { useLocale } from "@/i18n/provider";
 
 type Stats = {
   activeMembers: number;
@@ -19,6 +20,9 @@ type Stats = {
   totalDepositPaisa: number;
   totalDuePaisa: number;
   totalAdvancePaisa: number;
+  lifetimeMarketPaisa: number;
+  lifetimeOtherPaisa: number;
+  cashInHandPaisa: number;
 };
 
 type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string };
@@ -55,6 +59,7 @@ function KpiCard({ icon, label, value, sub, onClick, accent }: { icon: string; l
 export default function PublicDashboardPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useLocale();
   const [ym, setYm] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -68,7 +73,7 @@ export default function PublicDashboardPage() {
   const [insights, setInsights] = useState<string[]>([]);
   const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
   const [memberDash, setMemberDash] = useState<{ todayMeals: number; monthMeals: number; currentBalancePaisa: number; dueAdvance: string } | null>(null);
-  const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member"; member?: BalanceMember }>(null);
+  const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash"; member?: BalanceMember }>(null);
   const [drawerData, setDrawerData] = useState<{ marketEntries?: { date: string; finalPaisa: number; items: { productNameSnapshot: string }[]; purchaserNames: string[] }[]; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
 
   async function checkUser() {
@@ -199,15 +204,17 @@ export default function PublicDashboardPage() {
             <KpiCard icon="⚖️" label="মিল রেট" value={fmt(stats.mealRatePaisa)} sub={`বাজার ${fmt(stats.monthMarketPaisa)} ÷ ${totalMeals} মিল • ক্লিক করে ফর্মুলা`} onClick={() => setDrawer({ type: "rate" })} />
             <KpiCard icon="💰" label="মোট জমা" value={fmt(stats.totalDepositPaisa)} sub={`${balances?.members.filter((m) => m.depositPaisa > 0).length || 0} জন জমা দিয়েছে • ক্লিক করে তালিকা`} onClick={() => setDrawer({ type: "deposits" })} />
           </div>
-          <div className="rounded-2xl border bg-white px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
-            <span className="text-zinc-600">অন্যান্য খরচ <b className="text-zinc-900">{fmt(stats.monthOtherPaisa)}</b></span>
+          <button onClick={() => setDrawer({ type: "cash" })} className="w-full text-left rounded-2xl border bg-white px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs hover:border-zinc-300 transition">
+            <span className={stats.cashInHandPaisa < 0 ? "text-red-600" : "text-emerald-700"}>{t("dashboard.cashInHand")} <b>{fmt(stats.cashInHandPaisa)}</b></span>
             <span className="text-zinc-300">•</span>
             <span className="text-zinc-600">সর্বমোট খরচ <b className="text-zinc-900">{fmt(stats.monthTotalPaisa)}</b></span>
             <span className="text-zinc-300">•</span>
+            <span className="text-red-600">বকেয়া <b>{fmt(stats.totalDuePaisa)}</b></span>
+            <span className="text-zinc-300">•</span>
             <span className="text-emerald-700">অগ্রিম <b>{fmt(stats.totalAdvancePaisa)}</b></span>
             <span className="text-zinc-300">•</span>
-            <span className="text-red-600">বকেয়া <b>{fmt(stats.totalDuePaisa)}</b></span>
-          </div>
+            <span className="text-zinc-600">অন্যান্য খরচ <b className="text-zinc-900">{fmt(stats.monthOtherPaisa)}</b></span>
+          </button>
           <div className="rounded-2xl border bg-white p-3 sm:p-5">
             <div className="font-semibold text-sm">👥 সদস্য হিসাব — {ym}</div>
             {/* Desktop/tablet: full table */}
@@ -302,6 +309,14 @@ export default function PublicDashboardPage() {
       </Drawer>
       <Drawer open={drawer?.type === "rate"} onClose={() => setDrawer(null)} title="মিল রেট — হিসাব" subtitle="খরচ ÷ মিল">
         <div className="rounded-2xl border bg-zinc-50 p-4 space-y-2 text-sm"><div className="flex justify-between"><span className="text-zinc-600">মোট বাজার</span><b>{fmt(stats?.monthMarketPaisa || 0)}</b></div><div className="flex justify-between"><span className="text-zinc-600">অন্যান্য</span><b>{fmt(stats?.monthOtherPaisa || 0)}</b></div><div className="flex justify-between"><span className="text-zinc-600">সর্বমোট খরচ</span><b>{fmt(stats?.monthTotalPaisa || 0)}</b></div><div className="border-t pt-2 flex justify-between"><span className="text-zinc-600">মোট মিল</span><b>{totalMeals}</b></div><div className="flex justify-between text-emerald-700"><span>মিল রেট</span><b>{fmt(stats?.mealRatePaisa || 0)} = বাজার ÷ মিল</b></div></div>
+      </Drawer>
+      <Drawer open={drawer?.type === "cash"} onClose={() => setDrawer(null)} title={t("dashboard.cashTitle")} subtitle={`${fmt(stats?.cashInHandPaisa || 0)}`}>
+        <div className="rounded-2xl border bg-zinc-50 p-4 space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashDeposits")}</span><b className="text-emerald-700">+ {fmt(stats?.totalDepositPaisa || 0)}</b></div>
+          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashMarket")}</span><b>− {fmt(stats?.lifetimeMarketPaisa || 0)}</b></div>
+          <div className="flex justify-between"><span className="text-zinc-600">{t("dashboard.cashOther")}</span><b>− {fmt(stats?.lifetimeOtherPaisa || 0)}</b></div>
+          <div className="border-t pt-2 flex justify-between"><span className="font-medium">{t("dashboard.cashInHand")}</span><b className={(stats?.cashInHandPaisa || 0) < 0 ? "text-red-600" : "text-emerald-700"}>{fmt(stats?.cashInHandPaisa || 0)}</b></div>
+        </div>
       </Drawer>
       <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${ym} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}

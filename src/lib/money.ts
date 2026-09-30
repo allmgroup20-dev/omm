@@ -59,6 +59,15 @@ export function netBalanceStatus(netPaisa: number): "advance" | "due" | "settled
 }
 
 /**
+ * Cash in hand right now (lifetime): all active deposits minus all spending
+ * (active market + approved other expenses). All in paisa.
+ * Negative = deficit (manager paid out of pocket).
+ */
+export function cashInHandPaisa(totalDepositPaisa: number, lifetimeMarketPaisa: number, lifetimeOtherPaisa: number): number {
+  return totalDepositPaisa - lifetimeMarketPaisa - lifetimeOtherPaisa;
+}
+
+/**
  * Dashboard viewer classification (join prompt is ONLY for guests).
  * - no account → "guest" (30s login/register nag allowed)
  * - logged in + member of this mess → "member" (never nagged)

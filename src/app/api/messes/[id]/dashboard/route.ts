@@ -4,7 +4,7 @@ import { getRequestDb } from "@/db";
 import { messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
-import { monthlyNetBalance } from "@/lib/money";
+import { monthlyNetBalance, cashInHandPaisa } from "@/lib/money";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -74,6 +74,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const mealRatePaisa = finance.mealRatePaisa;
 
   const totalDeposits = deps.filter((r) => r.status === "active").reduce((a, r) => a + r.amountPaisa, 0);
+  // Cash in hand (lifetime): everything collected minus everything spent.
+  const lifetimeMarketPaisa = markets.filter((r) => r.status === "active").reduce((a, r) => a + r.finalPaisa, 0);
+  const lifetimeOtherPaisa = exps.filter((r) => r.status === "approved").reduce((a, r) => a + r.amountPaisa, 0);
+  const cashInHand = cashInHandPaisa(totalDeposits, lifetimeMarketPaisa, lifetimeOtherPaisa);
   // due/advance: monthly net per member (month deposits − month meal cost),
   // same formula as finance/balances. Ledger running balances are deposit-only
   // (no meal_cost postings), so they must NOT be used for due/advance here.
@@ -140,6 +144,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       totalDepositPaisa: totalDeposits,
       totalDuePaisa: totalDue,
       totalAdvancePaisa: totalAdvance,
+      lifetimeMarketPaisa,
+      lifetimeOtherPaisa,
+      cashInHandPaisa: cashInHand,
     },
     insights,
     dailyTrend,

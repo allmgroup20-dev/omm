@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer } from "@/lib/money";
+import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa } from "@/lib/money";
+import { rawDicts, leafKeys } from "@/i18n/dict";
 
 describe("manager dashboard — monthly net balance (deposit − meal cost)", () => {
   it("advance when deposit exceeds meal cost", () => {
@@ -58,5 +59,30 @@ describe("manager dashboard — join prompt gating", () => {
   it("error/edge responses fall back to outsider, never guest, when logged in", () => {
     expect(classifyDashboardViewer({ hasUser: true, memberOk: true, isGuest: false, hasTarget: false })).toBe("outsider");
     expect(classifyDashboardViewer({ hasUser: true, memberOk: true, isGuest: true, hasTarget: false })).toBe("outsider");
+  });
+});
+
+describe("manager dashboard — cash in hand (lifetime deposits − lifetime spend)", () => {
+  it("cash = deposits − market − other", () => {
+    // মোট জমা ৫০০০০, বাজার ৩০০০০, অন্যান্য ৫০০০ → ক্যাশ ১৫০০০
+    expect(cashInHandPaisa(5000000, 3000000, 500000)).toBe(1500000);
+  });
+
+  it("deficit goes negative when spending exceeds deposits", () => {
+    expect(cashInHandPaisa(1000000, 900000, 300000)).toBe(-200000);
+  });
+
+  it("zero when nothing collected/spent", () => {
+    expect(cashInHandPaisa(0, 0, 0)).toBe(0);
+  });
+
+  it("cash strip i18n keys exist in bn + en", () => {
+    const { bn, en } = rawDicts();
+    const bnKeys = new Set(leafKeys(bn));
+    const enKeys = new Set(leafKeys(en));
+    for (const k of ["dashboard.cashInHand", "dashboard.cashTitle", "dashboard.cashDeposits", "dashboard.cashMarket", "dashboard.cashOther"]) {
+      expect(bnKeys.has(k)).toBe(true);
+      expect(enKeys.has(k)).toBe(true);
+    }
   });
 });

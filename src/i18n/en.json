@@ -119,7 +119,12 @@
     "createMess": "Create Mess",
     "join": "Join",
     "role": "Role",
-    "account": "Account"
+    "account": "Account",
+    "cashInHand": "Cash in Hand",
+    "cashTitle": "Cash Breakdown — Lifetime",
+    "cashDeposits": "Total Deposits",
+    "cashMarket": "Total Market",
+    "cashOther": "Other Expenses"
   },
   "mess": {
     "newTitle": "Create a new mess",
