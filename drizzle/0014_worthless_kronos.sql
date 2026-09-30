@@ -1,0 +1,1 @@
+ALTER TABLE `settlement_adjustments` ADD `ref_id` text;

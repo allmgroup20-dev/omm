@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isMemberInMonth } from "@/lib/settlement";
+import { isMemberInMonth, nextYearMonth, carryDepositTarget, canRecordCarry, canRecordRefund } from "@/lib/settlement";
 import { isMemberVisibleForEntry } from "@/lib/money";
 
 describe("month-close — member month window (leave till month-end)", () => {
@@ -64,8 +64,7 @@ describe("month-close — advance disposition math", () => {
     expect(closing + rows[rows.length - 1].amountPaisa).toBe(0);
   });
 
-  it("opening composition: closing + latest adjustment (dashboard আগের জের)", () => {
-    const openingOf = (closing: number | null, adjs: { amountPaisa: number; createdAt: string }[]) => {
+  it("opening composition: closing + latest adjustment (dashboard আগের জের)", () => {    const openingOf = (closing: number | null, adjs: { amountPaisa: number; createdAt: string }[]) => {
       if (closing === null) return 0; // no prior settlement
       if (!adjs.length) return closing; // auto-carry
       const latest = [...adjs].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop()!;
@@ -76,5 +75,43 @@ describe("month-close — advance disposition math", () => {
     expect(openingOf(10000, [{ amountPaisa: 0, createdAt: "2026-09-20T00:00:00.000Z" }])).toBe(10000); // explicit carry
     expect(openingOf(10000, [{ amountPaisa: -10000, createdAt: "2026-09-21T00:00:00.000Z" }])).toBe(0); // refunded
     expect(openingOf(-50000, [])).toBe(-50000); // due carries as negative opening
+  });
+});
+
+describe("carry as real deposit — next-month 1st entry", () => {
+  it("September carry targets October 1st with surplus note", () => {
+    const t = carryDepositTarget(2026, 9);
+    expect(t.date).toBe("2026-10-01");
+    expect(t.periodYm).toBe("2026-10");
+    expect(t.note).toContain("2026-09");
+    expect(t.note).toContain("উদ্বৃত্ত");
+  });
+
+  it("December rolls to January next year", () => {
+    expect(nextYearMonth(2026, 12)).toEqual({ year: 2027, month: 1 });
+    expect(carryDepositTarget(2026, 12).date).toBe("2027-01-01");
+    expect(nextYearMonth(2026, 9)).toEqual({ year: 2026, month: 10 });
+  });
+
+  it("carry + offset adjustment nets exactly once (no double count)", () => {
+    const closing = 10000; // +100 advance
+    // October: opening(prev) 0 + real deposit 100
+    const opening = closing + -closing; // offset adjustment
+    const deposit = closing;
+    expect(opening).toBe(0);
+    expect(opening + deposit).toBe(10000);
+  });
+
+  it("double carry blocked only while linked deposit active", () => {
+    expect(canRecordCarry(null)).toBe(true);
+    expect(canRecordCarry({ kind: "refund", refActive: false })).toBe(true);
+    expect(canRecordCarry({ kind: "carry", refActive: true })).toBe(false);
+    expect(canRecordCarry({ kind: "carry", refActive: false })).toBe(true); // voided → re-carry ok
+  });
+
+  it("double refund blocked; refund after carry allowed", () => {
+    expect(canRecordRefund(null)).toBe(true);
+    expect(canRecordRefund({ kind: "carry", refActive: true })).toBe(true);
+    expect(canRecordRefund({ kind: "refund", refActive: false })).toBe(false);
   });
 });

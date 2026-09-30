@@ -707,6 +707,7 @@ export const settlementAdjustments = sqliteTable(
       .references(() => messMembers.id, { onDelete: "restrict" }),
     amountPaisa: integer("amount_paisa").notNull(),
     kind: text("kind").notNull().default("adjustment"), // carry|refund|adjustment (advance disposition)
+    refId: text("ref_id"), // carry-created deposit id (voided on refund-after-carry)
     reason: text("reason").notNull(),
     createdBy: text("created_by").references(() => users.id),
     createdAt: text("created_at").notNull(),

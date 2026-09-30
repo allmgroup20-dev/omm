@@ -30,6 +30,42 @@ export function filterMembersForMonth<
   return members.filter((m) => isMemberInMonth(m, year, month));
 }
 
+/** Next calendar month (Dec → Jan+1y). Used for carry deposits (1st of next month). */
+export function nextYearMonth(year: number, month: number): { year: number; month: number } {
+  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+}
+
+/** Carry deposit identity: always the 1st of the month after the source settlement. */
+export function carryDepositTarget(
+  year: number,
+  month: number,
+): { date: string; periodYm: string; note: string } {
+  const n = nextYearMonth(year, month);
+  const mm = String(n.month).padStart(2, "0");
+  const srcMm = String(month).padStart(2, "0");
+  return {
+    date: `${n.year}-${mm}-01`,
+    periodYm: `${n.year}-${mm}`,
+    note: `আগের মাসের উদ্বৃত্ত জমা (${year}-${srcMm})`,
+  };
+}
+
+export type LatestDisposition = { kind: string; refActive: boolean } | null;
+
+/**
+ * Carry guard: blocked only when the latest disposition is a carry whose
+ * deposit is still active (would double-count). Re-carry after refund/void
+ * is allowed and stays single-counted via the offset adjustment.
+ */
+export function canRecordCarry(latest: LatestDisposition): boolean {
+  return !(latest?.kind === "carry" && latest.refActive);
+}
+
+/** Refund guard: blocked only when already refunded (latest wins). */
+export function canRecordRefund(latest: LatestDisposition): boolean {
+  return latest?.kind !== "refund";
+}
+
 /**
  * Opening balance for (year, month): closing of the latest prior settlement
  * plus that settlement's latest advance disposition per member

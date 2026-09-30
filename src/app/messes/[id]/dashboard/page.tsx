@@ -25,7 +25,7 @@ type Stats = {
   cashInHandPaisa: number;
 };
 
-type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; previousBalancePaisa: number; status: string };
+type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string };
 
 function fmt(n: number) { return `৳${(n / 100).toFixed(2)}`; }
 
@@ -70,7 +70,6 @@ export default function PublicDashboardPage() {
   const [joinMsg, setJoinMsg] = useState("");
   const [balances, setBalances] = useState<{ members: BalanceMember[]; mealRatePaisa: number; totals: { totalMeals: number; totalMarketPaisa: number; totalOtherPaisa: number } } | null>(null);
   const [messName, setMessName] = useState<string | null>(null);
-  const [hasSettlement, setHasSettlement] = useState<boolean | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
@@ -113,7 +112,7 @@ export default function PublicDashboardPage() {
   }
 
   useEffect(() => {
-    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); setDailyTrend(d.dailyTrend || []); if (d.messName) setMessName(d.messName); if (typeof d.hasSettlement === "boolean") setHasSettlement(d.hasSettlement); } });
+    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); setDailyTrend(d.dailyTrend || []); if (d.messName) setMessName(d.messName); } });
     fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error && !d.guest) setMemberDash(d); });
     const [y, m] = ym.split("-").map(Number);
     fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`).then((r) => r.json()).then((d) => { if (!d.error) setBalances(d); });
@@ -313,24 +312,18 @@ export default function PublicDashboardPage() {
             <span className="text-zinc-300">•</span>
             <span className="text-zinc-600">অন্যান্য খরচ <b className="text-zinc-900">{fmt(stats.monthOtherPaisa)}</b></span>
           </button>
-          {hasSettlement === false && (
-            <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-800">
-              এই মাসের সেটেলমেন্ট এখনো তৈরি হয়নি — আগের মাসের জের দেখতে <Link href={`/messes/${id}/settlements`} className="underline font-medium">সেটেলমেন্ট তৈরি করুন</Link>
-            </div>
-          )}
           <div className="rounded-2xl border bg-white p-3 sm:p-5">
             <div className="font-semibold text-sm">👥 সদস্য হিসাব — {ym}</div>
             {/* Desktop/tablet: full table */}
             <div className="hidden sm:block overflow-x-auto mt-4">
-              <table className="w-full text-sm min-w-[640px]">
-                <thead><tr className="text-[11px] text-zinc-500 border-b"><th className="text-left font-medium py-2 px-2">সদস্য</th><th className="text-center font-medium py-2 px-2">মিল</th><th className="text-right font-medium py-2 px-2">মিল খরচ</th><th className="text-right font-medium py-2 px-2">জমা</th><th className="text-right font-medium py-2 px-2">আগের জের</th><th className="text-right font-medium py-2 px-2">ব্যালেন্স</th><th className="text-center font-medium py-2 px-2">অবস্থা</th></tr></thead>
+              <table className="w-full text-sm min-w-[560px]">
+                <thead><tr className="text-[11px] text-zinc-500 border-b"><th className="text-left font-medium py-2 px-2">সদস্য</th><th className="text-center font-medium py-2 px-2">মিল</th><th className="text-right font-medium py-2 px-2">মিল খরচ</th><th className="text-right font-medium py-2 px-2">জমা</th><th className="text-right font-medium py-2 px-2">ব্যালেন্স</th><th className="text-center font-medium py-2 px-2">অবস্থা</th></tr></thead>
                 <tbody>{(balances?.members || []).map((m) => (
                   <tr key={m.memberId} className="border-b last:border-0 hover:bg-zinc-50/70">
                     <td className="py-3 px-2"><button onClick={() => setDrawer({ type: "member", member: m })} className="flex items-center gap-2.5 text-left group min-w-0 min-h-0"><span className="w-8 h-8 rounded-full bg-zinc-900 text-white grid place-items-center text-xs font-semibold shrink-0">{m.displayName.trim().charAt(0).toUpperCase()}</span><span className="font-medium group-hover:underline text-[13px]">{m.displayName}</span></button></td>
                     <td className="py-3 px-2 text-center"><button onClick={() => setDrawer({ type: "member", member: m })} className="font-semibold hover:underline min-w-0 min-h-0">{m.totalMeals}</button></td>
                     <td className="py-3 px-2 text-right font-mono text-xs">{fmt(m.mealCostPaisa)}</td>
                     <td className="py-3 px-2 text-right font-mono text-xs text-emerald-700">{fmt(m.depositPaisa)}</td>
-                    <td className="py-3 px-2 text-right font-mono text-xs text-zinc-500">{fmt(m.previousBalancePaisa || 0)}</td>
                     <td className={`py-3 px-2 text-right font-mono text-xs font-semibold ${balanceColor(m.balancePaisa)}`}>{fmt(m.balancePaisa)}</td>
                     <td className="py-3 px-2 text-center"><span className={statusPill(m.status)}>{statusLabel(m.status)}</span></td>
                   </tr>
@@ -351,10 +344,6 @@ export default function PublicDashboardPage() {
                   <span className="flex items-center justify-between gap-2 text-xs text-zinc-600">
                     <span className="truncate">{m.totalMeals} মিল • খরচ {fmt(m.mealCostPaisa)}</span>
                     <span className="shrink-0">জমা {fmt(m.depositPaisa)}</span>
-                  </span>
-                  <span className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-zinc-500">আগের জের</span>
-                    <span className="font-mono text-zinc-600">{fmt(m.previousBalancePaisa || 0)}</span>
                   </span>
                   <span className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-zinc-500">ব্যালেন্স</span>
@@ -484,7 +473,7 @@ export default function PublicDashboardPage() {
         </div>
       </Drawer>
       <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${ym} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
-        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawer?.member && <div className="flex justify-between rounded-xl border bg-zinc-50 px-3 py-2 text-sm mb-2"><span className="text-zinc-500">আগের জের</span><b className="font-mono">{fmt(drawer.member.previousBalancePaisa || 0)}</b></div>}{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
+        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
       </Drawer>
     </div>
   );

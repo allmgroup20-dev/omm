@@ -5,7 +5,7 @@ import { messMembers, ledgerEntries, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, netBalanceStatus } from "@/lib/money";
-import { filterMembersForMonth, getPreviousBalance } from "@/lib/settlement";
+import { filterMembersForMonth } from "@/lib/settlement";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const userRows = await db.select().from(users);
   const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
 
-  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; previousBalancePaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
+  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
 
   for (const m of members) {
     const mealsScaled = finance.monthMeals.filter((r) => r.memberId === m.id).reduce((a, r) => a + r.quantityScaled, 0);
@@ -54,8 +54,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // lifetime running balance is NOT the monthly balance — don't display it here.
     // Previous-month carry + other-expense allocation live on the settlement page.
     const net = monthlyNetBalance(monthDeposits, mealCostPaisa);
-    // opening carried from previous settlement (carry/refund aware); 0 if none
-    const previousBalancePaisa = await getPreviousBalance(id, m.id, year, month);
     // include previous balance carry? Use currentBalance - monthDeposits + mealCost? But for now show net
     // We'll also expose currentBalance
     const status = netBalanceStatus(net);
@@ -69,7 +67,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       mealCostPaisa,
       depositPaisa: monthDeposits,
       balancePaisa: net,
-      previousBalancePaisa,
       lifetimeBalancePaisa: currentBalance,
       status,
     });
