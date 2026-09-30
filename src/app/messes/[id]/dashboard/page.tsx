@@ -71,6 +71,7 @@ export default function PublicDashboardPage() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [joinMsg, setJoinMsg] = useState("");
   const [balances, setBalances] = useState<{ members: BalanceMember[]; mealRatePaisa: number; totals: { totalMeals: number; totalMarketPaisa: number; totalOtherPaisa: number } } | null>(null);
+  const [messName, setMessName] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
@@ -113,7 +114,7 @@ export default function PublicDashboardPage() {
   }
 
   useEffect(() => {
-    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); setDailyTrend(d.dailyTrend || []); } });
+    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); setDailyTrend(d.dailyTrend || []); if (d.messName) setMessName(d.messName); } });
     fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error && !d.guest) setMemberDash(d); });
     const [y, m] = ym.split("-").map(Number);
     fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`).then((r) => r.json()).then((d) => { if (!d.error) setBalances(d); });
@@ -268,9 +269,10 @@ export default function PublicDashboardPage() {
   return (
     <div ref={contentRef} className="space-y-4 sm:space-y-5 max-w-[1100px] mx-auto p-3 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[20px] font-bold tracking-tight">Manager Dashboard</h1>
-        </div>
+          <div>
+            <h1 className="text-[20px] font-bold tracking-tight">{messName || "Manager Dashboard"}</h1>
+            {messName && <div className="text-xs text-zinc-500 mt-0.5">Manager Dashboard • {monthLabel} ({ym})</div>}
+          </div>
         <div className="flex flex-wrap gap-2 items-center">
           <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white max-w-full" />
           <Link href={`/messes/${id}`} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] inline-flex items-center">Overview</Link>

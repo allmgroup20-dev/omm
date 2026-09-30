@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { marketEntries, marketEntryItems, marketEntryPurchasers, messMembers, vendors, auditLogs, users } from "@/db/schema";
+import { marketEntries, marketEntryItems, marketEntryPurchasers, messMembers, vendors, auditLogs, users, monthlySettlements, closingPeriods } from "@/db/schema";
 import { marketEntryUpdateSchema, calcItemTotal, toScaledMarket } from "@/lib/validators-market";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -45,12 +45,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!existing[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (existing[0].status !== "active") return NextResponse.json({ error: "Only active entries can be edited" }, { status: 400 });
 
+  // closed-month guard (same rule as deposits): final settlement OR closed period blocks edits
+  const isMonthClosed = async (dateStr: string) => {
+    const y = Number(dateStr.slice(0, 4));
+    const m = Number(dateStr.slice(5, 7));
+    if (!y || !m) return false;
+    const [settRows, closeRows] = await Promise.all([
+      db.select().from(monthlySettlements).where(and(eq(monthlySettlements.messId, id), eq(monthlySettlements.year, y), eq(monthlySettlements.month, m))).limit(1),
+      db.select().from(closingPeriods).where(and(eq(closingPeriods.messId, id), eq(closingPeriods.year, y), eq(closingPeriods.month, m))).limit(1),
+    ]);
+    return settRows[0]?.status === "final" || closeRows[0]?.status === "closed";
+  };
+  if (await isMonthClosed(existing[0].date)) {
+    return NextResponse.json({ error: "Original month is closed (final). Reopen settlement first.", code: "MONTH_CLOSED", period: existing[0].date.slice(0, 7) }, { status: 409 });
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = marketEntryUpdateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
   const before = existing[0];
+  if (data.date && data.date !== before.date && (await isMonthClosed(data.date))) {
+    return NextResponse.json({ error: "Target month is closed (final). Reopen settlement first.", code: "MONTH_CLOSED", period: data.date.slice(0, 7) }, { status: 409 });
+  }
   const now = new Date().toISOString();
 
   // header updates

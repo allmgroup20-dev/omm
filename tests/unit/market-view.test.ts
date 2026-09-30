@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupEntriesByDate, formatMarketQty, formatDayBn, entryMonth, type MarketDrawerEntry } from "@/lib/market-view";
+import { groupEntriesByDate, formatMarketQty, formatDayBn, entryMonth, buildMarketItemsPayload, previewItemsTotalBDT, type MarketDrawerEntry } from "@/lib/market-view";
 
 const e = (over: Partial<MarketDrawerEntry> & { id: string; date: string }): MarketDrawerEntry => ({
   finalPaisa: 0,
@@ -61,5 +61,35 @@ describe("market drawer — quantity + date formatting", () => {
 
   it("bad date falls back to raw string", () => {
     expect(formatDayBn("not-a-date")).toBe("not-a-date");
+  });
+});
+
+describe("market entry edit — items payload", () => {
+  it("maps rows, exact totals win", () => {
+    const out = buildMarketItemsPayload([
+      { productName: "মুসুর ডাল", categoryName: "ডাল", quantity: "1", unit: "kg", unitPrice: "90", total: "" },
+      { productName: "পেঁপে", categoryName: "", quantity: "1", unit: "kg", unitPrice: "24.5", total: "25" },
+    ]);
+    expect(out).toEqual([
+      { productName: "মুসুর ডাল", categoryName: "ডাল", quantity: 1, unit: "kg", unitPrice: 90 },
+      { productName: "পেঁপে", categoryName: "", quantity: 1, unit: "kg", unitPrice: 24.5, total: 25 },
+    ]);
+  });
+
+  it("drops nameless and zero-qty rows", () => {
+    const out = buildMarketItemsPayload([
+      { productName: "  ", categoryName: "", quantity: "2", unit: "kg", unitPrice: "50", total: "" },
+      { productName: "আলু", categoryName: "", quantity: "0", unit: "kg", unitPrice: "30", total: "" },
+      { productName: "আলু", categoryName: "", quantity: "2", unit: "kg", unitPrice: "30", total: "" },
+    ]);
+    expect(out.length).toBe(1);
+    expect(out[0].productName).toBe("আলু");
+  });
+
+  it("preview total matches add-page math", () => {
+    expect(previewItemsTotalBDT([
+      { productName: "a", categoryName: "", quantity: "2", unit: "kg", unitPrice: "90", total: "" },
+      { productName: "b", categoryName: "", quantity: "1", unit: "kg", unitPrice: "24.5", total: "25" },
+    ])).toBe(205); // 180 + 25 exact
   });
 });

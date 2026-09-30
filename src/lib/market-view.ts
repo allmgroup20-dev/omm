@@ -75,3 +75,47 @@ export function formatDayBn(date: string): string {
   if (Number.isNaN(d.getTime())) return date;
   return new Intl.DateTimeFormat("bn-BD", { day: "numeric", month: "long" }).format(d);
 }
+
+/** Editable item row (string form state, same shape as market add page). */
+export type MarketEditRow = {
+  productName: string;
+  categoryName: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  total: string; // exact pasted total wins when present
+};
+
+export type MarketItemPayload = {
+  productName: string;
+  categoryName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total?: number;
+};
+
+/**
+ * Build PATCH items payload: drop nameless/zero-qty rows, parse numbers.
+ * Mirrors the market add-page submit mapping exactly.
+ */
+export function buildMarketItemsPayload(rows: MarketEditRow[]): MarketItemPayload[] {
+  return rows
+    .filter((it) => it.productName.trim() && (parseFloat(it.quantity) || 0) > 0)
+    .map((it) => ({
+      productName: it.productName.trim(),
+      categoryName: (it.categoryName || "").trim(),
+      quantity: parseFloat(it.quantity) || 0,
+      unit: it.unit || "kg",
+      unitPrice: parseFloat(it.unitPrice) || 0,
+      ...(it.total ? { total: parseFloat(it.total) || 0 } : {}),
+    }));
+}
+
+/** Live preview total of edit rows (BDT): exact totals win, else qty×price. */
+export function previewItemsTotalBDT(rows: MarketEditRow[]): number {
+  return rows.reduce(
+    (a, it) => a + (it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0)),
+    0,
+  );
+}

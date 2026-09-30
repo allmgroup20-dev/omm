@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements } from "@/db/schema";
+import { messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, messes } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, cashInHandPaisa } from "@/lib/money";
@@ -48,6 +48,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const today = ym === currentYm ? now.toISOString().slice(0, 10) : `${ym}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`;
 
   const members = await db.select().from(messMembers).where(eq(messMembers.messId, id));
+  const messRow = await db.select().from(messes).where(eq(messes.id, id)).limit(1);
+  const messName = messRow[0]?.name || null;
   const activeMembers = members.filter((m) => m.status === "active").length;
 
   const mealRows = await db.select().from(mealRecords).where(eq(mealRecords.messId, id));
@@ -131,6 +133,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   return NextResponse.json({
     ym,
+    messName,
     stats: {
       activeMembers,
       todayMeals: todayMealsCount,
