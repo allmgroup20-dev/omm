@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { Drawer } from "@/components/ui/drawers";
 import { classifyDashboardViewer } from "@/lib/money";
 import { useLocale } from "@/i18n/provider";
+import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
 
 type Stats = {
   activeMembers: number;
@@ -74,7 +75,11 @@ export default function PublicDashboardPage() {
   const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
   const [memberDash, setMemberDash] = useState<{ todayMeals: number; monthMeals: number; currentBalancePaisa: number; dueAdvance: string } | null>(null);
   const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash"; member?: BalanceMember }>(null);
-  const [drawerData, setDrawerData] = useState<{ marketEntries?: { date: string; finalPaisa: number; items: { productNameSnapshot: string }[]; purchaserNames: string[] }[]; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
+  const [drawerData, setDrawerData] = useState<{ marketEntries?: MarketDrawerEntry[]; vendorMap?: Record<string, string>; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
+  const [expandedDates, setExpandedDates] = useState<string[]>([]);
+  function toggleDate(ds: string) {
+    setExpandedDates((prev) => (prev.includes(ds) ? prev.filter((d) => d !== ds) : [...prev, ds]));
+  }
 
   async function checkUser() {
     const r = await fetch("/api/auth/me").catch(() => null);
@@ -138,10 +143,17 @@ export default function PublicDashboardPage() {
     const [y, m] = ym.split("-").map(Number);
     if (drawer.type === "market") {
       setDrawerData({ loading: true });
-      fetch(`/api/messes/${id}/market/entries?limit=200`).then((r) => r.json()).then((d) => {
-        const all = (d.entries || []) as { date: string; finalPaisa: number; items: { productNameSnapshot: string }[]; purchaserNames: string[] }[];
-        const filtered = all.filter((e) => e.date.startsWith(ym)).sort((a, b) => b.date.localeCompare(a.date));
-        setDrawerData({ marketEntries: filtered });
+      Promise.all([
+        fetch(`/api/messes/${id}/market/entries?limit=200`).then((r) => r.json()).catch(() => ({})),
+        fetch(`/api/messes/${id}/market/vendors`).then((r) => r.json()).catch(() => ({})),
+      ]).then(([ed, vd]) => {
+        const all = (ed.entries || []) as MarketDrawerEntry[];
+        const filtered = all.filter((e) => e.date.startsWith(ym) && (!e.status || e.status === "active")).sort((a, b) => b.date.localeCompare(a.date));
+        const vendorMap: Record<string, string> = {};
+        for (const v of (vd.vendors || []) as { id: string; name: string }[]) vendorMap[v.id] = v.name;
+        setDrawerData({ marketEntries: filtered, vendorMap });
+        // latest date expanded by default
+        if (filtered.length) setExpandedDates([filtered[0].date]);
       });
     } else if (drawer.type === "deposits") {
       setDrawerData({ loading: true });
@@ -299,7 +311,64 @@ export default function PublicDashboardPage() {
         </div>
       )}
       <Drawer open={drawer?.type === "market"} onClose={() => setDrawer(null)} title={`মোট বাজার — ${ym}`} subtitle={`${fmt(stats?.monthMarketPaisa || 0)} • ${drawerData.marketEntries?.length ?? 0}টি এন্ট্রি`}>
-        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (drawerData.marketEntries?.length ? <div className="space-y-3">{drawerData.marketEntries.map((e) => <div key={`${e.date}-${e.finalPaisa}`} className="rounded-xl border bg-zinc-50 px-3 py-2.5 flex justify-between gap-3"><div className="min-w-0"><div className="text-xs font-medium">{e.date} • {(e.purchaserNames || []).join(", ") || "—"}</div><div className="text-xs text-zinc-500 truncate mt-0.5">{(e.items || []).map((it) => it.productNameSnapshot).join(", ") || "—"}</div></div><div className="text-sm font-semibold shrink-0">{fmt(e.finalPaisa)}</div></div>)}<a href={`/messes/${id}/market/entries`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50">সব এন্ট্রি দেখুন →</a></div> : <div className="text-sm text-zinc-500">এই মাসে বাজার এন্ট্রি নেই</div>)}
+        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (() => {
+          const groups = groupEntriesByDate(drawerData.marketEntries || []);
+          const vendorMap = drawerData.vendorMap || {};
+          const payBn: Record<string, string> = { cash: "নগদ", bank: "ব্যাংক", mobile: "মোবাইল", other: "অন্যান্য" };
+          if (!groups.length) return <div className="text-sm text-zinc-500">এই মাসে বাজার এন্ট্রি নেই</div>;
+          return (
+            <div className="space-y-2">
+              {groups.map((g) => {
+                const open = expandedDates.includes(g.date);
+                return (
+                  <div key={g.date} className="rounded-xl border overflow-hidden">
+                    <button onClick={() => toggleDate(g.date)} className="w-full flex items-center justify-between gap-2 bg-zinc-50 px-3 py-2.5 text-left min-h-[44px]">
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold truncate">{formatDayBn(g.date)}</span>
+                        <span className="block text-[11px] text-zinc-500">{g.count}টি বাজার</span>
+                      </span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-bold">{fmt(g.dayTotalPaisa)}</span>
+                        <span className="text-zinc-400 text-xs">{open ? "▼" : "▶"}</span>
+                      </span>
+                    </button>
+                    {open && (
+                      <div className="divide-y">
+                        {g.entries.map((en) => (
+                          <div key={en.id} className="px-3 py-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[13px] font-medium truncate">🛒 {(en.purchaserNames || []).join(", ") || "—"}</span>
+                              <span className="text-sm font-bold shrink-0">{fmt(en.finalPaisa)}</span>
+                            </div>
+                            {en.vendorId && vendorMap[en.vendorId] && <div className="text-[11px] text-zinc-500">দোকান: {vendorMap[en.vendorId]}</div>}
+                            {(en.items || []).length ? (
+                              <div className="space-y-1">
+                                {en.items!.map((it) => (
+                                  <div key={it.id} className="flex items-baseline justify-between gap-2 text-xs">
+                                    <span className="min-w-0 truncate">{it.productNameSnapshot}{it.categoryNameSnapshot ? ` (${it.categoryNameSnapshot})` : ""} <span className="text-zinc-500">• {formatMarketQty(it.quantityScaled)} {it.unit} × {fmt(it.unitPricePaisa)}</span></span>
+                                    <b className="shrink-0 font-mono">= {fmt(it.totalPaisa)}</b>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : <div className="text-[11px] text-zinc-500">আইটেম নেই</div>}
+                            {(!!en.transportPaisa || !!en.discountPaisa || !!en.notes) && (
+                              <div className="text-[11px] text-zinc-500 space-y-0.5">
+                                {!!en.transportPaisa && <div>+ গাড়ি ভাড়া {fmt(en.transportPaisa)}</div>}
+                                {!!en.discountPaisa && <div>− ছাড় {fmt(en.discountPaisa)}</div>}
+                                <div>{payBn[en.paymentMethod || "cash"] || en.paymentMethod}{en.notes ? ` • ${en.notes}` : ""}</div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <a href={`/messes/${id}/market/entries`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50 min-h-[44px] flex items-center justify-center">সব এন্ট্রি দেখুন →</a>
+            </div>
+          );
+        })()}
       </Drawer>
       <Drawer open={drawer?.type === "meals"} onClose={() => setDrawer(null)} title={`মোট মিল — ${ym}`} subtitle={`${totalMeals} মিল • ${balances?.members.length || 0} জন`}>
         <div className="space-y-2">{(balances?.members || []).slice().sort((a, b) => b.totalMeals - a.totalMeals).map((m) => <button key={m.memberId} onClick={() => setDrawer({ type: "member", member: m })} className="w-full flex items-center justify-between rounded-xl border bg-white px-3 py-2.5 hover:bg-zinc-50 text-left"><span className="flex items-center gap-2.5"><span className="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-xs">{m.displayName.charAt(0).toUpperCase()}</span><span className="text-sm font-medium">{m.displayName}</span></span><span className="text-sm font-bold">{m.totalMeals} মিল</span></button>)} {!balances?.members.length && <div className="text-sm text-zinc-500">মিল নেই</div>}</div>
