@@ -30,6 +30,34 @@ export function filterMembersForMonth<
   return members.filter((m) => isMemberInMonth(m, year, month));
 }
 
+/**
+ * Opening balance for (year, month): closing of the latest prior settlement
+ * plus that settlement's latest advance disposition per member
+ * (carry = 0 net effect, refund = −closing). 0 when none exists.
+ * Single source of truth — settlement engine AND dashboard display use this.
+ */
+export async function getPreviousBalance(
+  messId: string,
+  memberId: string,
+  year: number,
+  month: number,
+): Promise<number> {
+  const db = await getRequestDb();
+  const prevSettlements = await db.select().from(monthlySettlements).where(eq(monthlySettlements.messId, messId));
+  const sortedPrev = prevSettlements
+    .filter((s) => s.year < year || (s.year === year && s.month < month))
+    .sort((a, b) => (a.year === b.year ? a.month - b.month : a.year - b.year));
+  if (!sortedPrev.length) return 0;
+  const last = sortedPrev[sortedPrev.length - 1];
+  const memSett = await db.select().from(memberSettlements).where(eq(memberSettlements.settlementId, last.id));
+  const found = memSett.find((ms) => ms.memberId === memberId);
+  let prev = found ? found.closingBalancePaisa : 0;
+  const adjRows = await db.select().from(settlementAdjustments).where(eq(settlementAdjustments.settlementId, last.id));
+  const mine = adjRows.filter((a) => a.memberId === memberId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (mine.length) prev += mine[mine.length - 1].amountPaisa;
+  return prev;
+}
+
 export async function computeSettlement(messId: string, year: number, month: number) {
   const db = await getRequestDb();
   const messRows = await db.select().from(messes).where(eq(messes.id, messId)).limit(1);
@@ -74,27 +102,8 @@ export async function computeSettlement(messId: string, year: number, month: num
     const mealCostPaisa = totalMealsScaled > 0 ? Math.round((mealsScaled * mealRatePaisa) / 100) : 0;
     const depositPaisa = depositRows.filter((d) => d.memberId === m.id && d.date.startsWith(prefix) && d.status === "active").reduce((a, d) => a + d.amountPaisa, 0);
 
-    // previous balance: from last settlement or ledger
-    // look for previous settlement
-    const prevSettlements = await db.select().from(monthlySettlements).where(eq(monthlySettlements.messId, messId));
-    // find previous month settlement
-    let prevBalance = 0;
-    const sortedPrev = prevSettlements.filter((s) => s.year < year || (s.year === year && s.month < month)).sort((a, b) => (a.year === b.year ? a.month - b.month : a.year - b.year));
-    if (sortedPrev.length) {
-      const last = sortedPrev[sortedPrev.length - 1];
-      const memSett = await db.select().from(memberSettlements).where(eq(memberSettlements.settlementId, last.id));
-      const found = memSett.find((ms) => ms.memberId === m.id);
-      if (found) prevBalance = found.closingBalancePaisa;
-      // advance dispositions on the previous settlement (carry confirm = 0,
-      // refund = −closing): latest row per member wins
-      const adjRows = await db.select().from(settlementAdjustments).where(eq(settlementAdjustments.settlementId, last.id));
-      const mine = adjRows.filter((a) => a.memberId === m.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      if (mine.length) prevBalance += mine[mine.length - 1].amountPaisa;
-    } else {
-      // No previous settlement: use ledger balance before month (credits - meal costs not yet accounted)
-      // For simplicity, use ledger current balance minus month deposits + month mealCost? But for first month, 0
-      prevBalance = 0;
-    }
+    // previous balance: single source of truth (last closing ± latest disposition)
+    const prevBalance = await getPreviousBalance(messId, m.id, year, month);
 
     byMember[m.id] = { mealsScaled, mealCostPaisa, depositPaisa, previousBalance: prevBalance };
   }

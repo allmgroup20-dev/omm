@@ -63,4 +63,18 @@ describe("month-close — advance disposition math", () => {
     ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     expect(closing + rows[rows.length - 1].amountPaisa).toBe(0);
   });
+
+  it("opening composition: closing + latest adjustment (dashboard আগের জের)", () => {
+    const openingOf = (closing: number | null, adjs: { amountPaisa: number; createdAt: string }[]) => {
+      if (closing === null) return 0; // no prior settlement
+      if (!adjs.length) return closing; // auto-carry
+      const latest = [...adjs].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop()!;
+      return closing + latest.amountPaisa;
+    };
+    expect(openingOf(null, [])).toBe(0);
+    expect(openingOf(10000, [])).toBe(10000); // untouched advance carries
+    expect(openingOf(10000, [{ amountPaisa: 0, createdAt: "2026-09-20T00:00:00.000Z" }])).toBe(10000); // explicit carry
+    expect(openingOf(10000, [{ amountPaisa: -10000, createdAt: "2026-09-21T00:00:00.000Z" }])).toBe(0); // refunded
+    expect(openingOf(-50000, [])).toBe(-50000); // due carries as negative opening
+  });
 });

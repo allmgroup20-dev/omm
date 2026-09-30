@@ -134,6 +134,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json({
     ym,
     messName,
+    hasSettlement: settlements.some((s) => s.year === year && s.month === month),
     stats: {
       activeMembers,
       todayMeals: todayMealsCount,
