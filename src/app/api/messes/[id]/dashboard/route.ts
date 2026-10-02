@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, cashInHandPaisa, sumMonthDeposits } from "@/lib/money";
 import { filterMembersForMonth } from "@/lib/settlement";
+import { buildInsights } from "@/lib/dashboard";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -112,13 +113,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // due members count
   const dueCount = Object.values(perMemberBalances).filter((b) => b < 0).length;
 
-  const insights: string[] = [];
-  if (Math.abs(marketMoM) >= 1) {
-    insights.push(`এই মাসে বাজার খরচ গত মাসের তুলনায় ${marketMoM > 0 ? `${marketMoM.toFixed(1)}% বেশি` : `${Math.abs(marketMoM).toFixed(1)}% কম`}।`);
-  }
-  if (pendingExpenses) insights.push(`${pendingExpenses}টি খরচ approval-এর অপেক্ষায়।`);
-  if (incompleteMeals) insights.push(`${incompleteMeals} জন সদস্যের আজকের মিল এন্ট্রি অসম্পূর্ণ।`);
-  if (dueCount) insights.push(`${dueCount} জন সদস্যের Due রয়েছে।`);
+  const insights = buildInsights({ marketMoM, pendingExpenses, incompleteMeals, dueCount });
 
   // dailyTrend for the full month — always full month, not last 7 days
   const { getMonthDates } = await import("@/lib/calendar");

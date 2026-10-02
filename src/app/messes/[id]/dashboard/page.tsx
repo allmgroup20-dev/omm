@@ -8,6 +8,7 @@ import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/li
 import { useLocale } from "@/i18n/provider";
 import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
 import { pickValidShareToken, shareUrl, dataUrlToBlob, TRANSPARENT_PNG } from "@/lib/share";
+import type { Insight } from "@/lib/dashboard";
 
 type Stats = {
   activeMembers: number;
@@ -72,7 +73,7 @@ export default function PublicDashboardPage() {
   const [balances, setBalances] = useState<{ members: BalanceMember[]; mealRatePaisa: number; totals: { totalMeals: number; totalMarketPaisa: number; totalOtherPaisa: number } } | null>(null);
   const [messName, setMessName] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [insights, setInsights] = useState<string[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
   const [memberDash, setMemberDash] = useState<{ todayMeals: number; monthMeals: number; currentBalancePaisa: number; dueAdvance: string } | null>(null);
   const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash"; member?: BalanceMember }>(null);
@@ -295,7 +296,12 @@ export default function PublicDashboardPage() {
               <span className="text-amber-600 mt-0.5">⚠</span>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-semibold text-amber-900">নজর দিন</div>
-                <ul className="mt-1 space-y-0.5 text-xs text-amber-800 list-disc pl-4">{insights.map((ins, i) => <li key={i}>{ins}</li>)}</ul>
+                <ul className="mt-1.5 space-y-1.5 text-xs list-none pl-0">{insights.map((ins, i) => (
+                  <li key={i} className="flex items-center gap-1.5">
+                    <span className="shrink-0">{ins.icon}</span>
+                    <span className={ins.tone === "bad" ? "text-red-700 font-medium" : ins.tone === "good" ? "text-emerald-800 font-medium" : "text-amber-800"}>{ins.text}</span>
+                  </li>
+                ))}</ul>
               </div>
             </div>
           )}
