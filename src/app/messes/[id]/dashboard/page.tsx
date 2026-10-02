@@ -467,7 +467,23 @@ export default function PublicDashboardPage() {
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (drawerData.deposits?.length ? <div className="space-y-2">{drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between items-center gap-2 rounded-xl border bg-emerald-50/60 px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{d.displayName} • <span className="text-xs text-zinc-500">{d.date}</span></span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(d.amountPaisa)}</span></div>)}<a href={`/messes/${id}/finance/deposits`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50">জমা পেজ →</a></div> : <div className="space-y-2">{(balances?.members || []).filter((m) => m.depositPaisa > 0).map((m) => <div key={m.memberId} className="flex justify-between items-center gap-2 rounded-xl border px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{m.displayName}</span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(m.depositPaisa)}</span></div>)}{!(balances?.members || []).some((m) => m.depositPaisa > 0) && <div className="text-sm text-zinc-500">এই মাসে জমা নেই</div>}</div>)}
       </Drawer>
       <Drawer open={drawer?.type === "rate"} onClose={() => setDrawer(null)} title="মিল রেট — হিসাব" subtitle="খরচ ÷ মিল">
-        <div className="rounded-2xl border bg-zinc-50 p-4 space-y-2 text-sm"><div className="flex justify-between"><span className="text-zinc-600">মোট বাজার</span><b>{fmt(stats?.monthMarketPaisa || 0)}</b></div><div className="flex justify-between"><span className="text-zinc-600">অন্যান্য</span><b>{fmt(stats?.monthOtherPaisa || 0)}</b></div><div className="flex justify-between"><span className="text-zinc-600">সর্বমোট খরচ</span><b>{fmt(stats?.monthTotalPaisa || 0)}</b></div><div className="border-t pt-2 flex justify-between"><span className="text-zinc-600">মোট মিল</span><b>{totalMeals}</b></div><div className="flex justify-between text-emerald-700"><span>মিল রেট</span><b>{fmt(stats?.mealRatePaisa || 0)} = বাজার ÷ মিল</b></div></div>
+        <div className="rounded-2xl border bg-zinc-50 p-4 space-y-3 text-sm">
+          <div>
+            <div className="text-[11px] font-semibold text-zinc-500 mb-1.5">ধাপ ১ • মোট খরচ</div>
+            <div className="flex justify-between"><span className="text-zinc-600">মোট বাজার</span><b>{formatPaisaBnCompact(stats?.monthMarketPaisa || 0)}</b></div>
+            {(stats?.monthOtherPaisa || 0) > 0 && <div className="flex justify-between mt-1"><span className="text-zinc-600">+ অন্যান্য</span><b>{formatPaisaBnCompact(stats?.monthOtherPaisa || 0)}</b></div>}
+            <div className="border-t mt-2 pt-2 flex justify-between"><span className="text-zinc-600">সর্বমোট</span><b>{formatPaisaBnCompact(stats?.monthTotalPaisa || 0)}</b></div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-zinc-500 mb-1.5">ধাপ ২ • ভাগ</div>
+            <div className="flex justify-between"><span className="text-zinc-600">সর্বমোট ÷ মোট মিল</span><b>{formatPaisaBnCompact(stats?.monthTotalPaisa || 0)} ÷ {formatNumBn(totalMeals, 0)} মিল</b></div>
+          </div>
+          <div className="rounded-xl bg-emerald-600 text-white p-4 text-center">
+            <div className="text-[11px] text-emerald-100">মিল রেট</div>
+            <div className="text-2xl font-bold mt-0.5">{formatPaisaBnCompact(stats?.mealRatePaisa || 0)}<span className="text-sm font-medium"> /মিল</span></div>
+            <div className="text-[11px] text-emerald-100 mt-1">প্রতি ১ মিলে এই খরচ</div>
+          </div>
+        </div>
       </Drawer>
       <Drawer open={drawer?.type === "cash"} onClose={() => setDrawer(null)} title={t("dashboard.cashTitle")} subtitle={`${fmt(stats?.cashInHandPaisa || 0)}`}>
         <div className="rounded-2xl border bg-zinc-50 p-4 space-y-2 text-sm">
