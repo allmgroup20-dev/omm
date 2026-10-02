@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Drawer } from "@/components/ui/drawers";
 import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/lib/money";
 import { useLocale } from "@/i18n/provider";
@@ -74,7 +73,6 @@ export default function PublicDashboardPage() {
   const [messName, setMessName] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
-  const [dailyTrend, setDailyTrend] = useState<{ date: string; market: number; other: number; total: number }[]>([]);
   const [memberDash, setMemberDash] = useState<{ todayMeals: number; monthMeals: number; currentBalancePaisa: number; dueAdvance: string } | null>(null);
   const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash"; member?: BalanceMember }>(null);
   const [drawerData, setDrawerData] = useState<{ marketEntries?: MarketDrawerEntry[]; vendorMap?: Record<string, string>; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
@@ -114,7 +112,7 @@ export default function PublicDashboardPage() {
   }
 
   useEffect(() => {
-    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); setDailyTrend(d.dailyTrend || []); if (d.messName) setMessName(d.messName); } });
+    fetch(`/api/messes/${id}/dashboard?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error) { setStats(d.stats); setInsights(d.insights || []); if (d.messName) setMessName(d.messName); } });
     fetch(`/api/messes/${id}/dashboard/member?ym=${ym}`).then((r) => r.json()).then((d) => { if (!d.error && !d.guest) setMemberDash(d); });
     const [y, m] = ym.split("-").map(Number);
     fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`).then((r) => r.json()).then((d) => { if (!d.error) setBalances(d); });
@@ -285,6 +283,9 @@ export default function PublicDashboardPage() {
         <div className="flex flex-wrap gap-2 items-center">
           <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white max-w-full" />
           <Link href={`/messes/${id}`} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] inline-flex items-center">Overview</Link>
+          {membership === "outsider" && (
+            <button onClick={requestJoin} className="px-4 py-2 rounded-full text-sm bg-zinc-900 text-white min-h-[44px]">Join Request পাঠান</button>
+          )}
           {membership === "member" && (
             <>
               <button onClick={shareLink} disabled={shareBusy} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] disabled:opacity-50">🔗 শেয়ার লিংক</button>
@@ -294,6 +295,7 @@ export default function PublicDashboardPage() {
         </div>
       </div>
       {shareMsg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{shareMsg}</div>}
+      {membership === "outsider" && joinMsg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{joinMsg}</div>}
 
       {!stats ? <div className="bg-white border rounded-2xl p-10 text-center text-sm">লোড হচ্ছে...</div> : (
         <>
@@ -370,32 +372,6 @@ export default function PublicDashboardPage() {
               ))}
             </div>
             {(!balances || balances.members.length === 0) && <div className="p-8 text-center text-xs text-zinc-500">এই মাসে হিসাব নেই — মিল/বাজার/জমা যোগ করুন</div>}
-          </div>
-          <div className="grid lg:grid-cols-3 gap-3 sm:gap-4">
-            <div className="lg:col-span-2 min-w-0 rounded-2xl border bg-white p-3 sm:p-5">
-              <div className="font-semibold text-sm">দৈনিক খরচ — {ym}</div>
-              <div className="h-[180px] sm:h-[200px] mt-3">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dailyTrend} onClick={(e: unknown) => { const ev = e as { activeLabel?: string } | null; if (ev?.activeLabel) { const full = `${ym}-${ev.activeLabel}`; window.location.href = `/messes/${id}/market/entries?date=${full}`; } }}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontSize: 10 }} width={36} />
-                    <Tooltip formatter={(value: unknown) => `৳${Number(value ?? 0).toFixed(2)}`} />
-                    <Bar dataKey="market" stackId="a" fill="#18181b" name="বাজার" cursor="pointer" />
-                    <Bar dataKey="other" stackId="a" fill="#d4d4d8" name="অন্যান্য" cursor="pointer" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="min-w-0 rounded-2xl border bg-white p-3 sm:p-5 space-y-3">
-              <div className="font-semibold text-sm">দ্রুত কাজ</div>
-              <div className="text-xs text-zinc-500">{user ? `লগইন: ${user.id.slice(0,6)}` : "অতিথি — ৩০s পর লগইন প্রম্পট"}</div>
-              {membership === "outsider" && (
-                <div className="space-y-2">
-                  {joinMsg && <div className="rounded-xl border p-2 text-xs bg-zinc-50 break-all">{joinMsg}</div>}
-                  <button onClick={requestJoin} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm">Join Request পাঠান</button>
-                </div>
-              )}
-            </div>
           </div>
         </>
       )}
