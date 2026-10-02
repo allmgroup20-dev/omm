@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Drawer } from "@/components/ui/drawers";
-import { classifyDashboardViewer } from "@/lib/money";
+import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/lib/money";
 import { useLocale } from "@/i18n/provider";
 import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
 import { pickValidShareToken, shareUrl, dataUrlToBlob, TRANSPARENT_PNG } from "@/lib/share";
@@ -17,6 +17,7 @@ type Stats = {
   todayTotalPaisa: number;
   mealRatePaisa: number;
   monthMarketPaisa: number;
+  monthMarketCount: number;
   monthOtherPaisa: number;
   monthTotalPaisa: number;
   monthDepositPaisa: number;
@@ -263,6 +264,9 @@ export default function PublicDashboardPage() {
 
   const totalMeals = balances?.totals.totalMeals ?? 0;
   const monthLabel = (() => { const [yy, mm] = ym.split("-"); const d = new Date(Number(yy), Number(mm) - 1, 1); return d.toLocaleDateString("bn-BD", { month: "long", year: "numeric" }); })();
+  const monthShort = (() => { const [yy, mm] = ym.split("-"); return new Date(Number(yy), Number(mm) - 1, 1).toLocaleDateString("bn-BD", { month: "long" }); })();
+  const avgMeals = totalMeals && stats?.activeMembers ? totalMeals / stats.activeMembers : 0;
+  const depositCount = balances?.members.filter((m) => m.depositPaisa > 0).length || 0;
 
   return (
     <div ref={contentRef} className="space-y-4 sm:space-y-5 max-w-[1100px] mx-auto p-3 sm:p-6">
@@ -296,11 +300,12 @@ export default function PublicDashboardPage() {
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard icon="🛒" label="মোট বাজার" value={fmt(stats.monthMarketPaisa)} sub={`${monthLabel} • ক্লিক করে কী কী বাজার হয়েছে দেখুন`} onClick={() => setDrawer({ type: "market" })} />
-            <KpiCard icon="🍚" label="মোট মিল" value={`${totalMeals} টি`} sub={`${stats.activeMembers} জন • গড় ${(totalMeals && stats.activeMembers) ? (totalMeals / stats.activeMembers).toFixed(1) : "0"} / জন • ক্লিক করে per-member`} onClick={() => setDrawer({ type: "meals" })} />
-            <KpiCard icon="⚖️" label="মিল রেট" value={fmt(stats.mealRatePaisa)} sub={`বাজার ${fmt(stats.monthMarketPaisa)} ÷ ${totalMeals} মিল • ক্লিক করে ফর্মুলা`} onClick={() => setDrawer({ type: "rate" })} />
-            <KpiCard icon="💰" label="মোট জমা" value={fmt(stats.monthDepositPaisa)} sub={`${balances?.members.filter((m) => m.depositPaisa > 0).length || 0} জন জমা দিয়েছে • ক্লিক করে তালিকা`} onClick={() => setDrawer({ type: "deposits" })} />
+            <KpiCard icon="🛒" label="মোট বাজার" value={formatPaisaBnCompact(stats.monthMarketPaisa)} sub={`${monthShort} • ${formatNumBn(stats.monthMarketCount, 0)}টি বাজার`} onClick={() => setDrawer({ type: "market" })} />
+            <KpiCard icon="🍚" label="মোট মিল" value={`${formatNumBn(totalMeals)}টি`} sub={`${formatNumBn(stats.activeMembers, 0)} জন • জনপ্রতি ${formatNumBn(avgMeals)}`} onClick={() => setDrawer({ type: "meals" })} />
+            <KpiCard icon="⚖️" label="মিল রেট" value={formatPaisaBnCompact(stats.mealRatePaisa)} sub="প্রতি মিল" onClick={() => setDrawer({ type: "rate" })} />
+            <KpiCard icon="💰" label="মোট জমা" value={formatPaisaBnCompact(stats.monthDepositPaisa)} sub={`${formatNumBn(depositCount, 0)} জনে দিয়েছে`} onClick={() => setDrawer({ type: "deposits" })} />
           </div>
+          <div className="text-center text-[11px] text-zinc-400">বিস্তারিত দেখতে কার্ডে ট্যাপ করুন</div>
           <button onClick={() => setDrawer({ type: "cash" })} className="w-full text-left rounded-2xl border bg-white px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs hover:border-zinc-300 transition">
             <span className={stats.cashInHandPaisa < 0 ? "text-red-600" : "text-emerald-700"}>{t("dashboard.cashInHand")} <b>{fmt(stats.cashInHandPaisa)}</b></span>
             <span className="text-zinc-300">•</span>

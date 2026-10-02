@@ -110,3 +110,14 @@ export function isMemberVisibleForEntry(
   if (m.status === "left" && m.leftAt && m.leftAt.slice(0, 10) >= todayIso) return true;
   return false;
 }
+
+/** Bengali-digit compact Taka: 319500 → ৳৩,১৯৫ · 19969 → ৳১৯৯.৬৯ (paisa in). */
+export function formatPaisaBnCompact(paisa: number): string {
+  const s = new Intl.NumberFormat("bn-BD", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(paisa / 100);
+  return `৳${s}`;
+}
+
+/** Bengali-digit number: 16 → ১৬ · 3.25 → ৩.২৫ (maxFrac default 1). */
+export function formatNumBn(n: number, maxFrac = 1): string {
+  return new Intl.NumberFormat("bn-BD", { minimumFractionDigits: 0, maximumFractionDigits: maxFrac }).format(n);
+}

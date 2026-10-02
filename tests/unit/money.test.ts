@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toPaisa, fromPaisa, formatBDT, calcMealRate } from "@/lib/money";
+import { toPaisa, fromPaisa, formatBDT, calcMealRate, formatPaisaBnCompact, formatNumBn } from "@/lib/money";
 
 describe("money — paisa-safe financial calculations", () => {
   it("toPaisa converts BDT to paisa", () => {
@@ -39,5 +39,23 @@ describe("money — paisa-safe financial calculations", () => {
     const price = 70;
     const total = Math.round(qty * price * 100);
     expect(total).toBe(35000);
+  });
+});
+
+describe("money — Bengali compact display (KPI cards)", () => {
+  it("whole taka drops decimals, Bengali digits", () => {
+    const s = formatPaisaBnCompact(319500);
+    expect(s).toContain("৩,১৯৫");
+    expect(s).not.toContain("০০");
+  });
+
+  it("fractional rate keeps decimals", () => {
+    expect(formatPaisaBnCompact(19969)).toContain("১৯৯.৬৯");
+  });
+
+  it("counts in Bengali digits", () => {
+    expect(formatNumBn(5, 0)).toBe("৫");
+    expect(formatNumBn(16, 0)).toBe("১৬");
+    expect(formatNumBn(3.25)).toBe("৩.৩");
   });
 });
