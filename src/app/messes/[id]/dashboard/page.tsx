@@ -272,9 +272,15 @@ export default function PublicDashboardPage() {
   return (
     <div ref={contentRef} className="space-y-4 sm:space-y-5 max-w-[1100px] mx-auto p-3 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-[20px] font-bold tracking-tight">{messName || "Manager Dashboard"}</h1>
-            {messName && <div className="text-xs text-zinc-500 mt-0.5">Manager Dashboard • {monthLabel} ({ym})</div>}
+          <div className="min-w-0">
+            <h1 className="text-[20px] font-bold tracking-tight flex items-center gap-2">
+              <span className="grid place-items-center w-9 h-9 rounded-2xl bg-zinc-900 text-white text-[18px] shrink-0">🏠</span>
+              <span className="truncate">{messName || "ড্যাশবোর্ড"}</span>
+            </h1>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[11px] font-medium rounded-full bg-zinc-900 text-white px-2.5 py-1">📊 ড্যাশবোর্ড</span>
+              <span className="text-[11px] font-medium rounded-full border bg-white px-2.5 py-1 text-zinc-600">{monthLabel}</span>
+            </div>
           </div>
         <div className="flex flex-wrap gap-2 items-center">
           <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white max-w-full" />
