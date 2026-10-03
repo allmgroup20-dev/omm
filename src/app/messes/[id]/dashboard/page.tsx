@@ -274,10 +274,6 @@ export default function PublicDashboardPage() {
               <span className="grid place-items-center w-9 h-9 rounded-2xl bg-zinc-900 text-white text-[18px] shrink-0">🏠</span>
               <span className="truncate">{messName || "ড্যাশবোর্ড"}</span>
             </h1>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[11px] font-medium rounded-full bg-zinc-900 text-white px-2.5 py-1">📊 ড্যাশবোর্ড</span>
-              <span className="text-[11px] font-medium rounded-full border bg-white px-2.5 py-1 text-zinc-600">{monthLabel}</span>
-            </div>
             {stats && <div className="text-[11px] text-zinc-400 mt-1.5">{formatNumBn(stats.activeMembers, 0)} জন সদস্য • স্বচ্ছ হিসাব, প্রতিদিন আপডেট</div>}
           </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -339,7 +335,7 @@ export default function PublicDashboardPage() {
             <span className="text-zinc-600">অন্যান্য খরচ <b className="text-zinc-900">{fmt(stats.monthOtherPaisa)}</b></span>
           </button>
           <div className="rounded-2xl border bg-white p-3 sm:p-5">
-            <div className="font-semibold text-sm">👥 সদস্য হিসাব — {ym}</div>
+            <div className="font-semibold text-sm">👥 সদস্য হিসাব — {monthLabel}</div>
             {/* Desktop/tablet: full table */}
             <div className="hidden sm:block overflow-x-auto mt-4">
               <table className="w-full text-sm min-w-[560px]">
@@ -495,7 +491,7 @@ export default function PublicDashboardPage() {
           <div className="border-t pt-2 flex justify-between"><span className="font-medium">{t("dashboard.cashInHand")}</span><b className={(stats?.cashInHandPaisa || 0) < 0 ? "text-red-600" : "text-emerald-700"}>{fmt(stats?.cashInHandPaisa || 0)}</b></div>
         </div>
       </Drawer>
-      <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${ym} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
+      <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${monthLabel} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
       </Drawer>
     </div>
