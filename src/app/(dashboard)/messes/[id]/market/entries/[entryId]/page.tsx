@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
@@ -39,6 +39,7 @@ export default function EntryDetailPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ date: "", classification: "food", paymentMethod: "cash", discount: "0", transport: "0", purchasedBy: [] as string[], vendorId: "", notes: "" });
   const [editItems, setEditItems] = useState<Row[]>([]);
+  const endOfRowsRef = useRef<HTMLDivElement>(null);
   const [members, setMembers] = useState<{ id: string; displayName: string }[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -141,7 +142,10 @@ export default function EntryDetailPage() {
       }),
     );
   }
-  function addRow() { setEditItems((prev) => [...prev, { ...EMPTY_ROW }]); }
+  function addRow() {
+    setEditItems((prev) => [...prev, { ...EMPTY_ROW }]);
+    requestAnimationFrame(() => endOfRowsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  }
   function removeRow(idx: number) { setEditItems((prev) => prev.filter((_, i) => i !== idx)); }
 
   const previewTotal = previewItemsTotalBDT(editItems.map(({ productName, categoryName, quantity, unit, unitPrice, total }) => ({ productName, categoryName, quantity, unit, unitPrice, total })));
@@ -240,8 +244,8 @@ export default function EntryDetailPage() {
             </div>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="নোট" className="w-full border rounded-xl px-3 py-2 text-sm" rows={2} />
 
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between"><span className="font-medium text-sm">আইটেম ({editItems.length}) — দাম/পরিমাণ/পণ্য সব বদলানো যায়</span><button type="button" onClick={addRow} className="text-xs border rounded-full px-3 py-1.5 min-h-[36px]">{t("market.addRow")}</button></div>
+              <div className="space-y-3 pt-1">
+              <div className="font-medium text-sm">আইটেম ({editItems.length}) — দাম/পরিমাণ/পণ্য সব বদলানো যায়</div>
               {editItems.map((it, idx) => {
                 const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
                 return (
@@ -320,6 +324,8 @@ export default function EntryDetailPage() {
                   </div>
                 );
               })}
+              <div ref={endOfRowsRef} />
+              <button type="button" onClick={addRow} className="w-full border-2 border-dashed rounded-xl py-3 text-sm bg-white text-zinc-700 font-medium min-h-[48px]">{t("market.addRow")}</button>
             </div>
 
             <div className="rounded-xl bg-zinc-900 text-white p-4 flex flex-wrap justify-between gap-2 text-sm">

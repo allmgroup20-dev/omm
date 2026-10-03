@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
@@ -43,6 +43,7 @@ export default function AddMarketPage() {
   const [items, setItems] = useState<Row[]>([{ ...EMPTY_ROW }]);
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
+  const endOfRowsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/messes/${id}/market/vendors`).then((r) => r.json()).then((d) => { if (d.vendors) setVendors(d.vendors); }).catch(() => {});
@@ -146,7 +147,11 @@ export default function AddMarketPage() {
     );
   }
 
-  function addRow() { setItems((prev) => [...prev, { ...EMPTY_ROW }]); }
+  function addRow() {
+    setItems((prev) => [...prev, { ...EMPTY_ROW }]);
+    // new row appears below; bring it into view on mobile
+    requestAnimationFrame(() => endOfRowsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  }
   function removeRow(idx: number) { setItems((prev) => prev.filter((_, i) => i !== idx)); }
   function togglePurchaser(mid: string) {
     setPurchasedBy((prev) => (prev.includes(mid) ? prev.filter((x) => x !== mid) : [...prev, mid]));
@@ -238,7 +243,7 @@ export default function AddMarketPage() {
 
         {/* items */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between"><span className="font-medium text-sm">{t("market.items")} ({items.length})</span><button type="button" onClick={addRow} className="text-xs border rounded-full px-3 py-2 bg-white min-h-[40px]">{t("market.addRow")}</button></div>
+          <div className="font-medium text-sm">{t("market.items")} ({items.length})</div>
           <p className="text-xs text-zinc-500">মোট জানা থাকলে সেটি লিখুন — না থাকলে পরিমাণ × দাম থেকে হিসাব হবে।</p>
            {items.map((it, idx) => {
             const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
@@ -368,6 +373,8 @@ export default function AddMarketPage() {
               </div>
             );
           })}
+          <div ref={endOfRowsRef} />
+          <button type="button" onClick={addRow} className="w-full border-2 border-dashed rounded-xl py-3 text-sm bg-white text-zinc-700 font-medium min-h-[48px]">{t("market.addRow")}</button>
         </div>
 
         {/* sticky save bar */}
