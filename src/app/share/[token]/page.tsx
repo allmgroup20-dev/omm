@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { formatCurrency } from "@/i18n/dict";
+import { formatPaisaBnCompact, formatNumBn } from "@/lib/money";
 
 type ShareData = {
   mess: { id: string; name: string; code: string };
@@ -79,18 +79,25 @@ export default function SharePage() {
   if (!data) return <div className="max-w-2xl mx-auto p-6 text-sm">Loading...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-4">
+    <div className="max-w-3xl mx-auto p-3 sm:p-6 space-y-4">
       <Link href="/" className="text-sm text-zinc-500">← Home</Link>
-      <h1 className="text-xl font-bold">{data.mess.name} — {data.mess.code}</h1>
-      <div className="text-xs text-zinc-500">চলমান মাস: {data.ym} • পাবলিক ড্যাশবোর্ড (read-only)</div>
+      <div>
+        <h1 className="text-xl font-bold flex items-center gap-2"><span className="grid place-items-center w-9 h-9 rounded-2xl bg-zinc-900 text-white text-[18px] shrink-0">🏠</span><span className="truncate">{data.mess.name}</span></h1>
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <span className="text-[11px] font-medium rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-600 font-mono">{data.mess.code}</span>
+          <span className="text-[11px] font-medium rounded-full border bg-white px-2.5 py-1 text-zinc-600">{data.ym}</span>
+          <span className="text-[11px] font-medium rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-1">পাবলিক • read-only</span>
+        </div>
+        <div className="text-[11px] text-zinc-400 mt-1.5">{formatNumBn(data.stats.activeMembers, 0)} জন সদস্য • স্বচ্ছ হিসাব, প্রতিদিন আপডেট</div>
+      </div>
 
-      <div className="grid md:grid-cols-3 gap-3">
-        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">সদস্য</div><div className="text-lg font-bold">{data.stats.activeMembers}</div></div>
-        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">মোট মিল ({data.ym})</div><div className="text-lg font-bold">{data.stats.totalMeals}</div></div>
-        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">মিল রেট</div><div className="text-lg font-bold">{formatCurrency(data.stats.mealRatePaisa, "bn")}</div></div>
-        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">বাজার খরচ</div><div className="text-lg font-bold">{formatCurrency(data.stats.totalMarketPaisa, "bn")}</div></div>
-        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">মোট খরচ (বাজার+অন্যান্য)</div><div className="text-lg font-bold">{formatCurrency(data.stats.totalMarketPaisa + (data.stats.totalOtherPaisa || 0), "bn")}</div></div>
-        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">অন্যান্য খরচ</div><div className="text-lg font-bold">{formatCurrency(data.stats.totalOtherPaisa || 0, "bn")}</div></div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">👥 সদস্য</div><div className="text-lg font-bold">{formatNumBn(data.stats.activeMembers, 0)}</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">🍚 মোট মিল ({data.ym})</div><div className="text-lg font-bold">{formatNumBn(data.stats.totalMeals, 1)}টি</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">⚖️ মিল রেট</div><div className="text-lg font-bold">{formatPaisaBnCompact(data.stats.mealRatePaisa)}</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">🛒 বাজার খরচ</div><div className="text-lg font-bold">{formatPaisaBnCompact(data.stats.totalMarketPaisa)}</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">💰 মোট খরচ (বাজার+অন্যান্য)</div><div className="text-lg font-bold">{formatPaisaBnCompact(data.stats.totalMarketPaisa + (data.stats.totalOtherPaisa || 0))}</div></div>
+        <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">🧾 অন্যান্য খরচ</div><div className="text-lg font-bold">{formatPaisaBnCompact(data.stats.totalOtherPaisa || 0)}</div></div>
       </div>
 
       <div className="bg-white border rounded-2xl p-4">
@@ -102,10 +109,10 @@ export default function SharePage() {
               {data.membersFinance.map((m) => (
                 <tr key={m.memberId} className="border-t">
                   <td className="p-2 font-medium">{m.fullName}</td>
-                  <td className="p-2 text-center">{m.totalMeals}</td>
-                  <td className="p-2 text-right">{formatCurrency(m.mealCostPaisa, "bn")}</td>
-                  <td className="p-2 text-right text-emerald-700">{formatCurrency(m.depositPaisa, "bn")}</td>
-                  <td className={`p-2 text-right font-semibold ${m.status === "due" ? "text-red-600" : m.status === "advance" ? "text-emerald-600" : ""}`}>{formatCurrency(m.balancePaisa, "bn")}</td>
+                  <td className="p-2 text-center">{formatNumBn(m.totalMeals, 1)}</td>
+                  <td className="p-2 text-right">{formatPaisaBnCompact(m.mealCostPaisa)}</td>
+                  <td className="p-2 text-right text-emerald-700">{formatPaisaBnCompact(m.depositPaisa)}</td>
+                  <td className={`p-2 text-right font-semibold ${m.status === "due" ? "text-red-600" : m.status === "advance" ? "text-emerald-600" : ""}`}>{formatPaisaBnCompact(m.balancePaisa)}</td>
                   <td className="p-2 text-center"><span className={`rounded-full px-2 py-0.5 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{m.status === "due" ? "দেবে" : m.status === "advance" ? "পাবে" : "সমান"}</span></td>
                 </tr>
               ))}
@@ -113,6 +120,14 @@ export default function SharePage() {
           </table>
         </div>
       </div>
+
+      {!user && (
+        <div className="rounded-2xl border bg-zinc-900 text-white p-5 text-center space-y-2">
+          <div className="font-semibold text-sm">আপনার মেসেও এমন স্বচ্ছ হিসাব চান?</div>
+          <div className="text-xs text-zinc-300">মিল, বাজার, জমা, বকেয়া — সব এক জায়গায়, প্রতিদিন আপডেট</div>
+          <Link href="/register" className="inline-block rounded-full bg-white text-zinc-900 px-6 py-2.5 text-sm font-medium min-h-[44px]">ফ্রি শুরু করুন →</Link>
+        </div>
+      )}
 
       {showPrompt && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">

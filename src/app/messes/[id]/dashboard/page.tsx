@@ -3,8 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Drawer } from "@/components/ui/drawers";
-import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/lib/money";
-import { useLocale } from "@/i18n/provider";
+import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/lib/money";import { useLocale } from "@/i18n/provider";
 import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
 import { pickValidShareToken, shareUrl, dataUrlToBlob, TRANSPARENT_PNG } from "@/lib/share";
 import type { Insight } from "@/lib/dashboard";
@@ -28,7 +27,7 @@ type Stats = {
 
 type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string };
 
-function fmt(n: number) { return `৳${(n / 100).toFixed(2)}`; }
+function fmt(n: number) { return formatPaisaBnCompact(n); } // single money standard: Bengali, compact, proper minus
 
 function statusPill(status: string) {
   return `inline-flex text-[11px] font-medium rounded-full px-2.5 py-1 ${status === "due" ? "bg-red-50 text-red-700 border border-red-200" : status === "advance" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-zinc-100 text-zinc-700 border"}`;
@@ -279,6 +278,7 @@ export default function PublicDashboardPage() {
               <span className="text-[11px] font-medium rounded-full bg-zinc-900 text-white px-2.5 py-1">📊 ড্যাশবোর্ড</span>
               <span className="text-[11px] font-medium rounded-full border bg-white px-2.5 py-1 text-zinc-600">{monthLabel}</span>
             </div>
+            {stats && <div className="text-[11px] text-zinc-400 mt-1.5">{formatNumBn(stats.activeMembers, 0)} জন সদস্য • স্বচ্ছ হিসাব, প্রতিদিন আপডেট</div>}
           </div>
         <div className="flex flex-wrap gap-2 items-center">
           <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} className="border rounded-full px-3.5 py-2 text-sm bg-white max-w-full" />
@@ -297,7 +297,14 @@ export default function PublicDashboardPage() {
       {shareMsg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{shareMsg}</div>}
       {membership === "outsider" && joinMsg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{joinMsg}</div>}
 
-      {!stats ? <div className="bg-white border rounded-2xl p-10 text-center text-sm">লোড হচ্ছে...</div> : (
+      {!stats ? (
+        <div className="space-y-3" aria-busy="true" aria-label="লোড হচ্ছে">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="rounded-2xl border bg-white p-5 animate-pulse"><div className="h-3 w-20 rounded bg-zinc-200" /><div className="h-7 w-28 rounded bg-zinc-200 mt-2" /><div className="h-3 w-32 rounded bg-zinc-100 mt-2" /></div>)}
+          </div>
+          <div className="rounded-2xl border bg-white p-5 animate-pulse"><div className="h-4 w-40 rounded bg-zinc-200" /><div className="h-24 rounded bg-zinc-100 mt-3" /></div>
+        </div>
+      ) : (
         <>
           {insights.length > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex gap-3 items-start">
@@ -321,7 +328,7 @@ export default function PublicDashboardPage() {
           </div>
           <div className="text-center text-[11px] text-zinc-400">বিস্তারিত দেখতে কার্ডে ট্যাপ করুন</div>
           <button onClick={() => setDrawer({ type: "cash" })} className="w-full text-left rounded-2xl border bg-white px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs hover:border-zinc-300 transition">
-            <span className={stats.cashInHandPaisa < 0 ? "text-red-600" : "text-emerald-700"}>{t("dashboard.cashInHand")} <b>{fmt(stats.cashInHandPaisa)}</b></span>
+            <span className={stats.cashInHandPaisa < 0 ? "text-red-600" : "text-emerald-700"}>{stats.cashInHandPaisa < 0 ? <>ঘাটতি <b>{fmt(stats.cashInHandPaisa)}</b> <span className="text-zinc-500 font-normal">— {fmt(stats.totalDuePaisa)} বকেয়া আদায়ে মিটবে</span></> : <>{t("dashboard.cashInHand")} <b>{fmt(stats.cashInHandPaisa)}</b></>}</span>
             <span className="text-zinc-300">•</span>
             <span className="text-zinc-600">সর্বমোট খরচ <b className="text-zinc-900">{fmt(stats.monthTotalPaisa)}</b></span>
             <span className="text-zinc-300">•</span>
@@ -388,12 +395,19 @@ export default function PublicDashboardPage() {
           </div>
         </div>
       )}
-      <Drawer open={drawer?.type === "market"} onClose={() => setDrawer(null)} title={`মোট বাজার — ${ym}`} subtitle={`${fmt(stats?.monthMarketPaisa || 0)} • ${drawerData.marketEntries?.length ?? 0}টি এন্ট্রি`}>
+      {membership === "guest" && (
+        <div className="rounded-2xl border bg-zinc-900 text-white p-5 text-center space-y-2">
+          <div className="font-semibold text-sm">আপনার মেসেও এমন স্বচ্ছ হিসাব চান?</div>
+          <div className="text-xs text-zinc-300">মিল, বাজার, জমা, বকেয়া — সব এক জায়গায়, প্রতিদিন আপডেট</div>
+          <Link href="/register" className="inline-block rounded-full bg-white text-zinc-900 px-6 py-2.5 text-sm font-medium min-h-[44px]">ফ্রি শুরু করুন →</Link>
+        </div>
+      )}
+      <Drawer open={drawer?.type === "market"} onClose={() => setDrawer(null)} title={`🛒 মোট বাজার — ${ym}`} subtitle={`${fmt(stats?.monthMarketPaisa || 0)} • ${drawerData.marketEntries?.length ?? 0}টি এন্ট্রি`}>
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (() => {
           const groups = groupEntriesByDate(drawerData.marketEntries || []);
           const vendorMap = drawerData.vendorMap || {};
           const payBn: Record<string, string> = { cash: "নগদ", bank: "ব্যাংক", mobile: "মোবাইল", other: "অন্যান্য" };
-          if (!groups.length) return <div className="text-sm text-zinc-500">এই মাসে বাজার এন্ট্রি নেই</div>;
+          if (!groups.length) return <div className="text-sm text-zinc-500 text-center py-6">এই মাসে বাজার এন্ট্রি নেই<br /><a href={`/messes/${id}/market/add`} className="inline-block mt-2 text-sm border rounded-full px-4 py-2 hover:bg-zinc-50 min-h-[44px]">+ বাজার যোগ করুন</a></div>;
           return (
             <div className="space-y-2">
               {groups.map((g) => {
@@ -448,10 +462,10 @@ export default function PublicDashboardPage() {
           );
         })()}
       </Drawer>
-      <Drawer open={drawer?.type === "meals"} onClose={() => setDrawer(null)} title={`মোট মিল — ${ym}`} subtitle={`${totalMeals} মিল • ${balances?.members.length || 0} জন`}>
-        <div className="space-y-2">{(balances?.members || []).slice().sort((a, b) => b.totalMeals - a.totalMeals).map((m) => <button key={m.memberId} onClick={() => setDrawer({ type: "member", member: m })} className="w-full flex items-center justify-between rounded-xl border bg-white px-3 py-2.5 hover:bg-zinc-50 text-left"><span className="flex items-center gap-2.5"><span className="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-xs">{m.displayName.charAt(0).toUpperCase()}</span><span className="text-sm font-medium">{m.displayName}</span></span><span className="text-sm font-bold">{m.totalMeals} মিল</span></button>)} {!balances?.members.length && <div className="text-sm text-zinc-500">মিল নেই</div>}</div>
+      <Drawer open={drawer?.type === "meals"} onClose={() => setDrawer(null)} title={`🍚 মোট মিল — ${ym}`} subtitle={`${totalMeals} মিল • ${balances?.members.length || 0} জন`}>
+        <div className="space-y-2">{(balances?.members || []).slice().sort((a, b) => b.totalMeals - a.totalMeals).map((m) => <button key={m.memberId} onClick={() => setDrawer({ type: "member", member: m })} className="w-full flex items-center justify-between rounded-xl border bg-white px-3 py-2.5 hover:bg-zinc-50 text-left"><span className="flex items-center gap-2.5 min-w-0 flex-1"><span className="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-xs shrink-0">{m.displayName.charAt(0).toUpperCase()}</span><span className="text-sm font-medium min-w-0 flex-1 truncate">{m.displayName}</span></span><span className="text-sm font-bold shrink-0">{m.totalMeals} মিল</span></button>)} {!balances?.members.length && <div className="text-sm text-zinc-500 text-center py-4">মিল নেই<br /><a href={`/messes/${id}/meals`} className="inline-block mt-2 text-sm border rounded-full px-4 py-2 hover:bg-zinc-50 min-h-[44px]">+ মিল দিন</a></div>}</div>
       </Drawer>
-      <Drawer open={drawer?.type === "deposits"} onClose={() => setDrawer(null)} title={`মোট জমা — ${ym}`} subtitle={`${fmt(stats?.monthDepositPaisa || 0)}`}>
+      <Drawer open={drawer?.type === "deposits"} onClose={() => setDrawer(null)} title={`💰 মোট জমা — ${ym}`} subtitle={`${fmt(stats?.monthDepositPaisa || 0)}`}>
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : (drawerData.deposits?.length ? <div className="space-y-2">{drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between items-center gap-2 rounded-xl border bg-emerald-50/60 px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{d.displayName} • <span className="text-xs text-zinc-500">{d.date}</span></span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(d.amountPaisa)}</span></div>)}<a href={`/messes/${id}/finance/deposits`} className="block text-center text-sm border rounded-full py-2 hover:bg-zinc-50">জমা পেজ →</a></div> : <div className="space-y-2">{(balances?.members || []).filter((m) => m.depositPaisa > 0).map((m) => <div key={m.memberId} className="flex justify-between items-center gap-2 rounded-xl border px-3 py-2"><span className="text-sm min-w-0 flex-1 truncate">{m.displayName}</span><span className="text-sm font-semibold text-emerald-700 shrink-0">{fmt(m.depositPaisa)}</span></div>)}{!(balances?.members || []).some((m) => m.depositPaisa > 0) && <div className="text-sm text-zinc-500">এই মাসে জমা নেই</div>}</div>)}
       </Drawer>
       <Drawer open={drawer?.type === "rate"} onClose={() => setDrawer(null)} title="মিল রেট — হিসাব" subtitle="খরচ ÷ মিল">

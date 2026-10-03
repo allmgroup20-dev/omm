@@ -54,6 +54,18 @@ describe("money — Bengali compact display (KPI cards)", () => {
     expect(formatPaisaBnCompact(19969)).toContain("১৯৯.৬৯");
   });
 
+  it("negatives put minus before Taka sign (no ৳-X)", () => {
+    const s = formatPaisaBnCompact(-66797);
+    expect(s.startsWith("−৳")).toBe(true);
+    expect(s).toContain("৬৬৭.৯৭");
+    expect(s).not.toContain("৳-");
+  });
+
+  it("zero and small amounts", () => {
+    expect(formatPaisaBnCompact(0)).toBe("৳০");
+    expect(formatPaisaBnCompact(-24455)).toBe("−৳২৪৪.৫৫");
+  });
+
   it("counts in Bengali digits", () => {
     expect(formatNumBn(5, 0)).toBe("৫");
     expect(formatNumBn(16, 0)).toBe("১৬");
