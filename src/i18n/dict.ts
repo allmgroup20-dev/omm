@@ -69,6 +69,6 @@ export function formatDateBD(iso: string, locale: Locale = defaultLocale): strin
   if (Number.isNaN(d.getTime())) return iso;
   const dd = new Intl.NumberFormat(intlLocale[locale], { minimumIntegerDigits: 2 }).format(d.getDate());
   const mm = new Intl.NumberFormat(intlLocale[locale], { minimumIntegerDigits: 2 }).format(d.getMonth() + 1);
-  const yyyy = new Intl.NumberFormat(intlLocale[locale]).format(d.getFullYear());
+  const yyyy = new Intl.NumberFormat(intlLocale[locale], { useGrouping: false }).format(d.getFullYear());
   return `${dd}-${mm}-${yyyy}`;
 }

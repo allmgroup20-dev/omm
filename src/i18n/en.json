@@ -288,7 +288,7 @@
     "quantity": "Quantity",
     "unit": "Unit",
     "unitPrice": "Unit price (BDT)",
-    "remove": "✕",
+    "remove": "Remove",
     "total": "Total",
     "final": "Final",
     "saveBtn": "Save Purchase",

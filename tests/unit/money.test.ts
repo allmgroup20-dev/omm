@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { toPaisa, fromPaisa, formatBDT, calcMealRate, formatPaisaBnCompact, formatNumBn } from "@/lib/money";
+import { formatDateBD } from "@/i18n/dict";
 
 describe("money — paisa-safe financial calculations", () => {
   it("toPaisa converts BDT to paisa", () => {
@@ -57,5 +58,21 @@ describe("money — Bengali compact display (KPI cards)", () => {
     expect(formatNumBn(5, 0)).toBe("৫");
     expect(formatNumBn(16, 0)).toBe("১৬");
     expect(formatNumBn(3.25)).toBe("৩.৩");
+  });
+});
+
+describe("dates — Bengali BD format has no grouping comma", () => {
+  it("2026-10-03 renders without comma in year", () => {
+    const s = formatDateBD("2026-10-03", "bn");
+    expect(s).not.toContain(",");
+    expect(s).toContain("২০২৬");
+  });
+
+  it("day-month padded, year plain", () => {
+    expect(formatDateBD("2026-01-05", "bn")).toBe("০৫-০১-২০২৬");
+  });
+
+  it("invalid input passes through", () => {
+    expect(formatDateBD("oops", "bn")).toBe("oops");
   });
 });

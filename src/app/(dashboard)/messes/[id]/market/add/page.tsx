@@ -148,6 +148,9 @@ export default function AddMarketPage() {
 
   function addRow() { setItems((prev) => [...prev, { ...EMPTY_ROW }]); }
   function removeRow(idx: number) { setItems((prev) => prev.filter((_, i) => i !== idx)); }
+  function togglePurchaser(mid: string) {
+    setPurchasedBy((prev) => (prev.includes(mid) ? prev.filter((x) => x !== mid) : [...prev, mid]));
+  }
 
   const total = items.reduce((a, it) => a + (it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0)), 0);
   const discountNum = parseFloat(discount) || 0;
@@ -202,39 +205,49 @@ export default function AddMarketPage() {
       <Link href={`/messes/${id}/market`} className="text-sm text-zinc-500">← {t("market.hub")}</Link>
       <h1 className="text-lg font-bold">{t("market.addEntry")}</h1>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
-      <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div><label className="text-xs font-medium">{t("market.date")} (DD-MM-YYYY)</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /><div className="text-[11px] text-zinc-500 mt-1">{formatDateBD(date, locale)}</div></div>
-          <div><label className="text-xs font-medium">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
-          <div className="sm:col-span-2 lg:col-span-1"><label className="text-xs font-medium">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="md:col-span-2 col-span-1">
-            <label className="text-xs font-medium">কে বাজার করেছে * (একাধিক নির্বাচন)</label>
-            <div className="border rounded-xl p-2 max-h-[110px] overflow-auto bg-white mt-1 space-y-1">
+      <form onSubmit={submit} className="space-y-4">
+        {/* who & when — one compact card */}
+        <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label className="text-xs font-medium">{t("market.date")}</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /><div className="text-[11px] text-zinc-500 mt-1">{formatDateBD(date, locale)}</div></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs font-medium">{t("market.gariVara")}</label><input type="number" step="0.01" placeholder={t("market.gariVaraPh")} value={transport} onChange={(e) => setTransport(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px] border-amber-200" /></div>
+              <div><label className="text-xs font-medium">{t("market.discount")}</label><input type="number" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" /></div>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium">কে বাজার করেছে *</label>
+            <div className="flex flex-wrap gap-2 mt-1.5">
               {members.map((m) => (
-                <label key={m.id} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={purchasedBy.includes(m.id)} onChange={(e) => setPurchasedBy((prev) => (e.target.checked ? [...prev, m.id] : prev.filter((x) => x !== m.id)))} />
-                  <span>{m.displayName}</span>
-                </label>
+                <button key={m.id} type="button" onClick={() => togglePurchaser(m.id)} className={`rounded-full px-4 py-2 text-sm min-h-[44px] border ${purchasedBy.includes(m.id) ? "bg-zinc-900 text-white border-zinc-900" : "bg-white hover:bg-zinc-50"}`}>{m.displayName}</button>
               ))}
               {members.length === 0 && <div className="text-xs text-zinc-500">কোনো সদস্য নেই</div>}
             </div>
             {purchasedBy.length === 0 && <div className="text-xs text-red-500 mt-1">কমপক্ষে একজন বেছে নিন</div>}
           </div>
-          <div><label className="text-xs">{t("market.vendor")}</label><select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">{t("market.noVendor")}</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
-          <div><label className="text-xs">{t("market.gariVara")}</label><input type="number" step="0.01" placeholder={t("market.gariVaraPh")} value={transport} onChange={(e) => setTransport(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" /></div>
-          <div><label className="text-xs">{t("market.discount")}</label><input type="number" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
+          <details className="rounded-xl border bg-zinc-50 px-3 py-2">
+            <summary className="text-sm font-medium cursor-pointer py-1">বিস্তারিত (শ্রেণি • পেমেন্ট • বিক্রেতা • নোট)</summary>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 pb-1">
+              <div><label className="text-xs font-medium">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px] bg-white"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
+              <div><label className="text-xs font-medium">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px] bg-white"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
+              <div><label className="text-xs font-medium">{t("market.vendor")}</label><select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px] bg-white"><option value="">{t("market.noVendor")}</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
+            </div>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("market.notesPh")} className="w-full border rounded-xl px-3 py-2 text-sm mt-3 bg-white" rows={2} />
+          </details>
         </div>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("market.notesPh")} className="w-full border rounded-xl px-3 py-2 text-sm" rows={2} />
 
+        {/* items */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between"><span className="font-medium text-sm">{t("market.items")} ({items.length})</span><button type="button" onClick={addRow} className="text-xs border rounded-full px-3 py-1">{t("market.addRow")}</button></div>
-          <p className="text-xs text-zinc-500">টিপ: পণ্য ছাড়া শুধু <b>গাড়ি ভাড়া</b> সেভ করতে চাইলে পণ্য খালি রাখুন — গাড়ি ভাড়া ৪০ লিখে Save করুন, আলাদা এন্ট্রি হিসেবে সেভ হবে (পণ্য সহ একসাথে বা আলাদা — উভয়ই)</p>
+          <div className="flex items-center justify-between"><span className="font-medium text-sm">{t("market.items")} ({items.length})</span><button type="button" onClick={addRow} className="text-xs border rounded-full px-3 py-2 bg-white min-h-[40px]">{t("market.addRow")}</button></div>
+          <p className="text-xs text-zinc-500">মোট জানা থাকলে সেটি লিখুন — না থাকলে পরিমাণ × দাম থেকে হিসাব হবে।</p>
            {items.map((it, idx) => {
             const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
             return (
-              <div key={idx} className="border rounded-xl p-4 bg-zinc-50 space-y-3">
+              <div key={idx} className="border rounded-xl p-3 sm:p-4 bg-white space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-500">পণ্য {idx + 1}{rowTotal > 0 && <span className="ml-2 text-zinc-900">• {formatCurrency(Math.round(rowTotal * 100), locale)}</span>}</span>
+                  {items.length > 1 && <button type="button" onClick={() => removeRow(idx)} className="text-xs text-red-600 min-h-[36px] px-2">{t("market.remove")}</button>}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="min-w-0">
                     <label className="text-[11px] text-zinc-500">{t("market.category")}</label>
@@ -274,7 +287,6 @@ export default function AddMarketPage() {
                             ))}
                             <option value={CUSTOM}>{t("market.newCustom")}</option>
                           </select>
-                          {filtered.length > 0 && it.categorySel !== CUSTOM && <div className="text-[11px] text-zinc-500 mt-1">{filtered.length}টি পণ্য</div>}
                           {it.productSel === CUSTOM && (
                             <input
                               placeholder={t("market.productCustomPh")}
@@ -289,8 +301,8 @@ export default function AddMarketPage() {
                     })()}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 items-end">
-                  <div className="sm:col-span-1 lg:col-span-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+                  <div className="col-span-1">
                     <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? "(কেজি + গ্রাম)" : ""}</label>
                     {it.unit === "kg" ? (
                       <div className="flex gap-1">
@@ -308,7 +320,6 @@ export default function AddMarketPage() {
                                 value={q ? String(kg) : it.quantity === "0" ? "0" : ""}
                                 onChange={(e) => onKgChange(idx, e.target.value, String(g))}
                                 className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white"
-                                required
                               />
                               <input
                                 type="number"
@@ -325,10 +336,10 @@ export default function AddMarketPage() {
                         })()}
                       </div>
                     ) : (
-                      <input type="number" step="0.001" placeholder={t("market.quantity")} value={it.quantity} onChange={(e) => onQuantityChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" required />
+                      <input type="number" step="0.001" placeholder={t("market.quantity")} value={it.quantity} onChange={(e) => onQuantityChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white" />
                     )}
                   </div>
-                  <div className="sm:col-span-1 lg:col-span-2">
+                  <div>
                     <label className="text-[11px] text-zinc-500">{t("market.unit")}</label>
                     <select value={it.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm bg-white truncate min-h-[44px]">
                       {UNIT_CODES.map((u) => (
@@ -338,43 +349,34 @@ export default function AddMarketPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="sm:col-span-1 lg:col-span-3">
+                  <div>
                     <label className="text-[11px] text-zinc-500">{t("market.unitPrice")}</label>
-                    <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white min-h-[44px]" required />
+                    <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white min-h-[44px]" />
                   </div>
-                  <div className="sm:col-span-1 lg:col-span-3">
-                    <label className="text-[11px] text-zinc-500">মোট (টাকা) — কপি-পেস্ট exact</label>
+                  <div>
+                    <label className="text-[11px] text-zinc-500">মোট (জানা থাকলে)</label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="যেমন ২৪৬০"
-                      value={it.total !== "" ? it.total : rowTotal ? rowTotal.toFixed(2).replace(/\.00$/, "") : ""}
+                      value={it.total !== "" ? it.total : ""}
                       onChange={(e) => onTotalChange(idx, e.target.value)}
                       className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white border-amber-300 focus:border-amber-500"
-                      title="২৪৬০ পেস্ট করলে ৫৬/৫৭ drift ছাড়া exact থাকবে"
                     />
                   </div>
-                  <div className="col-span-1 sm:col-span-2 lg:col-span-1 flex justify-end">
-                    <button type="button" onClick={() => removeRow(idx)} className="w-full lg:w-auto text-xs border rounded-lg bg-white px-4 py-3 min-h-[44px]">
-                      {t("market.remove")}
-                    </button>
-                  </div>
-                </div>
-                <div className="text-xs text-zinc-500 text-right">
-                  {t("market.total")}: {formatCurrency(Math.round((it.total ? parseFloat(it.total) || 0 : rowTotal) * 100), locale)}{" "}
-                  {rowTotal > 0 && <span className="text-zinc-400">({it.quantity} × {it.unitPrice} {it.total ? "= " + it.total + " exact" : ""})</span>}
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="rounded-xl bg-zinc-900 text-white p-4 flex flex-wrap justify-between gap-2 text-sm">
-          <span>{t("market.total")}: {formatCurrency(Math.round(total * 100), locale)} + {t("market.gariVara")}: {formatCurrency(Math.round(transportNum * 100), locale)} - {t("market.discount")}: {formatCurrency(Math.round(discountNum * 100), locale)}</span><span className="font-bold">{t("market.final")}: {formatCurrency(Math.round(final * 100), locale)}</span>
+        {/* sticky save bar */}
+        <div className="sticky bottom-0 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent">
+          <div className="rounded-2xl bg-zinc-900 text-white p-3 flex items-center justify-between gap-2">
+            <span className="text-sm font-bold pl-1">{t("market.final")}: {formatCurrency(Math.round(final * 100), locale)}</span>
+            <button disabled={saving} className="rounded-full bg-white text-zinc-900 px-6 py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{saving ? t("market.saving") : t("market.saveBtn")}</button>
+          </div>
         </div>
-
-        <button disabled={saving} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">{saving ? t("market.saving") : t("market.saveBtn")}</button>
-        <p className="text-xs text-zinc-500 text-center">{t("market.backendNote")}</p>
       </form>
     </div>
   );
