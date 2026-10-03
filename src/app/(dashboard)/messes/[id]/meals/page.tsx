@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
-import { formatNumber } from "@/i18n/dict";
+import { formatNumber, formatDateBD } from "@/i18n/dict";
 
 type MealType = { id: string; name: string; slug: string; isActive: boolean; sortOrder: number };
 type Member = { id: string; userId: string; fullName: string; status: string };
@@ -188,78 +188,66 @@ export default function MealsPage() {
     loadDate(date);
   }
 
-  async function bulkSetAllOne() {
-    const res = await fetch(`/api/messes/${id}/meals/bulk`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, quantity: 1 }) });
-    const data = await res.json();
-    if (res.ok) {
-      setMsg(`${t("common.success")} — ${formatNumber(data.updated, locale)}`);
-      loadDate(date);
-    } else setMsg(data.error);
-  }
+  const dayTotal = members.reduce((a, m) => a + mealTypes.reduce((x, t) => x + (grid[m.id]?.[t.id] ?? 0), 0), 0);
+  const templateSummary = mealTypes.map((mt) => `${mt.name} ${defaults[mt.id] ?? 1}`).join(", ");
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
-        <span className="text-sm text-zinc-400">|</span>
-        <Link href={`/messes/${id}/meals/matrix`} className="text-sm underline">{t("meals.matrixLink")}</Link>
-        <Link href={`/messes/${id}/meal-types`} className="text-sm underline">{t("meals.typesLink")}</Link>
-      </div>
+    <div className="space-y-4 max-w-4xl mx-auto">
+      <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-bold">{t("meals.dailyTitle")}</h1>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="border rounded-full px-4 py-2 text-sm" />
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="border rounded-full px-4 py-2 text-sm bg-white max-w-full" aria-label={t("common.date")} />
+            <div className="text-[11px] text-zinc-500 mt-0.5">{formatDateBD(date, locale)}</div>
+          </div>
+          <button onClick={toggleLock} title={locked ? t("meals.unlock") : t("meals.lock")} className={`w-11 h-11 grid place-items-center rounded-full border text-base shrink-0 ${locked ? "bg-amber-100 border-amber-300" : "bg-white"}`}>{locked ? "🔒" : "🔓"}</button>
+        </div>
       </div>
 
       {(locked || closed) && <div className="rounded-xl border p-3 text-sm bg-amber-50">{locked ? t("meals.lockedMsg") : ""} {closed ? t("meals.closedMsg") : ""}{t("meals.saveNeedManager")}</div>}
-      {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
+      {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
 
-      <div className="bg-white border rounded-2xl p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-semibold text-sm">Auto template — প্রতিদিন auto</div>
-            <div className="text-xs text-zinc-500">একবার সেভ করুন (যেমন লাঞ্চ 1, ডিনার 1, ব্রেকফাস্ট 0) — প্রতিদিন নতুন তারিখে Auto-fill চাপলে বা খালি দিনে auto উঠবে; যেকোনো দিন এডিট করা যাবে, টেমপ্লেটও এডিট করা যাবে</div>
-          </div>
-          <Link href={`/messes/${id}/meal-types`} className="text-xs underline">মিল টাইপ এডিট (ব্রেকফাস্ট বাদ দিতে Deactivate)</Link>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <details className="bg-white border rounded-2xl px-4 py-2.5">
+        <summary className="text-sm font-medium cursor-pointer py-1.5 list-none flex items-center justify-between gap-2">
+          <span>⚙️ অটো টেমপ্লেট <span className="text-zinc-500 font-normal">• {templateSummary || "—"}</span></span>
+          <span className="text-zinc-400 text-xs">▾</span>
+        </summary>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 pb-1">
           {mealTypes.map((t) => (
-            <div key={t.id} className="border rounded-xl p-3 bg-zinc-50">
+            <div key={t.id} className="border rounded-xl p-2.5 bg-zinc-50">
               <div className="text-xs font-medium">{t.name}</div>
-              <select value={String(defaults[t.id] ?? 1)} onChange={(e) => setDefaults((prev) => ({ ...prev, [t.id]: parseFloat(e.target.value) }))} className="w-full border rounded-lg px-2 py-1.5 text-sm mt-1 bg-white">
+              <select value={String(defaults[t.id] ?? 1)} onChange={(e) => setDefaults((prev) => ({ ...prev, [t.id]: parseFloat(e.target.value) }))} className="w-full border rounded-lg px-2 py-2 text-sm mt-1 bg-white min-h-[44px]">
                 <option value="0">0 — বাদ</option>
                 <option value="0.5">0.5</option>
                 <option value="1">1</option>
                 <option value="1.5">1.5</option>
                 <option value="2">2</option>
               </select>
-              <div className="text-[11px] text-zinc-500 mt-1">{(defaults[t.id] ?? 1) === 0 ? "Auto-তে বাদ" : "Auto-তে " + (defaults[t.id] ?? 1)}</div>
             </div>
           ))}
         </div>
-        <div className="flex gap-2">
-          <button onClick={saveDefaults} disabled={defaultsSaving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50">{defaultsSaving ? "সেভ হচ্ছে..." : "টেমপ্লেট সেভ করুন"}</button>
-          <button onClick={autoFillToday} disabled={autoSaving} className="px-6 rounded-full border bg-white text-sm disabled:opacity-50">{autoSaving ? "ভরছে..." : `Auto-fill ${date}`}</button>
+        <div className="flex gap-2 pb-2">
+          <button onClick={saveDefaults} disabled={defaultsSaving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{defaultsSaving ? "সেভ হচ্ছে..." : "টেমপ্লেট সেভ করুন"}</button>
+          <button onClick={autoFillToday} disabled={autoSaving} className="px-5 rounded-full border bg-white text-sm disabled:opacity-50 min-h-[44px]">{autoSaving ? "ভরছে..." : `Auto-fill`}</button>
         </div>
-        <p className="text-xs text-zinc-500">টিপ: ব্রেকফাস্ট আগামী মাস থেকে বাদ দিতে `মিল টাইপ এডিট` এ ব্রেকফাস্ট Deactivate করুন — পুরনো হিসাব থাকবে, নতুন দিনে কলাম আসবে না</p>
-      </div>
+      </details>
 
-      <div className="bg-white border rounded-2xl p-4 space-y-3">
+      <div className="bg-white border rounded-2xl p-3 sm:p-4 space-y-3">
         <div className="flex flex-wrap gap-2 text-xs">
-          <button onClick={() => bulkSet(1)} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.setAll1")}</button>
-          <button onClick={() => bulkSet(0)} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.clearAll")}</button>
-          <button onClick={bulkSetAllOne} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.bulkApi")}</button>
-          <button onClick={copyPrevDay} className="border rounded-full px-3 py-1 hover:bg-zinc-50">{t("meals.copyPrev")}</button>
+          <button onClick={() => bulkSet(1)} className="border rounded-full px-4 py-2 hover:bg-zinc-50 min-h-[40px]">{t("meals.setAll1")}</button>
+          <button onClick={() => bulkSet(0)} className="border rounded-full px-4 py-2 hover:bg-zinc-50 min-h-[40px]">{t("meals.clearAll")}</button>
+          <button onClick={copyPrevDay} className="border rounded-full px-4 py-2 hover:bg-zinc-50 min-h-[40px]">{t("meals.copyPrev")}</button>
           {mealTypes.map((t) => (
-            <button key={t.id} onClick={() => bulkSet(1, t.id)} className="border rounded-full px-3 py-1 bg-zinc-50">{t.name}=1</button>
+            <button key={t.id} onClick={() => bulkSet(1, t.id)} className="border rounded-full px-3 py-2 bg-zinc-50 min-h-[40px]">{t.name}=1</button>
           ))}
-          <button onClick={toggleLock} className="border rounded-full px-3 py-1 bg-amber-50">{locked ? t("meals.unlock") : t("meals.lock")}</button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-1 px-1">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-2">{t("meals.memberCol")}</th>
+                <th className="text-left p-2 sticky left-0 bg-white z-10">{t("meals.memberCol")}</th>
                 {mealTypes.map((t) => (
                   <th key={t.id} className="p-2 text-center font-medium">{t.name}</th>
                 ))}
@@ -271,10 +259,10 @@ export default function MealsPage() {
                 const total = mealTypes.reduce((a, t) => a + (grid[m.id]?.[t.id] ?? 0), 0);
                 return (
                   <tr key={m.id} className="border-b last:border-0">
-                    <td className="p-2 font-medium text-xs">{m.fullName}</td>
+                    <td className="p-2 font-medium text-xs sticky left-0 bg-white z-10 max-w-[110px] truncate" title={m.fullName}>{m.fullName}</td>
                     {mealTypes.map((t) => (
                       <td key={t.id} className="p-1">
-                        <input type="number" min={0} step={0.5} value={grid[m.id]?.[t.id] ?? ""} onChange={(e) => setCell(m.id, t.id, e.target.value)} className="w-20 border rounded-lg px-2 py-1.5 text-center text-sm" placeholder="0" />
+                        <input type="number" min={0} step={0.5} value={grid[m.id]?.[t.id] ?? ""} onChange={(e) => setCell(m.id, t.id, e.target.value)} className="w-20 border rounded-lg px-2 py-2.5 text-center text-base min-h-[44px]" placeholder="0" inputMode="decimal" />
                       </td>
                     ))}
                     <td className="p-2 text-center font-semibold">{total}</td>
@@ -286,11 +274,21 @@ export default function MealsPage() {
           {members.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("meals.noActiveMembers")}</div>}
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">{saving ? t("meals.saving") : t("meals.saveBtn")}</button>
-          <button onClick={() => loadDate(date)} className="px-6 rounded-full border bg-white text-sm">{t("meals.reloadBtn")}</button>
+        <div className="sticky bottom-0 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-white via-white to-transparent">
+          <div className="rounded-2xl bg-zinc-900 text-white p-3 flex items-center justify-between gap-2">
+            <span className="text-sm font-bold pl-1">মোট {formatNumber(dayTotal, locale)} মিল</span>
+            <span className="flex gap-2">
+              <button onClick={() => loadDate(date)} className="rounded-full border border-zinc-600 px-4 py-2.5 text-sm min-h-[44px]">{t("meals.reloadBtn")}</button>
+              <button onClick={save} disabled={saving} className="rounded-full bg-white text-zinc-900 px-6 py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{saving ? t("meals.saving") : t("meals.saveBtn")}</button>
+            </span>
+          </div>
         </div>
-        <p className="text-xs text-zinc-500">{t("meals.precisionNote")}</p>
+        <p className="text-xs text-zinc-500">পরিমাণ ০ / ০.৫ / ১… • সংশোধন অডিট হয়</p>
+      </div>
+
+      <div className="flex justify-center gap-4 text-xs text-zinc-400">
+        <Link href={`/messes/${id}/meals/matrix`} className="underline">{t("meals.matrixLink")}</Link>
+        <Link href={`/messes/${id}/meal-types`} className="underline">{t("meals.typesLink")}</Link>
       </div>
     </div>
   );
