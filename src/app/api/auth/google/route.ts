@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { buildGoogleAuthUrl, isGoogleConfigured } from "@/lib/google";
+import { oauthStateCookie } from "@/lib/auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 // GET /api/auth/google — start Google OAuth (public)
@@ -14,11 +15,7 @@ export async function GET(req: Request) {
 
   const state = nanoid(24);
   const res = NextResponse.redirect(buildGoogleAuthUrl(state));
-  res.cookies.set("omm_oauth_state", state, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 300, // 5 minutes
-  });
+  // single raw header (no cookies-API mixing — see callback)
+  res.headers.append("Set-Cookie", oauthStateCookie(state));
   return res;
 }

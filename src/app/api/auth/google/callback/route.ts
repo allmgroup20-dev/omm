@@ -5,7 +5,7 @@ import { exchangeCodeForProfile, googleConfig, isGoogleConfigured } from "@/lib/
 import { getRequestDb } from "@/db";
 import { users, sessions, loginHistory } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { hashPassword, createSessionToken, sessionCookie, hashToken } from "@/lib/auth";
+import { hashPassword, createSessionToken, sessionCookie, clearOauthStateCookie, hashToken } from "@/lib/auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 // GET /api/auth/google/callback?code=...&state=... (public)
@@ -181,8 +181,11 @@ export async function GET(req: Request) {
     console.error("[google-callback] E5 checkpoint: session inserted");
 
     const res = NextResponse.redirect(`${appUrl}/dashboard`);
-    res.headers.set("Set-Cookie", sessionCookie(token));
-    res.cookies.set("omm_oauth_state", "", { path: "/", maxAge: 0 });
+    // NEVER mix raw headers.set("Set-Cookie") with res.cookies.set() on one
+    // response — the cookies adapter can drop the raw header under
+    // OpenNext/Workers, losing the session (silent login loop). append() both.
+    res.headers.append("Set-Cookie", sessionCookie(token));
+    res.headers.append("Set-Cookie", clearOauthStateCookie());
     console.error("[google-callback] E5 success: redirecting to dashboard", { userId });
     return res;
   } catch (err) {

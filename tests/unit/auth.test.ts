@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validatePasswordPolicy } from "@/lib/auth";
+import { validatePasswordPolicy, sessionCookie, oauthStateCookie, clearOauthStateCookie, getCookieName, OAUTH_STATE_COOKIE } from "@/lib/auth";
 import { registerSchema, loginSchema } from "@/lib/validators";
 
 describe("auth — password policy & validators", () => {
@@ -24,5 +24,33 @@ describe("auth — password policy & validators", () => {
   it("loginSchema requires email and password", () => {
     expect(loginSchema.safeParse({ email: "test@example.com", password: "x" }).success).toBe(true);
     expect(loginSchema.safeParse({ email: "bad", password: "" }).success).toBe(false);
+  });
+});
+
+describe("auth — OAuth cookie headers (Google silent-loop fix)", () => {
+  it("session cookie carries Path/HttpOnly/SameSite/Max-Age", () => {
+    const s = sessionCookie("tok123");
+    expect(s.startsWith(`${getCookieName()}=tok123`)).toBe(true);
+    for (const part of ["Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=604800"]) {
+      expect(s).toContain(part);
+    }
+  });
+
+  it("oauth state set/clear helpers share name + path", () => {
+    expect(oauthStateCookie("abc")).toContain(`${OAUTH_STATE_COOKIE}=abc`);
+    expect(oauthStateCookie("abc")).toContain("Max-Age=300");
+    expect(clearOauthStateCookie()).toContain(`${OAUTH_STATE_COOKIE}=;`);
+    expect(clearOauthStateCookie()).toContain("Max-Age=0");
+  });
+
+  it("appending both headers keeps BOTH cookies (the silent-loop bug)", () => {
+    // mirrors the Google callback: two raw appends, never cookies-API mixing
+    const h = new Headers();
+    h.append("Set-Cookie", sessionCookie("tok123"));
+    h.append("Set-Cookie", clearOauthStateCookie());
+    const all = h.getSetCookie();
+    expect(all.length).toBe(2);
+    expect(all[0]).toContain(getCookieName());
+    expect(all[1]).toContain(OAUTH_STATE_COOKIE);
   });
 });

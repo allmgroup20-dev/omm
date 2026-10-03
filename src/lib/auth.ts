@@ -61,6 +61,17 @@ export function clearSessionCookie(): string {
   return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 
+export const OAUTH_STATE_COOKIE = "omm_oauth_state";
+
+export function oauthStateCookie(state: string): string {
+  // 5 minutes, httpOnly, lax — set at OAuth start
+  return `${OAUTH_STATE_COOKIE}=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=300`;
+}
+
+export function clearOauthStateCookie(): string {
+  return `${OAUTH_STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
 export function hashToken(token: string): string {
   // simple hash for DB lookup (sha256 stub — use bcrypt for session but jti enough)
   // we store tokenHash via SHA-like; for now use first 32 chars
