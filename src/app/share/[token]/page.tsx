@@ -75,8 +75,8 @@ export default function SharePage() {
     }
   }
 
-  if (err) return <div className="max-w-2xl mx-auto p-6 text-sm text-red-600">{err} — <Link href="/" className="underline">Home</Link></div>;
-  if (!data) return <div className="max-w-2xl mx-auto p-6 text-sm">Loading...</div>;
+  if (err) return <div className="max-w-2xl mx-auto p-3 sm:p-6 text-sm text-red-600">{err} — <Link href="/" className="underline">Home</Link></div>;
+  if (!data) return <div className="max-w-2xl mx-auto p-3 sm:p-6 text-sm">Loading...</div>;
 
   return (
     <div className="max-w-3xl mx-auto p-3 sm:p-6 space-y-4">
@@ -100,15 +100,16 @@ export default function SharePage() {
         <div className="bg-white border rounded-2xl p-4"><div className="text-xs text-zinc-500">🧾 অন্যান্য খরচ</div><div className="text-lg font-bold">{formatPaisaBnCompact(data.stats.totalOtherPaisa || 0)}</div></div>
       </div>
 
-      <div className="bg-white border rounded-2xl p-4">
+      <div className="bg-white border rounded-2xl p-3 sm:p-4">
         <div className="font-semibold text-sm">প্রতি সদস্য — {data.ym} (নাম A-Z, মিল, খরচ, জমা, পাবে/দেবে)</div>
-        <div className="overflow-x-auto mt-3">
-          <table className="w-full text-xs">
+        {/* Desktop/tablet: full table */}
+        <div className="hidden sm:block overflow-x-auto mt-3">
+          <table className="w-full text-xs min-w-[520px]">
             <thead className="bg-zinc-50"><tr><th className="text-left p-2">নাম</th><th className="p-2">মিল</th><th className="p-2 text-right">মিল খরচ</th><th className="p-2 text-right">জমা</th><th className="p-2 text-right">ব্যালেন্স</th><th className="p-2 text-center">অবস্থা</th></tr></thead>
             <tbody>
               {data.membersFinance.map((m) => (
                 <tr key={m.memberId} className="border-t">
-                  <td className="p-2 font-medium">{m.fullName}</td>
+                  <td className="p-2 font-medium max-w-[140px] truncate" title={m.fullName}>{m.fullName}</td>
                   <td className="p-2 text-center">{formatNumBn(m.totalMeals, 1)}</td>
                   <td className="p-2 text-right">{formatPaisaBnCompact(m.mealCostPaisa)}</td>
                   <td className="p-2 text-right text-emerald-700">{formatPaisaBnCompact(m.depositPaisa)}</td>
@@ -118,6 +119,25 @@ export default function SharePage() {
               ))}
             </tbody>
           </table>
+        </div>
+        {/* Mobile: compact cards, no sideways scroll */}
+        <div className="sm:hidden mt-3 space-y-2">
+          {data.membersFinance.map((m) => (
+            <div key={m.memberId} className="rounded-xl border bg-white px-3 py-2.5 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-[13px] truncate min-w-0" title={m.fullName}>{m.fullName}</span>
+                <span className={`shrink-0 text-[11px] rounded-full px-2 py-0.5 ${m.status === "due" ? "bg-red-100 text-red-700" : m.status === "advance" ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-600"}`}>{m.status === "due" ? "দেবে" : m.status === "advance" ? "পাবে" : "সমান"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-xs text-zinc-600">
+                <span className="truncate">{formatNumBn(m.totalMeals, 1)} মিল • খরচ {formatPaisaBnCompact(m.mealCostPaisa)}</span>
+                <span className="shrink-0">জমা {formatPaisaBnCompact(m.depositPaisa)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-zinc-500">ব্যালেন্স</span>
+                <span className={`font-mono font-bold ${m.status === "due" ? "text-red-600" : m.status === "advance" ? "text-emerald-600" : ""}`}>{formatPaisaBnCompact(m.balancePaisa)}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
