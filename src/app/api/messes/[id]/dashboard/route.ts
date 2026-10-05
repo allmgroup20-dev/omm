@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, messes } from "@/db/schema";
+import { messMembers, mealRecords, marketEntries, expenses, deposits, monthlySettlements, messes } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, cashInHandPaisa, sumMonthDeposits } from "@/lib/money";
@@ -61,7 +61,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const markets = await db.select().from(marketEntries).where(eq(marketEntries.messId, id));
   const exps = await db.select().from(expenses).where(eq(expenses.messId, id));
   const deps = await db.select().from(deposits).where(eq(deposits.messId, id));
-  const ledgers = await db.select().from(ledgerEntries).where(eq(ledgerEntries.messId, id));
 
   const todayMarket = markets.filter((r) => r.date === today && r.status === "active").reduce((a, r) => a + r.finalPaisa, 0);
   const todayOther = exps.filter((r) => r.date === today && r.status === "approved").reduce((a, r) => a + r.amountPaisa, 0);
@@ -90,9 +89,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       .filter((r) => r.memberId === m.id && r.date.startsWith(`${ym}-`))
       .reduce((a, r) => a + r.quantityScaled, 0);
     const mealCostPaisa = Math.round((mealsScaled * mealRatePaisa) / 100);
-    const monthDepositPaisa = ledgers
-      .filter((r) => r.memberId === m.id && r.type === "deposit" && r.date.startsWith(`${ym}-`))
-      .reduce((a, r) => a + r.creditPaisa, 0);
+    // deposits table is the single source (active only, voided excluded)
+    const monthDepositPaisa = sumMonthDeposits(
+      deps.filter((r) => r.memberId === m.id),
+      ym,
+    );
     perMemberBalances[m.id] = monthlyNetBalance(monthDepositPaisa, mealCostPaisa);
   }
   const totalDue = Object.values(perMemberBalances).filter((b) => b < 0).reduce((a, b) => a + Math.abs(b), 0);

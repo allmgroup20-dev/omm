@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getRequestDb } from "@/db";
-import { messShareTokens, messes, messMembers, users, deposits, ledgerEntries } from "@/db/schema";
+import { messShareTokens, messes, messMembers, users, deposits } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
+import { monthlyNetBalance, netBalanceStatus } from "@/lib/money";
 import { memberDisplayName } from "@/lib/mess";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
@@ -35,7 +36,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
   const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
   const prefix = `${ym}-`;
   const depRows = await db.select().from(deposits).where(eq(deposits.messId, share[0].messId));
-  const ledgerRows = await db.select().from(ledgerEntries).where(eq(ledgerEntries.messId, share[0].messId));
 
   const membersFinance = members
     .filter((m) => m.status === "active")
@@ -43,10 +43,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
       const scaled = byMember[m.id] || 0;
       const totalMeals = scaled / 100;
       const mealCostPaisa = Math.round((scaled * finance.mealRatePaisa) / 100);
+      // same monthly-net formula as the manager dashboard (voided excluded)
       const depositPaisa = depRows.filter((d) => d.memberId === m.id && d.status === "active" && d.date.startsWith(prefix)).reduce((a, r) => a + r.amountPaisa, 0);
-      const ledgers = ledgerRows.filter((r) => r.memberId === m.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      const balancePaisa = ledgers.length ? ledgers[ledgers.length - 1].balancePaisa : 0;
-      const status = balancePaisa > 0 ? "advance" : balancePaisa < 0 ? "due" : "settled";
+      const balancePaisa = monthlyNetBalance(depositPaisa, mealCostPaisa);
+      const status = netBalanceStatus(balancePaisa);
       const fullName = memberDisplayName(m as never, { fullName: userMap.get(m.userId || "") || "" } as never) || m.displayName || "সদস্য";
       return { memberId: m.id, fullName, displayName: m.displayName, totalMeals, mealCostPaisa, depositPaisa, balancePaisa, status };
     })

@@ -73,9 +73,10 @@ export default function PublicDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [memberDash, setMemberDash] = useState<{ todayMeals: number; monthMeals: number; currentBalancePaisa: number; dueAdvance: string } | null>(null);
-  const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash"; member?: BalanceMember }>(null);
+  const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash" | "share"; member?: BalanceMember }>(null);
   const [drawerData, setDrawerData] = useState<{ marketEntries?: MarketDrawerEntry[]; vendorMap?: Record<string, string>; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
+  const [shareTokens, setShareTokens] = useState<{ token: string; expiresAt: string | null; createdAt: string }[]>([]);
   const [shareMsg, setShareMsg] = useState("");
   const [shareBusy, setShareBusy] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -146,11 +147,16 @@ export default function PublicDashboardPage() {
     try {
       let token: string | null = null;
       const listed = await fetch(`/api/messes/${id}/share`).then((r) => r.json().catch(() => ({})));
-      if (Array.isArray(listed.tokens)) token = pickValidShareToken(listed.tokens);
+      if (Array.isArray(listed.tokens)) {
+        token = pickValidShareToken(listed.tokens);
+        setShareTokens(listed.tokens);
+      }
       if (!token) {
         const created = await fetch(`/api/messes/${id}/share`, { method: "POST" }).then((r) => r.json().catch(() => ({})));
-        if (created.token) token = created.token as string;
-        else throw new Error(created.error || "শেয়ার লিংক বানানো যায়নি");
+        if (created.token) {
+          token = created.token as string;
+          setShareTokens((prev) => [{ token: token as string, expiresAt: null, createdAt: new Date().toISOString() }, ...prev]);
+        } else throw new Error(created.error || "শেয়ার লিংক বানানো যায়নি");
       }
       const url = shareUrl(window.location.origin, token);
       if (navigator.share) {
@@ -164,6 +170,33 @@ export default function PublicDashboardPage() {
       setShareMsg(e instanceof Error ? e.message : "শেয়ার ব্যর্থ — আবার চেষ্টা করুন");
     } finally {
       setShareBusy(false);
+    }
+  }
+
+  async function loadShareTokens() {
+    const d = await fetch(`/api/messes/${id}/share`).then((r) => r.json().catch(() => ({})));
+    if (Array.isArray(d.tokens)) setShareTokens(d.tokens);
+  }
+
+  async function copyShareLink(token: string) {
+    const url = shareUrl(window.location.origin, token);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMsg(`লিংক কপি হয়েছে: ${url}`);
+    } catch {
+      setShareMsg(url);
+    }
+  }
+
+  async function revokeShareLink(token: string) {
+    if (!window.confirm("এই শেয়ার লিংকটি বাতিল করবেন?")) return;
+    setShareMsg("");
+    const res = await fetch(`/api/messes/${id}/share?token=${encodeURIComponent(token)}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setShareMsg(data.error || "বাতিল ব্যর্থ");
+    else {
+      setShareMsg("লিংক বাতিল হয়েছে");
+      setShareTokens((prev) => prev.filter((t) => t.token !== token));
     }
   }
 
@@ -284,7 +317,7 @@ export default function PublicDashboardPage() {
           )}
           {membership === "member" && (
             <>
-              <button onClick={shareLink} disabled={shareBusy} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] disabled:opacity-50">🔗 শেয়ার লিংক</button>
+              <button onClick={() => { setDrawer({ type: "share" }); loadShareTokens(); }} disabled={shareBusy} className="px-4 py-2 border rounded-full text-sm bg-white hover:bg-zinc-50 min-h-[44px] disabled:opacity-50">🔗 শেয়ার লিংক</button>
               <button onClick={shareShot} disabled={shareBusy} className="px-4 py-2 rounded-full text-sm bg-zinc-900 text-white min-h-[44px] disabled:opacity-50">{shareBusy ? "তৈরি হচ্ছে..." : "📸 শেয়ার স্ক্রিনশট"}</button>
             </>
           )}
@@ -481,6 +514,27 @@ export default function PublicDashboardPage() {
             <div className="text-2xl font-bold mt-0.5">{formatPaisaBnCompact(stats?.mealRatePaisa || 0)}<span className="text-sm font-medium"> /মিল</span></div>
             <div className="text-[11px] text-emerald-100 mt-1">প্রতি ১ মিলে এই খরচ</div>
           </div>
+        </div>
+      </Drawer>
+      <Drawer open={drawer?.type === "share"} onClose={() => setDrawer(null)} title="🔗 শেয়ার লিংক" subtitle="পাবলিক read-only ভিউ • মেয়াদ ৩০ দিন">
+        <div className="space-y-2">
+          <button onClick={shareLink} disabled={shareBusy} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm min-h-[44px] disabled:opacity-50">{shareBusy ? "তৈরি হচ্ছে..." : "শেয়ার করুন"}</button>
+          {shareTokens.length === 0 && <div className="text-xs text-zinc-500 text-center py-3">এখনো কোনো লিংক নেই — উপরে শেয়ার করুন</div>}
+          {shareTokens.map((st) => {
+            const expired = st.expiresAt ? new Date(st.expiresAt) < new Date() : false;
+            return (
+              <div key={st.token} className="rounded-xl border px-3 py-2.5 space-y-1.5">
+                <div className="font-mono text-xs break-all">/share/{st.token}</div>
+                <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500">
+                  <span>{st.expiresAt ? `মেয়াদ: ${st.expiresAt.slice(0, 10)}` : "মেয়াদ: —"}{expired ? " • মেয়াদোত্তীর্ণ" : ""}</span>
+                  <span className="flex gap-1.5 shrink-0">
+                    <button onClick={() => copyShareLink(st.token)} className="border rounded-full px-3 py-1.5 min-h-[36px]">কপি</button>
+                    <button onClick={() => revokeShareLink(st.token)} className="border rounded-full px-3 py-1.5 min-h-[36px] text-red-600">বাতিল</button>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Drawer>
       <Drawer open={drawer?.type === "cash"} onClose={() => setDrawer(null)} title={t("dashboard.cashTitle")} subtitle={`${fmt(stats?.cashInHandPaisa || 0)}`}>

@@ -30,3 +30,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const rows = await db.select().from(messShareTokens).where(eq(messShareTokens.messId, id));
   return NextResponse.json({ tokens: rows });
 }
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getRequestDb();
+  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+  if (!access[0] || !["manager", "assistant_manager"].includes(access[0].role)) return NextResponse.json({ error: "Forbidden — only manager/assistant can revoke" }, { status: 403 });
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token");
+  if (!token) return NextResponse.json({ error: "token required" }, { status: 400 });
+  const rows = await db.select().from(messShareTokens).where(and(eq(messShareTokens.messId, id), eq(messShareTokens.token, token))).limit(1);
+  if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await db.delete(messShareTokens).where(eq(messShareTokens.id, rows[0].id));
+  return NextResponse.json({ ok: true, revoked: true });
+}

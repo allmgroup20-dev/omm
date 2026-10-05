@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
+import { useMyRole } from "@/hooks/useMyRole";
 
 type Member = {
   id: string;
@@ -36,6 +37,8 @@ export default function MembersPage() {
   const [searching, setSearching] = useState(false);
   const [msg, setMsg] = useState("");
   const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; status: string; requestedAt: string }[]>([]);
+  const { role: myRole, isPrimary } = useMyRole(id);
+  const privileged = myRole === "manager" || isPrimary;
 
   async function loadJoinRequests() {
     const res = await fetch(`/api/messes/${id}/join-requests`).catch(() => null);
@@ -169,8 +172,8 @@ export default function MembersPage() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-lg font-bold">{t("members.title")}</h1>
         <div className="flex gap-2">
-          <button onClick={() => setShowAdd((v) => !v)} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm">{t("members.addMember")}</button>
-          <Link href={`/messes/${id}/invitations`} className="px-4 py-2 rounded-full border bg-white text-sm">{t("members.invite")}</Link>
+          {privileged && <button onClick={() => setShowAdd((v) => !v)} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">{t("members.addMember")}</button>}
+          {privileged && <Link href={`/messes/${id}/invitations`} className="px-4 py-2 rounded-full border bg-white text-sm min-h-[44px] inline-flex items-center">{t("members.invite")}</Link>}
         </div>
       </div>
       {msg && <div className="rounded-xl border bg-white p-3 text-sm">{msg}</div>}
@@ -227,21 +230,29 @@ export default function MembersPage() {
                     </td>
                     <td className="p-3 text-xs">{m.email || "—"}</td>
                     <td className="p-3">
-                      <select value={m.role} onChange={(e) => updateRole(m.id, e.target.value)} className="border rounded-full px-2 py-1 text-xs">
-                        <option value="member">{t("roles.member")}</option>
-                        <option value="assistant_manager">{t("roles.assistant_manager")}</option>
-                        <option value="manager">{t("roles.manager")}</option>
-                      </select>
+                      {privileged ? (
+                        <select value={m.role} onChange={(e) => updateRole(m.id, e.target.value)} className="border rounded-full px-2 py-1 text-xs">
+                          <option value="member">{t("roles.member")}</option>
+                          <option value="assistant_manager">{t("roles.assistant_manager")}</option>
+                          <option value="manager">{t("roles.manager")}</option>
+                        </select>
+                      ) : (
+                        <span className="text-xs">{t(`roles.${m.role}`)}</span>
+                      )}
                     </td>
                     <td className="p-3"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "active" ? "bg-emerald-100" : m.status === "left" ? "bg-zinc-200" : "bg-amber-100"}`}>{t(`status.${m.status}`)}</span></td>
                     <td className="p-3 text-xs">{m.joinedAt.slice(0, 10)}</td>
                     <td className="p-3 text-right flex gap-1 justify-end flex-wrap">
-                      {m.isPlaceholder ? (
-                        <button onClick={() => setLinkFor(m)} className="text-xs border rounded-full px-3 py-1 bg-amber-50">{t("members.linkBtn")}</button>
-                      ) : m.claimedAt ? (
-                        <button onClick={() => unlinkAccount(m)} className="text-xs border rounded-full px-3 py-1">{t("members.unlinkBtn")}</button>
-                      ) : null}
-                      <button onClick={() => updateStatus(m.id, m.status === "active" ? "left" : "active")} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
+                      {privileged && (
+                        <>
+                          {m.isPlaceholder ? (
+                            <button onClick={() => setLinkFor(m)} className="text-xs border rounded-full px-3 py-1 bg-amber-50 min-h-[36px]">{t("members.linkBtn")}</button>
+                          ) : m.claimedAt ? (
+                            <button onClick={() => unlinkAccount(m)} className="text-xs border rounded-full px-3 py-1 min-h-[36px]">{t("members.unlinkBtn")}</button>
+                          ) : null}
+                          <button onClick={() => updateStatus(m.id, m.status === "active" ? "left" : "active")} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50 min-h-[36px]">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -262,10 +273,10 @@ export default function MembersPage() {
                 <div>
                   <span className="font-mono text-xs">{r.userId.slice(0, 8)}</span> <span className={`text-xs rounded-full px-2 py-0.5 ${r.status === "pending" ? "bg-amber-100" : r.status === "approved" ? "bg-emerald-100" : "bg-zinc-200"}`}>{r.status}</span> <span className="text-xs text-zinc-500">{new Date(r.requestedAt).toLocaleString()}</span>
                 </div>
-                {r.status === "pending" && (
+                {r.status === "pending" && privileged && (
                   <div className="flex gap-1">
-                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1">Approve</button>
-                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-3 py-1">Reject</button>
+                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1 min-h-[36px]">Approve</button>
+                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-3 py-1 min-h-[36px]">Reject</button>
                   </div>
                 )}
               </div>

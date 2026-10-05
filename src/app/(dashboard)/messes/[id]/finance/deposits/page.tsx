@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency } from "@/i18n/dict";
 import { isMemberVisibleForEntry } from "@/lib/money";
+import { useMyRole } from "@/hooks/useMyRole";
 
 type Member = { id: string; fullName: string };
 type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null; transactionId?: string | null };
@@ -19,6 +20,7 @@ export default function DepositsPage() {
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Deposit | null>(null);
+  const { canManage } = useMyRole(id);
   const [editForm, setEditForm] = useState({ memberId: "", date: "", amount: "", paymentMethod: "cash", note: "", reason: "" });
   const [editBusy, setEditBusy] = useState(false);
   const [lockedPeriods, setLockedPeriods] = useState<string[]>([]);
@@ -166,6 +168,7 @@ export default function DepositsPage() {
           <Link href={`/messes/${id}/settlements`} className="ml-1 underline font-medium">{t("finance.reopenLink")}</Link>
         </div>
       )}
+      {canManage ? (
       <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div><label className="text-xs font-medium">{t("finance.memberLabel")} *</label><select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required><option value="">{t("finance.selectMember")}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}</select></div>
@@ -176,8 +179,11 @@ export default function DepositsPage() {
           <div><label className="text-xs font-medium">{t("finance.paymentLabel")}</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
           <div><label className="text-xs font-medium">{t("finance.noteLabel")}</label><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.notePh")} /></div>
         </div>
-        <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm">{t("finance.addBtn")}</button>
+        <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm min-h-[48px]">{t("finance.addBtn")}</button>
       </form>
+      ) : (
+        <div className="rounded-xl border bg-zinc-50 p-4 text-sm text-zinc-500 text-center">শুধু ম্যানেজার জমা যোগ/এডিট করতে পারে — তথ্য দেখা যাবে</div>
+      )}
 
       <div className="bg-white border rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
@@ -193,7 +199,7 @@ export default function DepositsPage() {
                 <td className="p-3 text-center text-xs">{{ cash: t("market.payCash"), bank: t("market.payBank"), mobile: t("market.payMobile"), other: t("market.payOther") }[d.paymentMethod] || d.paymentMethod}</td>
                 <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${d.status === "active" ? "bg-emerald-100" : "bg-zinc-200"}`}>{t(`status.${d.status}`)}</span></td>
                 <td className="p-3 text-center whitespace-nowrap">
-                  {d.status === "active" ? (
+                  {d.status === "active" && canManage ? (
                     <span className="inline-flex gap-2">
                       <button onClick={() => openEdit(d)} className="text-xs border rounded-full px-3 py-1.5 hover:bg-zinc-50">✏️ {t("common.edit")}</button>
                       <button onClick={() => voidDeposit(d)} className="text-xs border rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50">{t("finance.voidBtn")}</button>

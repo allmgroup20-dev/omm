@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatDateBD } from "@/i18n/dict";
 import { buildMarketItemsPayload, previewItemsTotalBDT } from "@/lib/market-view";
+import { useMyRole } from "@/hooks/useMyRole";
 
 type Entry = { id: string; date: string; vendorId: string | null; classification: string; paymentMethod: string; totalPaisa: number; transportPaisa: number; discountPaisa: number; finalPaisa: number; notes: string | null; status: string };
 type Item = { id: string; productNameSnapshot: string; categoryNameSnapshot: string | null; quantityScaled: number; unit: string; unitPricePaisa: number; totalPaisa: number };
@@ -40,6 +41,7 @@ export default function EntryDetailPage() {
   const [form, setForm] = useState({ date: "", classification: "food", paymentMethod: "cash", discount: "0", transport: "0", purchasedBy: [] as string[], vendorId: "", notes: "" });
   const [editItems, setEditItems] = useState<Row[]>([]);
   const endOfRowsRef = useRef<HTMLDivElement>(null);
+  const { canManage } = useMyRole(id);
   const [members, setMembers] = useState<{ id: string; displayName: string }[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -229,9 +231,10 @@ export default function EntryDetailPage() {
       <div className="bg-white border rounded-2xl p-4 space-y-3">
         <div className="font-medium text-sm">Edit — সব ফিল্ড</div>
         {!isActive && <div className="text-xs text-zinc-500">বাতিলকৃত এন্ট্রি এডিট করা যাবে না।</div>}
-        {isActive && !editing ? (
+        {isActive && !canManage && <div className="text-xs text-zinc-500">শুধু ম্যানেজার এডিট করতে পারে — তথ্য দেখা যাবে।</div>}
+        {isActive && canManage && !editing ? (
           <button onClick={() => setEditing(true)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">Edit</button>
-        ) : isActive ? (
+        ) : isActive && canManage ? (
           <div className="space-y-3">
             <div className="grid md:grid-cols-2 gap-3">
               <div><label className="text-xs">তারিখ (DD-MM-YYYY)</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /><div className="text-[11px] text-zinc-500 mt-1">{form.date ? formatDateBD(form.date, locale) : ""}</div></div>
@@ -340,7 +343,7 @@ export default function EntryDetailPage() {
         ) : null}
         {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
         <div className="flex gap-2 pt-2">
-          {isActive && <button onClick={voidEntry} className="px-4 py-2 rounded-full border text-sm text-red-600 min-h-[44px]">Void (বাতিল)</button>}
+          {isActive && canManage && <button onClick={voidEntry} className="px-4 py-2 rounded-full border text-sm text-red-600 min-h-[44px]">Void (বাতিল)</button>}
           <button onClick={() => router.push(`/messes/${id}/market/entries`)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">Back to list</button>
         </div>
       </div>

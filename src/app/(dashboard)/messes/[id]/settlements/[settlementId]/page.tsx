@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatNumber } from "@/i18n/dict";
+import { useMyRole } from "@/hooks/useMyRole";
 
 type MemberSettle = { memberId: string; fullName: string; totalMeals: number; mealCostPaisa: number; allocatedExpensePaisa: number; previousBalancePaisa: number; depositPaisa: number; closingBalancePaisa: number; status: string };
 type Disposition = { memberId: string; kind: string; amountPaisa: number; createdAt: string };
@@ -15,6 +16,7 @@ export default function SettlementDetailPage() {
   const [members, setMembers] = useState<MemberSettle[]>([]);
   const [dispositions, setDispositions] = useState<Record<string, Disposition>>({});
   const [msg, setMsg] = useState("");
+  const { isManager } = useMyRole(id);
 
   function load() {
     fetch(`/api/messes/${id}/settlements/${settlementId}`).then((r) => r.json()).then((d) => {
@@ -93,10 +95,12 @@ export default function SettlementDetailPage() {
                     {m.closingBalancePaisa > 0 ? (
                       <span className="inline-flex flex-col gap-1 items-center">
                         {dispBadge(m.memberId)}
-                        <span className="inline-flex gap-1">
-                          <button onClick={() => setDisposition(m.memberId, "carry")} className="text-[11px] border rounded-full px-2 py-1 hover:bg-emerald-50 min-h-[32px]">{t("settlements.carryBtn")}</button>
-                          <button onClick={() => setDisposition(m.memberId, "refund")} className="text-[11px] border rounded-full px-2 py-1 hover:bg-sky-50 min-h-[32px]">{t("settlements.refundBtn")}</button>
-                        </span>
+                        {isManager && (
+                          <span className="inline-flex gap-1">
+                            <button onClick={() => setDisposition(m.memberId, "carry")} className="text-[11px] border rounded-full px-2 py-1 hover:bg-emerald-50 min-h-[32px]">{t("settlements.carryBtn")}</button>
+                            <button onClick={() => setDisposition(m.memberId, "refund")} className="text-[11px] border rounded-full px-2 py-1 hover:bg-sky-50 min-h-[32px]">{t("settlements.refundBtn")}</button>
+                          </span>
+                        )}
                       </span>
                     ) : <span className="text-[11px] text-zinc-400">—</span>}
                   </td>

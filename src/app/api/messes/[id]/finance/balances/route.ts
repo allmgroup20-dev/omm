@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { messMembers, ledgerEntries, users } from "@/db/schema";
+import { messMembers, ledgerEntries, deposits, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, netBalanceStatus } from "@/lib/money";
@@ -33,6 +33,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // ledger balances per member (current)
   const ledgerRows = await db.select().from(ledgerEntries).where(eq(ledgerEntries.messId, id));
+  // deposits table is the single source for monthly sums (voided excluded)
+  const depRows = await db.select().from(deposits).where(eq(deposits.messId, id));
   // map userId -> fullName for display
   const userRows = await db.select().from(users);
   const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
@@ -44,10 +46,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const mealCostPaisa = Math.round((mealsScaled * mealRatePaisa) / 100); // scaled * rate /100
     const memberLedger = ledgerRows.filter((r) => r.memberId === m.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     const currentBalance = memberLedger.length ? memberLedger[memberLedger.length - 1].balancePaisa : 0;
-    // deposit for month: sum of deposit-type ledger credits in month
+    // deposit for month: single source = deposits table (active only, voided excluded)
     const mm = String(month).padStart(2, "0");
     const prefix = `${year}-${mm}-`;
-    const monthDeposits = memberLedger.filter((r) => r.type === "deposit" && r.date.startsWith(prefix)).reduce((a, r) => a + r.creditPaisa, 0);
+    const monthDeposits = depRows
+      .filter((d) => d.memberId === m.id && d.status === "active" && d.date.startsWith(prefix))
+      .reduce((a, d) => a + d.amountPaisa, 0);
 
     // Monthly balance = month deposits − month meal cost (+ = advance, − = due).
     // NOTE: ledger holds deposit-only entries (no meal_cost postings), so the
