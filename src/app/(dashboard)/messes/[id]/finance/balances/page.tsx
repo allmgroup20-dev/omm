@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatNumber } from "@/i18n/dict";
 
-type Bal = { memberId: string; userId: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; status: string };
+type Bal = { memberId: string; userId: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; dueSourceYm: string | null; status: string };
 
 export default function BalancesPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,11 +16,9 @@ export default function BalancesPage() {
   const [data, setData] = useState<{ mealRateBDT: number; breakdown: string; members: (Bal & { name?: string })[] } | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
-  const viewedYm = `${year}-${String(month).padStart(2, "0")}`;
-  const currentYm = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
 
-  async function collectDue(memberId: string) {
-    const raw = window.prompt("কত টাকা পেলেন? (আজকের তারিখে নেওয়া হবে)");
+  async function collectDue(memberId: string, sourceYm: string) {
+    const raw = window.prompt(`কত টাকা পেলেন? (${sourceYm}-এর বকেয়া — আজকের তারিখে নেওয়া হবে)`);
     if (!raw) return;
     const amount = parseFloat(raw);
     if (!amount || amount <= 0) {
@@ -31,12 +29,12 @@ export default function BalancesPage() {
     const res = await fetch(`/api/messes/${id}/deposits/collect`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId, amount, sourceYm: viewedYm }),
+      body: JSON.stringify({ memberId, amount, sourceYm }),
     });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) setMsg(j.error || "আদায় ব্যর্থ");
     else {
-      setMsg(`আদায় হয়েছে — ${viewedYm}-এ ${formatCurrency(j.split.toSourcePaisa, locale)} + এই মাসে ${formatCurrency(j.split.toCurrentPaisa, locale)}`);
+      setMsg(`আদায় হয়েছে — ${sourceYm}-এ ${formatCurrency(j.split.toSourcePaisa, locale)} + এই মাসে ${formatCurrency(j.split.toCurrentPaisa, locale)}`);
       load();
     }
   }
@@ -86,7 +84,7 @@ export default function BalancesPage() {
                     <td className="p-3 text-center">{formatNumber(m.totalMeals, locale)}</td>
                     <td className="p-3 text-right">{formatCurrency(m.mealCostPaisa, locale)}</td>
                     <td className="p-3 text-right text-emerald-700">{formatCurrency(m.depositPaisa, locale)}{(m.dueCollectedPaisa || 0) > 0 && <span className="block text-[11px] font-normal text-sky-700">বকেয়া আদায় {formatCurrency(m.dueCollectedPaisa, locale)}</span>}</td>
-                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.dueRemainingPaisa || 0) > 0 && viewedYm < currentYm && <button onClick={() => collectDue(m.memberId)} className="block mx-auto mt-1 text-[11px] border rounded-full px-2 py-1 min-h-[32px] hover:bg-zinc-50">বকেয়া জমা ({formatCurrency(m.dueRemainingPaisa, locale)})</button>}</td>
+                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.dueRemainingPaisa || 0) > 0 && m.dueSourceYm && <button onClick={() => collectDue(m.memberId, m.dueSourceYm as string)} className="block mx-auto mt-1 text-[11px] border rounded-full px-2 py-1 min-h-[32px] hover:bg-zinc-50">বকেয়া জমা ({m.dueSourceYm} • {formatCurrency(m.dueRemainingPaisa, locale)})</button>}</td>
                     <td className="p-3 text-right font-bold">{formatCurrency(m.balancePaisa, locale)}</td>
                   </tr>
                 ))}

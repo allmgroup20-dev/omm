@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isMemberInMonth, nextYearMonth, carryDepositTarget, canRecordCarry, canRecordRefund } from "@/lib/settlement";
+import { isMemberInMonth, nextYearMonth, carryDepositTarget, canRecordCarry, canRecordRefund, prevYearMonth } from "@/lib/settlement";
 import { isMemberVisibleForEntry } from "@/lib/money";
 
 describe("month-close — member month window (leave till month-end)", () => {
@@ -113,5 +113,10 @@ describe("carry as real deposit — next-month 1st entry", () => {
     expect(canRecordRefund(null)).toBe(true);
     expect(canRecordRefund({ kind: "carry", refActive: true })).toBe(true);
     expect(canRecordRefund({ kind: "refund", refActive: false })).toBe(false);
+  });
+
+  it("previous month steps back over year boundary", () => {
+    expect(prevYearMonth(2026, 10)).toEqual({ year: 2026, month: 9 });
+    expect(prevYearMonth(2026, 1)).toEqual({ year: 2025, month: 12 });
   });
 });

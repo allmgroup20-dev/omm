@@ -23,6 +23,20 @@ export function isMemberInMonth(
   return (m.joinedAt || "").slice(0, 10) <= monthEnd && (!m.leftAt || m.leftAt.slice(0, 10) >= monthStart);
 }
 
+/** Previous calendar month (Jan → Dec-1y). */
+export function prevYearMonth(year: number, month: number): { year: number; month: number } {
+  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+}
+
+async function findPrevSettlement(messId: string, year: number, month: number) {
+  const db = await getRequestDb();
+  const prevSettlements = await db.select().from(monthlySettlements).where(eq(monthlySettlements.messId, messId));
+  const sortedPrev = prevSettlements
+    .filter((s) => s.year < year || (s.year === year && s.month < month))
+    .sort((a, b) => (a.year === b.year ? a.month - b.month : a.year - b.year));
+  return sortedPrev.length ? sortedPrev[sortedPrev.length - 1] : null;
+}
+
 /** Shared by settlement, balances and dashboard: only members in this month. */
 export function filterMembersForMonth<
   T extends { joinedAt: string; leftAt: string | null },
@@ -79,12 +93,8 @@ export async function getPreviousBalance(
   month: number,
 ): Promise<number> {
   const db = await getRequestDb();
-  const prevSettlements = await db.select().from(monthlySettlements).where(eq(monthlySettlements.messId, messId));
-  const sortedPrev = prevSettlements
-    .filter((s) => s.year < year || (s.year === year && s.month < month))
-    .sort((a, b) => (a.year === b.year ? a.month - b.month : a.year - b.year));
-  if (!sortedPrev.length) return 0;
-  const last = sortedPrev[sortedPrev.length - 1];
+  const last = await findPrevSettlement(messId, year, month);
+  if (!last) return 0;
   const memSett = await db.select().from(memberSettlements).where(eq(memberSettlements.settlementId, last.id));
   const found = memSett.find((ms) => ms.memberId === memberId);
   let prev = found ? found.closingBalancePaisa : 0;
@@ -92,6 +102,16 @@ export async function getPreviousBalance(
   const mine = adjRows.filter((a) => a.memberId === memberId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   if (mine.length) prev += mine[mine.length - 1].amountPaisa;
   return prev;
+}
+
+/**
+ * Which month's settlement feeds this month's opening (YYYY-MM | null).
+ * Due-collection uses it as the source month — no guessing needed.
+ */
+export async function getPreviousSourceYm(messId: string, year: number, month: number): Promise<string | null> {
+  const last = await findPrevSettlement(messId, year, month);
+  if (!last) return null;
+  return `${last.year}-${String(last.month).padStart(2, "0")}`;
 }
 
 export async function computeSettlement(messId: string, year: number, month: number) {

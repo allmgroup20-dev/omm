@@ -25,7 +25,7 @@ type Stats = {
   cashInHandPaisa: number;
 };
 
-type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; status: string };
+type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; dueSourceYm: string | null; status: string };
 
 function fmt(n: number) { return formatPaisaBnCompact(n); } // single money standard: Bengali, compact, proper minus
 
@@ -124,8 +124,8 @@ export default function PublicDashboardPage() {
 
   const currentYm = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
 
-  async function collectDue(memberId: string) {
-    const raw = window.prompt("কত টাকা পেলেন? (আজকের তারিখে নেওয়া হবে)");
+  async function collectDue(memberId: string, sourceYm: string) {
+    const raw = window.prompt(`কত টাকা পেলেন? (${sourceYm}-এর বকেয়া — আজকের তারিখে নেওয়া হবে)`);
     if (!raw) return;
     const amount = parseFloat(raw);
     if (!amount || amount <= 0) { setShareMsg("সঠিক টাকা লিখুন"); return; }
@@ -133,7 +133,7 @@ export default function PublicDashboardPage() {
     const res = await fetch(`/api/messes/${id}/deposits/collect`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId, amount, sourceYm: ym }),
+      body: JSON.stringify({ memberId, amount, sourceYm }),
     });
     const data = await res.json().catch(() => ({}));
     setShareBusy(false);
@@ -141,7 +141,7 @@ export default function PublicDashboardPage() {
       setShareMsg(data.error || "আদায় ব্যর্থ");
       return;
     }
-    setShareMsg(`আদায় হয়েছে — ${ym}-এ ${formatPaisaBnCompact(data.split.toSourcePaisa)} + এই মাসে ${formatPaisaBnCompact(data.split.toCurrentPaisa)}`);
+    setShareMsg(`আদায় হয়েছে — ${sourceYm}-এ ${formatPaisaBnCompact(data.split.toSourcePaisa)} + এই মাসে ${formatPaisaBnCompact(data.split.toCurrentPaisa)}`);
     setDrawer(null);
     reloadBalances();
   }
@@ -574,7 +574,7 @@ export default function PublicDashboardPage() {
         </div>
       </Drawer>
       <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${monthLabel} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
-        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawer?.member && (drawer.member.dueRemainingPaisa || 0) > 0 && ym < currentYm && <button onClick={() => drawer.member && collectDue(drawer.member.memberId)} disabled={shareBusy} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm mb-2 min-h-[44px] disabled:opacity-50">বকেয়া জমা ({fmt(drawer.member.dueRemainingPaisa)})</button>}{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
+        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawer?.member && (drawer.member.dueRemainingPaisa || 0) > 0 && drawer.member.dueSourceYm && <button onClick={() => drawer.member && drawer.member.dueSourceYm && collectDue(drawer.member.memberId, drawer.member.dueSourceYm)} disabled={shareBusy} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm mb-2 min-h-[44px] disabled:opacity-50">বকেয়া জমা ({drawer.member.dueSourceYm} • {fmt(drawer.member.dueRemainingPaisa)})</button>}{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
       </Drawer>
     </div>
   );

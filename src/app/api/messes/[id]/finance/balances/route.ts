@@ -5,7 +5,7 @@ import { messMembers, ledgerEntries, deposits, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
 import { monthlyNetBalance, netBalanceStatus, dueProgress } from "@/lib/money";
-import { filterMembersForMonth, getPreviousBalance } from "@/lib/settlement";
+import { filterMembersForMonth, getPreviousBalance, getPreviousSourceYm } from "@/lib/settlement";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,11 +35,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const ledgerRows = await db.select().from(ledgerEntries).where(eq(ledgerEntries.messId, id));
   // deposits table is the single source for monthly sums (voided excluded)
   const depRows = await db.select().from(deposits).where(eq(deposits.messId, id));
+  // which past month feeds this month's opening (for due collection)
+  const dueSourceYm = await getPreviousSourceYm(id, year, month);
   // map userId -> fullName for display
   const userRows = await db.select().from(users);
   const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
 
-  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
+  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; dueSourceYm: string | null; lifetimeBalancePaisa?: number; status: string }[] = [];
 
   for (const m of members) {
     const mealsScaled = finance.monthMeals.filter((r) => r.memberId === m.id).reduce((a, r) => a + r.quantityScaled, 0);
@@ -80,6 +82,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       // obligation view: cash total minus collected due = this month's new money
       // (totals stay cash-true; this split is display-only, settlement math untouched)
       newDepositPaisa: monthDeposits - dueCollectedPaisa,
+      dueSourceYm,
       lifetimeBalancePaisa: currentBalance,
       status,
     });
