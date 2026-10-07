@@ -4,8 +4,8 @@ import { getRequestDb } from "@/db";
 import { messMembers, ledgerEntries, deposits, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMonthlyFinance } from "@/lib/finance";
-import { monthlyNetBalance, netBalanceStatus } from "@/lib/money";
-import { filterMembersForMonth } from "@/lib/settlement";
+import { monthlyNetBalance, netBalanceStatus, dueProgress } from "@/lib/money";
+import { filterMembersForMonth, getPreviousBalance } from "@/lib/settlement";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const userRows = await db.select().from(users);
   const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
 
-  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
+  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
 
   for (const m of members) {
     const mealsScaled = finance.monthMeals.filter((r) => r.memberId === m.id).reduce((a, r) => a + r.quantityScaled, 0);
@@ -58,6 +58,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // lifetime running balance is NOT the monthly balance — don't display it here.
     // Previous-month carry + other-expense allocation live on the settlement page.
     const net = monthlyNetBalance(monthDeposits, mealCostPaisa);
+    // carried opening (carry/refund aware) + due-collection progress
+    const openingPaisa = await getPreviousBalance(id, m.id, year, month);
+    const { collectedPaisa: dueCollectedPaisa, remainingPaisa: dueRemainingPaisa } = dueProgress(openingPaisa, monthDeposits);
     // include previous balance carry? Use currentBalance - monthDeposits + mealCost? But for now show net
     // We'll also expose currentBalance
     const status = netBalanceStatus(net);
@@ -71,6 +74,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       mealCostPaisa,
       depositPaisa: monthDeposits,
       balancePaisa: net,
+      openingPaisa,
+      dueCollectedPaisa,
+      dueRemainingPaisa,
       lifetimeBalancePaisa: currentBalance,
       status,
     });

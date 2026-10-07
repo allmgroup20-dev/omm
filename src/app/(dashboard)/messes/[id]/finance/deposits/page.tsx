@@ -8,20 +8,20 @@ import { isMemberVisibleForEntry } from "@/lib/money";
 import { useMyRole } from "@/hooks/useMyRole";
 
 type Member = { id: string; fullName: string };
-type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null; transactionId?: string | null };
+type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null; transactionId?: string | null; forMonth?: string | null };
 
 export default function DepositsPage() {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLocale();
   const [members, setMembers] = useState<Member[]>([]);
   const [deposits, setDeposits] = useState<Deposit[]>([]);
-  const [form, setForm] = useState({ memberId: "", date: new Date().toISOString().slice(0, 10), amount: "", paymentMethod: "cash", note: "" });
+  const [form, setForm] = useState({ memberId: "", date: new Date().toISOString().slice(0, 10), amount: "", paymentMethod: "cash", note: "", forMonth: "" });
   const [msg, setMsg] = useState("");
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Deposit | null>(null);
   const { canManage } = useMyRole(id);
-  const [editForm, setEditForm] = useState({ memberId: "", date: "", amount: "", paymentMethod: "cash", note: "", reason: "" });
+  const [editForm, setEditForm] = useState({ memberId: "", date: "", amount: "", paymentMethod: "cash", note: "", reason: "", forMonth: "" });
   const [editBusy, setEditBusy] = useState(false);
   const [lockedPeriods, setLockedPeriods] = useState<string[]>([]);
   function addLockedPeriod(p: string) {
@@ -78,13 +78,13 @@ export default function DepositsPage() {
     const res = await fetch(`/api/messes/${id}/deposits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId: form.memberId, date: form.date, amount: parseFloat(form.amount) || 0, paymentMethod: form.paymentMethod, note: form.note, clientRefId: `dep-${Date.now()}` }),
+      body: JSON.stringify({ memberId: form.memberId, date: form.date, amount: parseFloat(form.amount) || 0, paymentMethod: form.paymentMethod, note: form.note, forMonth: form.forMonth || undefined, clientRefId: `dep-${Date.now()}` }),
     });
     const data = await res.json();
     if (!res.ok) setMsg(data.error || t("errors.saveFail"));
     else {
       setMsg(`${t("common.success")} — ${t("finance.balanceCol")}: ${formatCurrency(data.balancePaisa, locale)}`);
-      setForm({ ...form, amount: "", note: "" });
+      setForm({ ...form, amount: "", note: "", forMonth: "" });
       load();
     }
   }
@@ -98,6 +98,7 @@ export default function DepositsPage() {
       paymentMethod: d.paymentMethod,
       note: d.note || "",
       reason: "",
+      forMonth: d.forMonth || "",
     });
     setMsg("");
   }
@@ -120,6 +121,7 @@ export default function DepositsPage() {
         amount: parseFloat(editForm.amount) || 0,
         paymentMethod: editForm.paymentMethod,
         note: editForm.note,
+        forMonth: editForm.forMonth || undefined,
         reason: editForm.reason.trim(),
       }),
     });
@@ -179,6 +181,7 @@ export default function DepositsPage() {
           <div><label className="text-xs font-medium">{t("finance.paymentLabel")}</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
           <div><label className="text-xs font-medium">{t("finance.noteLabel")}</label><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.notePh")} /></div>
         </div>
+        <div><label className="text-xs font-medium">কোন মাসের বকেয়া (ঐচ্ছিক)</label><input type="month" value={form.forMonth} onChange={(e) => setForm({ ...form, forMonth: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" /><div className="text-[11px] text-zinc-500 mt-1">যেমন গত মাসের বকেয়া এ মাসে দিলে ওই মাস বেছে দিন — তারিখ এ মাসেরই থাকবে</div></div>
         <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm min-h-[48px]">{t("finance.addBtn")}</button>
       </form>
       ) : (
@@ -193,7 +196,7 @@ export default function DepositsPage() {
           <tbody>
             {deposits.map((d) => (
               <tr key={d.id} className="border-t">
-                <td className="p-3 text-xs">{d.date}</td>
+                <td className="p-3 text-xs">{d.date}{d.forMonth && <span className="block text-[11px] text-sky-700">• {d.forMonth} বকেয়া</span>}</td>
                 <td className="p-3 text-xs">{members.find((m) => m.id === d.memberId)?.fullName || d.memberId.slice(0, 6)}</td>
                 <td className="p-3 text-right font-medium">{formatCurrency(d.amountPaisa, locale)}</td>
                 <td className="p-3 text-center text-xs">{{ cash: t("market.payCash"), bank: t("market.payBank"), mobile: t("market.payMobile"), other: t("market.payOther") }[d.paymentMethod] || d.paymentMethod}</td>
@@ -226,6 +229,7 @@ export default function DepositsPage() {
               <div><label className="text-xs font-medium">{t("finance.amountLabel")} *</label><input type="number" step="0.01" min="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" required /></div>
               <div><label className="text-xs font-medium">{t("finance.paymentLabel")}</label><select value={editForm.paymentMethod} onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
               <div><label className="text-xs font-medium">{t("finance.noteLabel")}</label><input value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.notePh")} /></div>
+              <div><label className="text-xs font-medium">কোন মাসের বকেয়া (ঐচ্ছিক)</label><input type="month" value={editForm.forMonth} onChange={(e) => setEditForm({ ...editForm, forMonth: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" /></div>
               <div className="sm:col-span-2"><label className="text-xs font-medium">{t("finance.reasonLabel")}</label><input value={editForm.reason} onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.reasonPh")} required minLength={3} /></div>
             </div>
             <div className="flex gap-2">

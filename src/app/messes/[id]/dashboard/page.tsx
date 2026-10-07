@@ -25,7 +25,7 @@ type Stats = {
   cashInHandPaisa: number;
 };
 
-type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; status: string };
+type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; status: string };
 
 function fmt(n: number) { return formatPaisaBnCompact(n); } // single money standard: Bengali, compact, proper minus
 
@@ -74,7 +74,7 @@ export default function PublicDashboardPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [memberDash, setMemberDash] = useState<{ todayMeals: number; monthMeals: number; currentBalancePaisa: number; dueAdvance: string } | null>(null);
   const [drawer, setDrawer] = useState<null | { type: "market" | "meals" | "deposits" | "rate" | "member" | "cash" | "share"; member?: BalanceMember }>(null);
-  const [drawerData, setDrawerData] = useState<{ marketEntries?: MarketDrawerEntry[]; vendorMap?: Record<string, string>; deposits?: { date: string; amountPaisa: number; memberId: string; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
+  const [drawerData, setDrawerData] = useState<{ marketEntries?: MarketDrawerEntry[]; vendorMap?: Record<string, string>; deposits?: { date: string; amountPaisa: number; memberId: string; forMonth?: string | null; displayName?: string }[]; memberMeals?: { date: string; qty: number }[]; loading?: boolean }>({});
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [shareTokens, setShareTokens] = useState<{ token: string; expiresAt: string | null; createdAt: string }[]>([]);
   const [shareMsg, setShareMsg] = useState("");
@@ -287,7 +287,7 @@ export default function PublicDashboardPage() {
         const byDate: Record<string, number> = {};
         for (const r of mine) byDate[r.date] = (byDate[r.date] || 0) + r.quantityScaled / 100;
         const memberMeals = Object.entries(byDate).sort((a, b) => a[0].localeCompare(b[0])).map(([date, qty]) => ({ date, qty }));
-        const deps = ((depRes.deposits || []) as { date: string; amountPaisa: number }[]).filter((d) => d.date.startsWith(ym));
+        const deps = ((depRes.deposits || []) as { date: string; amountPaisa: number; forMonth?: string | null }[]).filter((d) => d.date.startsWith(ym));
         setDrawerData({ memberMeals, deposits: deps.map((d) => ({ ...d, memberId: mid })) as never });
       });
     } else setDrawerData({});
@@ -546,7 +546,7 @@ export default function PublicDashboardPage() {
         </div>
       </Drawer>
       <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${monthLabel} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
-        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
+        {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawer?.member && (drawer.member.openingPaisa || 0) < 0 && (() => { const total = (drawer.member?.dueCollectedPaisa || 0) + (drawer.member?.dueRemainingPaisa || 0); const pct = total > 0 ? Math.round(((drawer.member?.dueCollectedPaisa || 0) / total) * 100) : 0; return (<div className="rounded-xl border bg-sky-50 px-3 py-2 text-sm mb-2"><div className="flex justify-between text-xs"><span>বকেয়া আদায়</span><b>{fmt(drawer.member?.dueCollectedPaisa || 0)} / {fmt(total)}</b></div><div className="h-1.5 rounded-full bg-zinc-200 mt-1.5"><div className="h-1.5 rounded-full bg-sky-600" style={{ width: `${pct}%` }} /></div></div>); })()}{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}{d.forMonth && <span className="block text-[11px] text-sky-700">• {d.forMonth} বকেয়া</span>}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
       </Drawer>
     </div>
   );

@@ -610,6 +610,7 @@ export const deposits = sqliteTable(
     paymentMethod: text("payment_method").notNull().default("cash"), // cash|bank|mobile|other
     receivedBy: text("received_by").references(() => users.id),
     transactionId: text("transaction_id"),
+    forMonth: text("for_month"), // YYYY-MM — which month's due this pays (label only; accounting uses date)
     clientRefId: text("client_ref_id").unique(),
     note: text("note"),
     receiptUrl: text("receipt_url"),

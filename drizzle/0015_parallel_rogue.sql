@@ -1,0 +1,1 @@
+ALTER TABLE `deposits` ADD `for_month` text;

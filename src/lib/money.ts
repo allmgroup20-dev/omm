@@ -122,3 +122,24 @@ export function formatPaisaBnCompact(paisa: number): string {
 export function formatNumBn(n: number, maxFrac = 1): string {
   return new Intl.NumberFormat("bn-BD", { minimumFractionDigits: 0, maximumFractionDigits: maxFrac }).format(n);
 }
+
+/**
+ * Due-attribution rule: forMonth (YYYY-MM label) must not be after the
+ * deposit's own month. Backdating into closed months stays blocked;
+ * the label is the sanctioned path for "last month's due paid now".
+ */
+export function isForMonthAllowed(forMonth: string, depositDateYm: string): boolean {
+  return /^\d{4}-\d{2}$/.test(forMonth) && forMonth <= depositDateYm;
+}
+
+/**
+ * Due-collection progress from a carried opening (<0) and this month's
+ * deposits. Overpayment flows into the monthly net naturally; collected
+ * is capped at the due.
+ */
+export function dueProgress(openingPaisa: number, monthDepositPaisa: number): { collectedPaisa: number; remainingPaisa: number } {
+  if (openingPaisa >= 0) return { collectedPaisa: 0, remainingPaisa: 0 };
+  const due = -openingPaisa;
+  const collected = Math.min(Math.max(0, monthDepositPaisa), due);
+  return { collectedPaisa: collected, remainingPaisa: due - collected };
+}

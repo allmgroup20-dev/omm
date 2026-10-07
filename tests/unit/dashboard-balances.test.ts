@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa, sumMonthDeposits } from "@/lib/money";
+import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa, sumMonthDeposits, isForMonthAllowed, dueProgress } from "@/lib/money";
 import { rawDicts, leafKeys } from "@/i18n/dict";
 import { filterMembersForMonth } from "@/lib/settlement";
 
@@ -119,5 +119,31 @@ describe("dashboard month isolation — fresh start every month", () => {
 
   it("monthly cash = month deposits − month spend", () => {
     expect(cashInHandPaisa(200000, 150000, 20000)).toBe(30000);
+  });
+});
+
+describe("due collection — forMonth attribution + আদায় progress", () => {
+  it("past or same month allowed, future rejected", () => {
+    expect(isForMonthAllowed("2026-09", "2026-10-07".slice(0, 7))).toBe(true);
+    expect(isForMonthAllowed("2026-10", "2026-10")).toBe(true);
+    expect(isForMonthAllowed("2026-11", "2026-10")).toBe(false);
+    expect(isForMonthAllowed("bad", "2026-10")).toBe(false);
+  });
+
+  it("partial payment: 500 due, 300 paid → 200 remains", () => {
+    expect(dueProgress(-50000, 30000)).toEqual({ collectedPaisa: 30000, remainingPaisa: 20000 });
+  });
+
+  it("full payment clears the due", () => {
+    expect(dueProgress(-50000, 50000)).toEqual({ collectedPaisa: 50000, remainingPaisa: 0 });
+  });
+
+  it("overpayment caps collection, excess flows to net", () => {
+    expect(dueProgress(-50000, 80000)).toEqual({ collectedPaisa: 50000, remainingPaisa: 0 });
+  });
+
+  it("no opening → no due tracking", () => {
+    expect(dueProgress(0, 30000)).toEqual({ collectedPaisa: 0, remainingPaisa: 0 });
+    expect(dueProgress(10000, 30000)).toEqual({ collectedPaisa: 0, remainingPaisa: 0 });
   });
 });

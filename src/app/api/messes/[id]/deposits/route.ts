@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { deposits, messMembers, ledgerEntries, auditLogs } from "@/db/schema";
 import { depositSchema } from "@/lib/validators-finance";
+import { isForMonthAllowed } from "@/lib/money";
 import { and, eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getMemberBalancePaisa } from "@/lib/finance";
@@ -63,6 +64,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const now = new Date().toISOString();
   const depId = nanoid();
+  const forMonth = data.forMonth?.trim() || null;
+  if (forMonth && !isForMonthAllowed(forMonth, data.date.slice(0, 7))) {
+    return NextResponse.json({ error: "forMonth cannot be after the deposit month" }, { status: 400 });
+  }
   await db.insert(deposits).values({
     id: depId,
     messId: id,
@@ -72,6 +77,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     paymentMethod: data.paymentMethod || "cash",
     receivedBy: data.receivedBy || user.id,
     transactionId: data.transactionId?.trim() || null,
+    forMonth,
     note: data.note?.trim() || null,
     receiptUrl: data.receiptUrl?.trim() || null,
     clientRefId: data.clientRefId || null,
@@ -89,7 +95,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     memberId: data.memberId,
     date: data.date,
     type: "deposit",
-    description: `Deposit ৳${(amountPaisa / 100).toFixed(2)} (${data.paymentMethod || "cash"})`,
+      description: `Deposit ৳${(amountPaisa / 100).toFixed(2)} (${data.paymentMethod || "cash"})${forMonth ? ` • বকেয়া ${forMonth}` : ""}`,
     debitPaisa: 0,
     creditPaisa: amountPaisa,
     balancePaisa: newBalance,
