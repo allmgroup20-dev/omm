@@ -25,7 +25,7 @@ type Stats = {
   cashInHandPaisa: number;
 };
 
-type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; status: string };
+type BalanceMember = { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; status: string };
 
 function fmt(n: number) { return formatPaisaBnCompact(n); } // single money standard: Bengali, compact, proper minus
 
@@ -378,7 +378,7 @@ export default function PublicDashboardPage() {
                     <td className="py-3 px-2"><button onClick={() => setDrawer({ type: "member", member: m })} className="flex items-center gap-2.5 text-left group min-w-0 min-h-0"><span className="w-8 h-8 rounded-full bg-zinc-900 text-white grid place-items-center text-xs font-semibold shrink-0">{m.displayName.trim().charAt(0).toUpperCase()}</span><span className="font-medium group-hover:underline text-[13px]">{m.displayName}</span></button></td>
                     <td className="py-3 px-2 text-center"><button onClick={() => setDrawer({ type: "member", member: m })} className="font-semibold hover:underline min-w-0 min-h-0">{m.totalMeals}</button></td>
                     <td className="py-3 px-2 text-right font-mono text-xs">{fmt(m.mealCostPaisa)}</td>
-                    <td className="py-3 px-2 text-right font-mono text-xs text-emerald-700">{fmt(m.depositPaisa)}</td>
+                    <td className="py-3 px-2 text-right font-mono text-xs text-emerald-700">{fmt(m.depositPaisa)}{(m.dueCollectedPaisa || 0) > 0 && <span className="block text-[11px] text-sky-700 font-normal">বকেয়া আদায় {fmt(m.dueCollectedPaisa)}</span>}</td>
                     <td className={`py-3 px-2 text-right font-mono text-xs font-semibold ${balanceColor(m.balancePaisa)}`}>{fmt(m.balancePaisa)}</td>
                     <td className="py-3 px-2 text-center"><span className={statusPill(m.status)}>{statusLabel(m.status)}</span></td>
                   </tr>
@@ -398,7 +398,7 @@ export default function PublicDashboardPage() {
                   </span>
                   <span className="flex items-center justify-between gap-2 text-xs text-zinc-600">
                     <span className="truncate">{m.totalMeals} মিল • খরচ {fmt(m.mealCostPaisa)}</span>
-                    <span className="shrink-0">জমা {fmt(m.depositPaisa)}</span>
+                    <span className="shrink-0">জমা {fmt(m.depositPaisa)}{(m.dueCollectedPaisa || 0) > 0 && <span className="block text-[11px] text-sky-700 font-normal">বকেয়া আদায় {fmt(m.dueCollectedPaisa)}</span>}</span>
                   </span>
                   <span className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-zinc-500">ব্যালেন্স</span>

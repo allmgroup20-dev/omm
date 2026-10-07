@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const userRows = await db.select().from(users);
   const userMap = new Map(userRows.map((u) => [u.id, u.fullName]));
 
-  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
+  const result: { memberId: string; userId: string | null; displayName: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; lifetimeBalancePaisa?: number; status: string }[] = [];
 
   for (const m of members) {
     const mealsScaled = finance.monthMeals.filter((r) => r.memberId === m.id).reduce((a, r) => a + r.quantityScaled, 0);
@@ -77,6 +77,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       openingPaisa,
       dueCollectedPaisa,
       dueRemainingPaisa,
+      // obligation view: cash total minus collected due = this month's new money
+      // (totals stay cash-true; this split is display-only, settlement math untouched)
+      newDepositPaisa: monthDeposits - dueCollectedPaisa,
       lifetimeBalancePaisa: currentBalance,
       status,
     });

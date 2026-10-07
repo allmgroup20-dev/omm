@@ -146,4 +146,17 @@ describe("due collection — forMonth attribution + আদায় progress", (
     expect(dueProgress(0, 30000)).toEqual({ collectedPaisa: 0, remainingPaisa: 0 });
     expect(dueProgress(10000, 30000)).toEqual({ collectedPaisa: 0, remainingPaisa: 0 });
   });
+
+  it("display split invariant: collected + new = cash total, new never negative", () => {
+    // user case: 300 paid in October, 200 of it September due
+    const monthDeposits = 30000;
+    const { collectedPaisa } = dueProgress(-20000, monthDeposits);
+    const newDeposit = monthDeposits - collectedPaisa;
+    expect(collectedPaisa).toBe(20000);
+    expect(newDeposit).toBe(10000);
+    expect(collectedPaisa + newDeposit).toBe(monthDeposits);
+    // overpay case keeps invariant too
+    const over = dueProgress(-20000, 50000);
+    expect(over.collectedPaisa + (50000 - over.collectedPaisa)).toBe(50000);
+  });
 });

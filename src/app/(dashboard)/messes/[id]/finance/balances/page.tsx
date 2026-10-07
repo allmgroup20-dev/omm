@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatNumber } from "@/i18n/dict";
 
-type Bal = { memberId: string; userId: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; status: string };
+type Bal = { memberId: string; userId: string; totalMeals: number; mealCostPaisa: number; depositPaisa: number; balancePaisa: number; openingPaisa: number; dueCollectedPaisa: number; dueRemainingPaisa: number; newDepositPaisa: number; status: string };
 
 export default function BalancesPage() {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +59,7 @@ export default function BalancesPage() {
                     <td className="p-3 text-xs">{names[m.memberId] || m.memberId.slice(0, 6)}</td>
                     <td className="p-3 text-center">{formatNumber(m.totalMeals, locale)}</td>
                     <td className="p-3 text-right">{formatCurrency(m.mealCostPaisa, locale)}</td>
-                    <td className="p-3 text-right text-emerald-700">{formatCurrency(m.depositPaisa, locale)}</td>
+                    <td className="p-3 text-right text-emerald-700">{formatCurrency(m.depositPaisa, locale)}{(m.dueCollectedPaisa || 0) > 0 && <span className="block text-[11px] font-normal text-sky-700">বকেয়া আদায় {formatCurrency(m.dueCollectedPaisa, locale)}</span>}</td>
                     <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.openingPaisa || 0) < 0 && (() => { const total = (m.dueCollectedPaisa || 0) + (m.dueRemainingPaisa || 0); const pct = total > 0 ? Math.round(((m.dueCollectedPaisa || 0) / total) * 100) : 0; return (<span className="block mt-1 text-[11px] text-sky-700">আদায় {formatCurrency(m.dueCollectedPaisa || 0, locale)}/{formatCurrency(total, locale)}<span className="block h-1 rounded-full bg-zinc-200 mt-0.5"><span className="block h-1 rounded-full bg-sky-600" style={{ width: `${pct}%` }} /></span></span>); })()}</td>
                     <td className="p-3 text-right font-bold">{formatCurrency(m.balancePaisa, locale)}</td>
                   </tr>
