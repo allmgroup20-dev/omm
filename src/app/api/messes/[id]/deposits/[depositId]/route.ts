@@ -3,7 +3,6 @@ import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { deposits, messMembers, ledgerEntries, auditLogs, monthlySettlements, closingPeriods } from "@/db/schema";
 import { depositUpdateSchema } from "@/lib/validators-finance";
-import { isForMonthAllowed } from "@/lib/money";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getMemberBalancePaisa } from "@/lib/finance";
@@ -141,10 +140,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const newTxnId = data.transactionId !== undefined ? (data.transactionId.trim() || null) : prev.transactionId;
   const newReceiptUrl = data.receiptUrl !== undefined ? (data.receiptUrl.trim() || null) : prev.receiptUrl;
   const newReceivedBy = data.receivedBy !== undefined ? (data.receivedBy || null) : prev.receivedBy;
-  const newForMonth = data.forMonth !== undefined ? (data.forMonth.trim() || null) : (prev as unknown as { forMonth?: string | null }).forMonth || null;
-  if (newForMonth && !isForMonthAllowed(newForMonth, newDate.slice(0, 7))) {
-    return NextResponse.json({ error: "forMonth cannot be after the deposit month" }, { status: 400 });
-  }
 
   const now = new Date().toISOString();
   await db
@@ -155,7 +150,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       amountPaisa: newAmountPaisa,
       paymentMethod: newPaymentMethod,
       note: newNote,
-      forMonth: newForMonth,
       transactionId: newTxnId,
       receiptUrl: newReceiptUrl,
       receivedBy: newReceivedBy,
@@ -177,7 +171,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         memberId: newMemberId,
         date: newDate,
         creditPaisa: newAmountPaisa,
-        description: `Deposit ৳${(newAmountPaisa / 100).toFixed(2)} (${newPaymentMethod})${newForMonth ? ` • বকেয়া ${newForMonth}` : ""}`,
+        description: `Deposit ৳${(newAmountPaisa / 100).toFixed(2)} (${newPaymentMethod})`,
       })
       .where(eq(ledgerEntries.id, orig.id));
   } else {

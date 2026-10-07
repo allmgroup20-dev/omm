@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa, sumMonthDeposits, isForMonthAllowed, dueProgress } from "@/lib/money";
+import { monthlyNetBalance, netBalanceStatus, classifyDashboardViewer, cashInHandPaisa, sumMonthDeposits, splitDuePayment, dueProgress } from "@/lib/money";
 import { rawDicts, leafKeys } from "@/i18n/dict";
 import { filterMembersForMonth } from "@/lib/settlement";
 
@@ -122,15 +122,34 @@ describe("dashboard month isolation — fresh start every month", () => {
   });
 });
 
-describe("due collection — forMonth attribution + আদায় progress", () => {
-  it("past or same month allowed, future rejected", () => {
-    expect(isForMonthAllowed("2026-09", "2026-10-07".slice(0, 7))).toBe(true);
-    expect(isForMonthAllowed("2026-10", "2026-10")).toBe(true);
-    expect(isForMonthAllowed("2026-11", "2026-10")).toBe(false);
-    expect(isForMonthAllowed("bad", "2026-10")).toBe(false);
+describe("due collection — split payment (বকেয়া জমা)", () => {
+  it("300 received against 200 due → 200 source + 100 current", () => {
+    expect(splitDuePayment(30000, 20000)).toEqual({ toSourcePaisa: 20000, toCurrentPaisa: 10000 });
   });
 
-  it("partial payment: 500 due, 300 paid → 200 remains", () => {
+  it("underpayment goes fully to source month", () => {
+    expect(splitDuePayment(15000, 20000)).toEqual({ toSourcePaisa: 15000, toCurrentPaisa: 0 });
+  });
+
+  it("exact payment clears the due", () => {
+    expect(splitDuePayment(20000, 20000)).toEqual({ toSourcePaisa: 20000, toCurrentPaisa: 0 });
+  });
+
+  it("no due → everything stays current", () => {
+    expect(splitDuePayment(30000, 0)).toEqual({ toSourcePaisa: 0, toCurrentPaisa: 30000 });
+  });
+
+  it("split never loses money and never negatives", () => {
+    for (const [amt, due] of [[0, 0], [1, 50000], [99999, 1], [50000, 50000]] as const) {
+      const s = splitDuePayment(amt, due);
+      expect(s.toSourcePaisa + s.toCurrentPaisa).toBe(Math.max(0, amt));
+      expect(s.toSourcePaisa).toBeGreaterThanOrEqual(0);
+      expect(s.toCurrentPaisa).toBeGreaterThanOrEqual(0);
+      expect(s.toSourcePaisa).toBeLessThanOrEqual(Math.max(0, due));
+    }
+  });
+
+  it("partial payment: 500 due, 300 paid → 200 remains (display math)", () => {
     expect(dueProgress(-50000, 30000)).toEqual({ collectedPaisa: 30000, remainingPaisa: 20000 });
   });
 

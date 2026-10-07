@@ -124,12 +124,15 @@ export function formatNumBn(n: number, maxFrac = 1): string {
 }
 
 /**
- * Due-attribution rule: forMonth (YYYY-MM label) must not be after the
- * deposit's own month. Backdating into closed months stays blocked;
- * the label is the sanctioned path for "last month's due paid now".
+ * Due-collection split: amount received today against a past month's remaining
+ * due. Returns paisa going to the SOURCE month (backdated to its last day)
+ * and to the CURRENT month (today). Never negative, never exceeds amount.
  */
-export function isForMonthAllowed(forMonth: string, depositDateYm: string): boolean {
-  return /^\d{4}-\d{2}$/.test(forMonth) && forMonth <= depositDateYm;
+export function splitDuePayment(amountPaisa: number, remainingDuePaisa: number): { toSourcePaisa: number; toCurrentPaisa: number } {
+  const due = Math.max(0, remainingDuePaisa);
+  const amt = Math.max(0, amountPaisa);
+  const toSource = Math.min(amt, due);
+  return { toSourcePaisa: toSource, toCurrentPaisa: amt - toSource };
 }
 
 /**

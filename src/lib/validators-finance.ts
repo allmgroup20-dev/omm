@@ -10,8 +10,6 @@ export const depositSchema = z.object({
   note: z.string().max(500).optional().or(z.literal("")),
   receiptUrl: z.string().max(500).optional().or(z.literal("")),
   clientRefId: z.string().max(80).optional(),
-  // optional attribution: which month's due this pays (YYYY-MM, label only)
-  forMonth: z.string().regex(/^\d{4}-\d{2}$/).optional().or(z.literal("")),
 });
 
 /** Partial update for an existing deposit — at least one editable field + mandatory reason for audit. */
@@ -25,8 +23,7 @@ export const depositUpdateSchema = z.object({
   note: z.string().max(500).optional().or(z.literal("")),
   receiptUrl: z.string().max(500).optional().or(z.literal("")),
   reason: z.string().trim().min(3).max(500),
-  forMonth: z.string().regex(/^\d{4}-\d{2}$/).optional().or(z.literal("")),
-}).refine((d) => d.memberId !== undefined || d.date !== undefined || d.amount !== undefined || d.paymentMethod !== undefined || d.receivedBy !== undefined || d.transactionId !== undefined || d.note !== undefined || d.receiptUrl !== undefined || d.forMonth !== undefined, {
+}).refine((d) => d.memberId !== undefined || d.date !== undefined || d.amount !== undefined || d.paymentMethod !== undefined || d.receivedBy !== undefined || d.transactionId !== undefined || d.note !== undefined || d.receiptUrl !== undefined, {
   message: "At least one field to update is required",
 });
 
