@@ -233,3 +233,44 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const balancePaisa = await getMemberBalancePaisa(id, newMemberId);
   return NextResponse.json({ ok: true, deposit: after[0], balancePaisa });
 }
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string; depositId: string }> }) {
+  const { id, depositId } = await params;
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getRequestDb();
+  const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
+  if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager can permanently delete" }, { status: 403 });
+
+  const body = await req.json().catch(() => null);
+  const reason = typeof body?.reason === "string" ? body.reason.trim().slice(0, 200) : "";
+  if (!reason || reason.length < 3) {
+    return NextResponse.json({ error: "Deletion reason (min 3 chars) is required" }, { status: 400 });
+  }
+
+  const before = await db.select().from(deposits).where(and(eq(deposits.id, depositId), eq(deposits.messId, id))).limit(1);
+  if (!before[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const prev = before[0];
+
+  const now = new Date().toISOString();
+  // hard delete: deposit row + all linked ledger entries vanish completely
+  await db.delete(ledgerEntries).where(eq(ledgerEntries.refId, depositId));
+  await db.delete(deposits).where(eq(deposits.id, depositId));
+  // repair the running-balance chain for later entries
+  await recomputeMemberBalances(db, id, prev.memberId);
+
+  await db.insert(auditLogs).values({
+    id: nanoid(),
+    messId: id,
+    actorId: user.id,
+    action: "delete",
+    entityType: "deposit",
+    entityId: depositId,
+    beforeJson: JSON.stringify(prev),
+    afterJson: null,
+    reason,
+    createdAt: now,
+  });
+  const balancePaisa = await getMemberBalancePaisa(id, prev.memberId);
+  return NextResponse.json({ ok: true, deleted: true, balancePaisa });
+}

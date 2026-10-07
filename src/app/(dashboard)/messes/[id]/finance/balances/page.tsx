@@ -15,29 +15,6 @@ export default function BalancesPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [data, setData] = useState<{ mealRateBDT: number; breakdown: string; members: (Bal & { name?: string })[] } | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [msg, setMsg] = useState("");
-
-  async function collectDue(memberId: string, sourceYm: string) {
-    const raw = window.prompt(`কত টাকা পেলেন? (${sourceYm}-এর বকেয়া — আজকের তারিখে নেওয়া হবে)`);
-    if (!raw) return;
-    const amount = parseFloat(raw);
-    if (!amount || amount <= 0) {
-      setMsg("সঠিক টাকা লিখুন");
-      return;
-    }
-    setMsg("");
-    const res = await fetch(`/api/messes/${id}/deposits/collect`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId, amount, sourceYm }),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(j.error || "আদায় ব্যর্থ");
-    else {
-      setMsg(`আদায় হয়েছে — ${sourceYm}-এ ${formatCurrency(j.split.toSourcePaisa, locale)} + এই মাসে ${formatCurrency(j.split.toCurrentPaisa, locale)}`);
-      load();
-    }
-  }
 
   useEffect(() => {
     fetch(`/api/messes/${id}/members`).then((r) => r.json()).then((d) => {
@@ -58,7 +35,6 @@ export default function BalancesPage() {
     <div className="space-y-4">
       <Link href={`/messes/${id}/finance`} className="text-sm text-zinc-500">← {t("finance.hub")}</Link>
       <h1 className="text-lg font-bold">{t("finance.balTitle")}</h1>
-      {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       <div className="flex gap-2 items-center flex-wrap">
         <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.year")} />
         <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.month")} />
@@ -84,7 +60,7 @@ export default function BalancesPage() {
                     <td className="p-3 text-center">{formatNumber(m.totalMeals, locale)}</td>
                     <td className="p-3 text-right">{formatCurrency(m.mealCostPaisa, locale)}</td>
                     <td className="p-3 text-right text-emerald-700">{formatCurrency(m.depositPaisa, locale)}{(m.dueCollectedPaisa || 0) > 0 && <span className="block text-[11px] font-normal text-sky-700">বকেয়া আদায় {formatCurrency(m.dueCollectedPaisa, locale)}</span>}</td>
-                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.dueRemainingPaisa || 0) > 0 && m.dueSourceYm && <button onClick={() => collectDue(m.memberId, m.dueSourceYm as string)} className="block mx-auto mt-1 text-[11px] border rounded-full px-2 py-1 min-h-[32px] hover:bg-zinc-50">বকেয়া জমা ({m.dueSourceYm} • {formatCurrency(m.dueRemainingPaisa, locale)})</button>}</td>
+                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.dueRemainingPaisa || 0) > 0 && <Link href={`/messes/${id}/finance/dues`} className="block mx-auto mt-1 text-[11px] border border-red-200 text-red-700 rounded-full px-2 py-1 min-h-[32px]">বকেয়া জমা →</Link>}</td>
                     <td className="p-3 text-right font-bold">{formatCurrency(m.balancePaisa, locale)}</td>
                   </tr>
                 ))}

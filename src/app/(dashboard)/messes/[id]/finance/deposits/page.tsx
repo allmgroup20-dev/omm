@@ -20,7 +20,11 @@ export default function DepositsPage() {
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Deposit | null>(null);
-  const { canManage } = useMyRole(id);
+  const { canManage, isManager } = useMyRole(id);
+  const [statusFilter, setStatusFilter] = useState<"active" | "voided" | "all">("active");
+  const visibleDeposits = deposits.filter((d) =>
+    statusFilter === "all" ? true : statusFilter === "voided" ? d.status !== "active" : d.status === "active",
+  );
   const [editForm, setEditForm] = useState({ memberId: "", date: "", amount: "", paymentMethod: "cash", note: "", reason: "" });
   const [editBusy, setEditBusy] = useState(false);
   const [lockedPeriods, setLockedPeriods] = useState<string[]>([]);
@@ -135,6 +139,27 @@ export default function DepositsPage() {
     load();
   }
 
+  async function deleteDeposit(d: Deposit) {
+    if (!window.confirm(`স্থায়ীভাবে মুছবেন? এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে। (${formatCurrency(d.amountPaisa, locale)})`)) return;
+    const reason = window.prompt("মুছে ফেলার কারণ লিখুন (অডিটের জন্য বাধ্যতামূলক)") || "";
+    if (reason.trim().length < 3) {
+      setMsg("কারণ লিখুন (কমপক্ষে ৩ অক্ষর)");
+      return;
+    }
+    setMsg("");
+    const res = await fetch(`/api/messes/${id}/deposits/${d.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: reason.trim() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(data.error || t("errors.saveFail"));
+    else {
+      setMsg("স্থায়ীভাবে মুছে ফেলা হয়েছে");
+      load();
+    }
+  }
+
   async function voidDeposit(d: Deposit) {
     if (!window.confirm(t("finance.voidConfirm"))) return;
     const reason = window.prompt(t("finance.voidReasonPh") || "reason") || "";
@@ -186,12 +211,19 @@ export default function DepositsPage() {
       )}
 
       <div className="bg-white border rounded-2xl overflow-hidden">
+        <div className="flex gap-2 px-3 pt-3">
+          {(["active", "voided", "all"] as const).map((s) => (
+            <button key={s} onClick={() => setStatusFilter(s)} className={`text-xs rounded-full px-3 py-1.5 min-h-[36px] border ${statusFilter === s ? "bg-zinc-900 text-white border-zinc-900" : "hover:bg-zinc-50"}`}>
+              {s === "active" ? t("status.active") : s === "voided" ? t("status.voided") : t("common.all")}
+            </button>
+          ))}
+        </div>
         <div className="overflow-x-auto">
           <div className="min-w-[680px]">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("finance.memberLabel")}</th><th className="text-right p-3">{t("finance.amountCol")}</th><th className="text-center p-3">{t("finance.methodCol")}</th><th className="text-center p-3">{t("common.status")}</th><th className="text-center p-3">{t("common.actions")}</th></tr></thead>
           <tbody>
-            {deposits.map((d) => (
+            {visibleDeposits.map((d) => (
               <tr key={d.id} className="border-t">
                 <td className="p-3 text-xs">{d.date}</td>
                 <td className="p-3 text-xs">{members.find((m) => m.id === d.memberId)?.fullName || d.memberId.slice(0, 6)}</td>
@@ -201,9 +233,11 @@ export default function DepositsPage() {
                 <td className="p-3 text-center whitespace-nowrap">
                   {d.status === "active" && canManage ? (
                     <span className="inline-flex gap-2">
-                      <button onClick={() => openEdit(d)} className="text-xs border rounded-full px-3 py-1.5 hover:bg-zinc-50">✏️ {t("common.edit")}</button>
-                      <button onClick={() => voidDeposit(d)} className="text-xs border rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50">{t("finance.voidBtn")}</button>
+                      <button onClick={() => openEdit(d)} className="text-xs border rounded-full px-3 py-1.5 hover:bg-zinc-50 min-h-[36px]">✏️ {t("common.edit")}</button>
+                      <button onClick={() => voidDeposit(d)} className="text-xs border rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50 min-h-[36px]">{t("finance.voidBtn")}</button>
                     </span>
+                  ) : d.status !== "active" && isManager ? (
+                    <button onClick={() => deleteDeposit(d)} className="text-xs border border-red-200 rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50 min-h-[36px]">স্থায়ীভাবে মুছুন</button>
                   ) : <span className="text-xs text-zinc-400">—</span>}
                 </td>
               </tr>
@@ -212,7 +246,7 @@ export default function DepositsPage() {
             </table>
           </div>
         </div>
-        {deposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
+        {visibleDeposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
         {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">সদস্য তালিকা খালি — প্রথমে <Link href={`/messes/${id}/members`} className="underline">সদস্য যোগ করুন</Link></div>}
       </div>
 

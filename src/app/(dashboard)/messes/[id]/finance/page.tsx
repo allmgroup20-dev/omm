@@ -12,6 +12,9 @@ export default async function FinanceHubPage({ params }: { params: Promise<{ id:
         <Link href={`/messes/${id}/finance/deposits`} className="rounded-2xl border bg-zinc-900 text-white p-5">
           <div className="font-semibold">{t("finance.deposits")}</div><div className="text-xs text-white/70 mt-1">{t("finance.depositsDesc")}</div>
         </Link>
+        <Link href={`/messes/${id}/finance/dues`} className="rounded-2xl border border-red-200 bg-red-50 p-5 hover:shadow-sm">
+          <div className="font-semibold">🔴 বকেয়া আদায়</div><div className="text-xs text-red-800/70 mt-1">যাদের বকেয়া আছে শুধু তাদের তালিকা + এক ক্লিকে আদায়</div>
+        </Link>
         <Link href={`/messes/${id}/finance/ledger`} className="rounded-2xl border bg-white p-5 hover:shadow-sm">
           <div className="font-semibold">{t("finance.ledger")}</div><div className="text-xs text-zinc-500 mt-1">{t("finance.ledgerDesc")}</div>
         </Link>
