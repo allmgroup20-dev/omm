@@ -1,6 +1,7 @@
 import { getRequestDb } from "@/db";
-import { messes, messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, memberSettlements, settlementAdjustments } from "@/db/schema";
+import { messes, messMembers, mealRecords, marketEntries, expenses, deposits, ledgerEntries, monthlySettlements, memberSettlements, settlementAdjustments, auditLogs } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { calcMealRate } from "./money";
 
 export type CostingModel = "food_only" | "food_plus_expenses" | "custom";
@@ -112,6 +113,100 @@ export async function getPreviousSourceYm(messId: string, year: number, month: n
   const last = await findPrevSettlement(messId, year, month);
   if (!last) return null;
   return `${last.year}-${String(last.month).padStart(2, "0")}`;
+}
+
+/**
+ * Regenerate (recompute + persist) one month's settlement as draft.
+ * Used after due collection so the source closing absorbs the payment
+ * immediately — otherwise the same due could be collected twice and the
+ * next opening would stay stale. Only call for OPEN months.
+ * Returns the settlement id and any LATER generated months (their stored
+ * openings are now stale — UI should prompt regenerating them too).
+ */
+export async function regenerateSettlement(
+  messId: string,
+  year: number,
+  month: number,
+  actorId: string,
+  reason: string,
+): Promise<{ settlementId: string; laterSettlements: string[] }> {
+  const db = await getRequestDb();
+  const computed = await computeSettlement(messId, year, month);
+  const now = new Date().toISOString();
+  const existing = await db
+    .select()
+    .from(monthlySettlements)
+    .where(and(eq(monthlySettlements.messId, messId), eq(monthlySettlements.year, year), eq(monthlySettlements.month, month)))
+    .limit(1);
+  let settlementId: string;
+  if (existing[0]) {
+    settlementId = existing[0].id;
+    await db
+      .update(monthlySettlements)
+      .set({
+        totalMarketPaisa: computed.totalMarketPaisa,
+        totalOtherExpensePaisa: computed.totalOtherPaisa,
+        totalFoodCostPaisa: computed.totalFoodCostPaisa,
+        totalMealsScaled: computed.totalMealsScaled,
+        mealRatePaisa: computed.mealRatePaisa,
+        status: "draft",
+        updatedAt: now,
+      })
+      .where(eq(monthlySettlements.id, settlementId));
+    await db.delete(memberSettlements).where(eq(memberSettlements.settlementId, settlementId));
+  } else {
+    settlementId = nanoid();
+    await db.insert(monthlySettlements).values({
+      id: settlementId,
+      messId,
+      year,
+      month,
+      totalMarketPaisa: computed.totalMarketPaisa,
+      totalOtherExpensePaisa: computed.totalOtherPaisa,
+      totalFoodCostPaisa: computed.totalFoodCostPaisa,
+      totalMealsScaled: computed.totalMealsScaled,
+      mealRatePaisa: computed.mealRatePaisa,
+      status: "draft",
+      createdBy: actorId,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  for (const m of computed.members) {
+    const bm = computed.byMember[m.id];
+    const allocated = computed.allocatedExpenseMap[m.id] || 0;
+    const closing = computed.closingMap[m.id];
+    await db.insert(memberSettlements).values({
+      id: nanoid(),
+      settlementId,
+      memberId: m.id,
+      totalMealsScaled: bm.mealsScaled,
+      mealCostPaisa: bm.mealCostPaisa,
+      allocatedExpensePaisa: allocated,
+      previousBalancePaisa: bm.previousBalance,
+      depositPaisa: bm.depositPaisa,
+      adjustmentPaisa: 0,
+      closingBalancePaisa: closing.closing,
+      status: closing.status as never,
+      createdAt: now,
+    });
+  }
+  await db.insert(auditLogs).values({
+    id: nanoid(),
+    messId,
+    actorId,
+    action: "regenerate",
+    entityType: "settlement",
+    entityId: settlementId,
+    afterJson: JSON.stringify({ year, month, reason }),
+    createdAt: now,
+  });
+  const allSett = await db.select().from(monthlySettlements).where(eq(monthlySettlements.messId, messId));
+  const laterSettlements = allSett
+    .filter((s) => s.year > year || (s.year === year && s.month > month))
+    .sort((a, b) => (a.year === b.year ? a.month - b.month : a.year - b.year))
+    .map((s) => `${s.year}-${String(s.month).padStart(2, "0")}`);
+  return { settlementId, laterSettlements };
 }
 
 export async function computeSettlement(messId: string, year: number, month: number) {

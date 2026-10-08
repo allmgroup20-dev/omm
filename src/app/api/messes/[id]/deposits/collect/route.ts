@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
 import { deposits, messMembers, ledgerEntries, auditLogs, monthlySettlements, memberSettlements, closingPeriods } from "@/db/schema";
 import { splitDuePayment } from "@/lib/money";
+import { regenerateSettlement } from "@/lib/settlement";
 import { getMemberBalancePaisa } from "@/lib/finance";
 import { createNotification } from "@/lib/notifications";
 import { and, eq } from "drizzle-orm";
@@ -144,6 +145,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await addDeposit(receiptDate, toCurrentPaisa, userNote, "current");
   }
 
+  // Auto-regenerate the (open) source settlement so its closing absorbs the
+  // payment at once — otherwise the same due stays collectible (double-collect)
+  // and the next opening stays stale. Closed months are 409-blocked above.
+  const regen = await regenerateSettlement(id, sYear, sMonth, user.id, `due collection ${made.map((d) => d.id).join(",")}`);
+  const regenRows = await db
+    .select()
+    .from(memberSettlements)
+    .where(and(eq(memberSettlements.settlementId, regen.settlementId), eq(memberSettlements.memberId, data.memberId)))
+    .limit(1);
+
   try {
     if (mem[0].userId) {
       await createNotification({
@@ -157,5 +168,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   } catch {}
 
-  return NextResponse.json({ ok: true, split: { toSourcePaisa, toCurrentPaisa, sourceDate: sourceEnd, currentDate: receiptDate }, deposits: made });
+  return NextResponse.json({
+    ok: true,
+    split: { toSourcePaisa, toCurrentPaisa, sourceDate: sourceEnd, currentDate: receiptDate },
+    deposits: made,
+    sourceClosingPaisa: regenRows[0]?.closingBalancePaisa ?? null,
+    laterSettlements: regen.laterSettlements,
+  });
 }
