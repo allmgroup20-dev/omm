@@ -216,7 +216,7 @@ export default function EntryDetailPage() {
       <div className="bg-white border rounded-2xl p-4 space-y-2 text-sm">
         <div className="flex justify-between"><span>তারিখ (DD-MM-YYYY)</span><span className="font-mono">{formatDateBD(entry.date, locale)}</span></div>
         <div className="flex justify-between"><span>কে বাজার করেছে</span><span className="font-medium">{((entry as unknown as { purchaserNames?: string[]; purchaserName: string | null }).purchaserNames?.length ? (entry as unknown as { purchaserNames: string[] }).purchaserNames.join(", ") : (entry as unknown as { purchaserName: string | null }).purchaserName) || "—"}</span></div>
-        <div className="flex justify-between"><span>অবস্থা</span><span className={`rounded-full px-2 py-0.5 text-xs ${entry.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{entry.status}</span></div>
+        <div className="flex justify-between"><span>অবস্থা</span><span className={`rounded-full px-2 py-0.5 text-xs ${entry.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{entry.status === "active" ? t("status.active") : t("status.voided")}</span></div>
         <div className="flex justify-between"><span>মোট</span><span>{formatCurrency(entry.totalPaisa, locale)}</span></div>
         <div className="flex justify-between"><span>গাড়ি ভাড়া</span><span>{formatCurrency(entry.transportPaisa || 0, locale)}</span></div>
         <div className="flex justify-between"><span>ছাড়</span><span>{formatCurrency(entry.discountPaisa, locale)}</span></div>
@@ -339,13 +339,13 @@ export default function EntryDetailPage() {
               <button type="button" onClick={addRow} className="w-full border-2 border-dashed rounded-xl py-3 text-sm bg-white text-zinc-700 font-medium min-h-[48px]">{t("market.addRow")}</button>
             </div>
 
-            <div className="rounded-xl bg-zinc-900 text-white p-4 flex flex-wrap justify-between gap-2 text-sm">
+            <div className="sticky bottom-[calc(68px+env(safe-area-inset-bottom))] lg:bottom-4 z-20 rounded-xl bg-zinc-900 text-white p-4 flex flex-wrap justify-between gap-2 text-sm shadow-xl">
               <span>{t("market.total")}: {formatCurrency(Math.round(previewTotal * 100), locale)} + {t("market.gariVara")}: {formatCurrency(Math.round((parseFloat(form.transport) || 0) * 100), locale)} - {t("market.discount")}: {formatCurrency(Math.round((parseFloat(form.discount) || 0) * 100), locale)}</span><span className="font-bold">{t("market.final")}: {formatCurrency(Math.round(previewFinal * 100), locale)}</span>
             </div>
 
             <div className="flex gap-2">
-              <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm disabled:opacity-50">{saving ? t("market.saving") : "Save"}</button>
-              <button onClick={() => setEditing(false)} className="px-6 rounded-full border text-sm">Cancel</button>
+              <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm disabled:opacity-50 min-h-[48px]">{saving ? t("market.saving") : "Save"}</button>
+              <button onClick={() => setEditing(false)} className="px-6 rounded-full border text-sm min-h-[48px]">Cancel</button>
             </div>
           </div>
         ) : null}

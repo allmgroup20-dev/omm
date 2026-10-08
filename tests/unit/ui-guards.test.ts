@@ -66,6 +66,28 @@ describe("ui guards — bottom stack contract", () => {
   });
 });
 
+describe("ui guards — tables ship card alternatives on mobile", () => {
+  it("list pages render cards alongside desktop tables", () => {
+    const pages = [
+      "src/app/(mess)/messes/[id]/members/page.tsx",
+      "src/app/(mess)/messes/[id]/expenses/page.tsx",
+      "src/app/(mess)/messes/[id]/market/entries/page.tsx",
+      "src/app/(mess)/messes/[id]/finance/deposits/page.tsx",
+      "src/app/(mess)/messes/[id]/finance/ledger/page.tsx",
+      "src/app/(mess)/messes/[id]/finance/balances/page.tsx",
+      "src/app/(mess)/messes/[id]/settlements/page.tsx",
+      "src/app/(mess)/messes/[id]/settlements/[settlementId]/page.tsx",
+      "src/app/(mess)/messes/[id]/audit-logs/page.tsx",
+      "src/app/(mess)/messes/[id]/meals/matrix/page.tsx",
+    ];
+    const missing = pages.filter((p) => {
+      const src = readFileSync(join(process.cwd(), p), "utf8");
+      return !/(md|sm|lg):hidden/.test(src) || !/hidden (md|sm|lg):(table|block)/.test(src);
+    });
+    expect(missing).toEqual([]);
+  });
+});
+
 describe("ui guards — dead patterns stay dead", () => {
   it("has no ThemeToggle usage (dark mode removed)", () => {
     const offenders = scopedFiles().filter((f) =>

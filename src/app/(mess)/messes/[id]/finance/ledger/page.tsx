@@ -56,26 +56,50 @@ export default function LedgerPage() {
         </select>
       </div>
 
+      {ledger.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("finance.inCol")}</div><div className="font-bold text-emerald-700 tabular-nums">{formatCurrency(ledger.reduce((a, e) => a + (e.creditPaisa || 0), 0), locale)}</div></div>
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("finance.outCol")}</div><div className="font-bold text-red-600 tabular-nums">{formatCurrency(ledger.reduce((a, e) => a + (e.debitPaisa || 0), 0), locale)}</div></div>
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("finance.remainCol")}</div><div className="font-bold tabular-nums">{formatCurrency(ledger[ledger.length - 1]?.balancePaisa || 0, locale)}</div></div>
+        </div>
+      )}
+      <p className="text-xs text-zinc-500">{t("finance.ledgerLegend")}</p>
+
       {msg && <div className="rounded-xl bg-red-50 border p-3 text-sm text-red-700">{msg}</div>}
 
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <div className="min-w-[600px]">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("common.description")}</th><th className="text-right p-3">{t("finance.debitCol")}</th><th className="text-right p-3">{t("finance.creditCol")}</th><th className="text-right p-3">{t("finance.balanceCol")}</th></tr></thead>
+              <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("common.description")}</th><th className="text-right p-3">{t("finance.outCol")}</th><th className="text-right p-3">{t("finance.inCol")}</th><th className="text-right p-3">{t("finance.remainCol")}</th></tr></thead>
           <tbody>
             {ledger.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-3 text-xs">{e.date}</td>
                 <td className="p-3 text-xs">{e.description}</td>
-                <td className="p-3 text-right text-red-600">{e.debitPaisa ? formatCurrency(e.debitPaisa, locale) : "—"}</td>
-                <td className="p-3 text-right text-emerald-600">{e.creditPaisa ? formatCurrency(e.creditPaisa, locale) : "—"}</td>
-                <td className="p-3 text-right font-bold">{formatCurrency(e.balancePaisa, locale)}</td>
+                <td className="p-3 text-right text-red-600 tabular-nums">{e.debitPaisa ? formatCurrency(e.debitPaisa, locale) : "—"}</td>
+                <td className="p-3 text-right text-emerald-600 tabular-nums">{e.creditPaisa ? formatCurrency(e.creditPaisa, locale) : "—"}</td>
+                <td className="p-3 text-right font-bold tabular-nums">{formatCurrency(e.balancePaisa, locale)}</td>
               </tr>
             ))}
             </tbody>
             </table>
           </div>
+        </div>
+        <div className="md:hidden divide-y">
+          {ledger.map((e) => (
+            <div key={e.id} className="p-4 space-y-1">
+              <div className="flex items-center gap-2 text-xs text-zinc-500"><span>{e.date}</span><span className="truncate">{e.description}</span></div>
+              <div className="flex items-center justify-between">
+                {e.creditPaisa ? (
+                  <span className="font-bold text-emerald-700 tabular-nums">+ {formatCurrency(e.creditPaisa, locale)}</span>
+                ) : (
+                  <span className="font-bold text-red-600 tabular-nums">− {formatCurrency(e.debitPaisa, locale)}</span>
+                )}
+                <span className="text-xs text-zinc-500 tabular-nums">{t("finance.remainCol")}: {formatCurrency(e.balancePaisa, locale)}</span>
+              </div>
+            </div>
+          ))}
         </div>
         {ledger.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noLedger")}</div>}
       </div>

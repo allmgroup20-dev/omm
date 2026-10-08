@@ -65,11 +65,23 @@ export default function SettlementsPage() {
     }
   }
 
+  const openCount = settlements.filter((s) => s.status !== "final").length;
+  const closedCount = settlements.length - openCount;
+  const lastRate = settlements.length ? settlements[settlements.length - 1] : null;
+
   return (
     <div className="space-y-4">
       <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
       <h1 className="text-lg font-bold">{t("settlements.title")}</h1>
 
+      {settlements.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("settlements.lastRate")}</div><div className="font-bold tabular-nums">{lastRate ? formatCurrency(lastRate.mealRatePaisa, locale) : "—"}</div></div>
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("settlements.openCount")}</div><div className="font-bold tabular-nums">{formatNumber(openCount, locale)}</div></div>
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("settlements.closedCount")}</div><div className="font-bold tabular-nums">{formatNumber(closedCount, locale)}</div></div>
+        </div>
+      )}
+      <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">{t("settlements.lockExplainer")}</div>
       <div className="bg-white border rounded-2xl p-4 sm:p-5 flex gap-2 items-center flex-wrap">
         <input type="month" value={ym} onChange={(e) => e.target.value && setYm(e.target.value)} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px] bg-white max-w-full" aria-label={`${t("reports.year")}-${t("reports.month")}`} />
         <button onClick={generate} className="px-6 py-3 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">{t("settlements.generate")}</button>
@@ -79,7 +91,7 @@ export default function SettlementsPage() {
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
 
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <div className="min-w-[720px]">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("settlements.periodCol")}</th><th className="text-right p-3">{t("settlements.mealsCol")}</th><th className="text-right p-3">{t("settlements.marketCol")}</th><th className="text-right p-3">{t("settlements.otherCol")}</th><th className="text-right p-3">{t("settlements.rateCol")}</th><th className="text-center p-3">{t("settlements.statusCol")}</th><th className="text-right p-3">{t("settlements.actionsCol")}</th></tr></thead>
@@ -100,6 +112,24 @@ export default function SettlementsPage() {
             </tbody>
             </table>
           </div>
+        </div>
+        <div className="md:hidden divide-y">
+          {settlements.map((s) => (
+            <div key={s.id} className="p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Link href={`/messes/${id}/settlements/${s.id}`} className="font-bold underline">{formatNumber(s.year, locale)}-{String(s.month).padStart(2, "0")}</Link>
+                <span className={`ml-auto text-xs rounded-full px-2 py-1 ${s.status === "final" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`status.${s.status}`)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-zinc-500">
+                <span>{t("settlements.mealsCol")}: <b className="text-zinc-900">{formatNumber(s.totalMealsScaled / 100, locale)}</b></span>
+                <span>{t("settlements.marketCol")}+{t("settlements.otherCol")}: <b className="text-zinc-900 tabular-nums">{formatCurrency(s.totalMarketPaisa + s.totalOtherExpensePaisa, locale)}</b></span>
+                <span>{t("settlements.rateCol")}: <b className="text-zinc-900 tabular-nums">{formatCurrency(s.mealRatePaisa, locale)}</b></span>
+              </div>
+              {s.status !== "final"
+                ? <button onClick={() => setSheet({ sid: s.id, mode: "close", reason: "" })} className="w-full text-sm border rounded-full px-4 py-2.5 bg-amber-50 min-h-[48px]">{t("settlements.closeBtn")}</button>
+                : <button onClick={() => setSheet({ sid: s.id, mode: "reopen", reason: "" })} className="w-full text-sm border rounded-full px-4 py-2.5 min-h-[48px]">{t("settlements.reopenBtn")}</button>}
+            </div>
+          ))}
         </div>
         {settlements.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("settlements.noSettlements")}</div>}
       </div>

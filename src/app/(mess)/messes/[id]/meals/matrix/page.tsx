@@ -31,7 +31,7 @@ export default function MatrixPage() {
         <div className="bg-white border rounded-xl p-4 sm:p-6 text-sm">{t("common.loading")}</div>
       ) : (
         <div className="bg-white border rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden sm:block">
             <div className="min-w-[900px]">
               <table className="w-full text-xs">
               <thead>
@@ -69,10 +69,23 @@ export default function MatrixPage() {
                   <td className="p-2 text-center">{formatNumber(data.totalMealsScaled / 100, locale)}</td>
                 </tr>
               </tfoot>
-              </table>
-            </div>
+          </table>
+          </div>
+          <div className="sm:hidden divide-y">
+            {data.dates.map((d) => {
+              const dayTotal = Object.values(data.matrix).reduce((a, map) => a + (map[d] || 0), 0);
+              return (
+                <Link key={d} href={`/messes/${id}/meals?date=${d}`} className="flex items-center gap-3 p-4 min-h-[52px]">
+                  <span className="font-mono font-bold text-sm w-8">{formatNumber(Number(d.slice(8, 10)), locale)}</span>
+                  <span className="text-xs text-zinc-500 flex-1">{d}</span>
+                  <span className="text-sm font-semibold tabular-nums">{dayTotal ? formatNumber(dayTotal / 100, locale) : "—"}</span>
+                  <span className="text-zinc-400">→</span>
+                </Link>
+              );
+            })}
           </div>
           <p className="p-3 text-xs text-zinc-500">{t("meals.singleSource")}</p>
+        </div>
         </div>
       )}
     </div>

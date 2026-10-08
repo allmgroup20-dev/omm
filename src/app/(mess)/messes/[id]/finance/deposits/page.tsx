@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
-import { formatCurrency } from "@/i18n/dict";
+import { formatCurrency, formatDateBD } from "@/i18n/dict";
 import { isMemberVisibleForEntry } from "@/lib/money";
 import { useMyRole } from "@/hooks/useMyRole";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
@@ -197,6 +197,10 @@ export default function DepositsPage() {
     <div className="space-y-4 max-w-3xl mx-auto">
       <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
       <h1 className="text-lg font-bold">{t("finance.depositTitle")}</h1>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">{t("finance.totalDeposits")}</div><div className="text-xl font-bold text-emerald-700 tabular-nums">{formatCurrency(visibleDeposits.filter((d) => d.status === "active").reduce((a, d) => a + d.amountPaisa, 0), locale)}</div></div>
+        <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">{t("finance.countDeposits")}</div><div className="text-xl font-bold tabular-nums">{visibleDeposits.length}</div></div>
+      </div>
       {loading && <div className="rounded-xl border p-3 text-sm bg-white text-zinc-500">লোড হচ্ছে...</div>}
       {loadError && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError} <button onClick={load} className="ml-2 underline">আবার চেষ্টা করুন</button> <Link href="/login" className="ml-2 underline">লগইন</Link></div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
@@ -231,15 +235,15 @@ export default function DepositsPage() {
             </button>
           ))}
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <div className="min-w-[680px]">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("common.date")}</th><th className="text-left p-3">{t("finance.memberLabel")}</th><th className="text-right p-3">{t("finance.amountCol")}</th><th className="text-center p-3">{t("finance.methodCol")}</th><th className="text-center p-3">{t("common.status")}</th><th className="text-center p-3">{t("common.actions")}</th></tr></thead>
           <tbody>
             {visibleDeposits.map((d) => (
               <tr key={d.id} className="border-t">
-                <td className="p-3 text-xs">{d.date}</td>
-                <td className="p-3 text-xs">{members.find((m) => m.id === d.memberId)?.fullName || d.memberId.slice(0, 6)}</td>
+                <td className="p-3 text-xs">{formatDateBD(d.date, locale)}</td>
+                <td className="p-3 text-xs" title={d.memberId}>{members.find((m) => m.id === d.memberId)?.fullName || t("finance.unknownMember")}</td>
                 <td className="p-3 text-right font-medium">{formatCurrency(d.amountPaisa, locale)}</td>
                 <td className="p-3 text-center text-xs">{{ cash: t("market.payCash"), bank: t("market.payBank"), mobile: t("market.payMobile"), other: t("market.payOther") }[d.paymentMethod] || d.paymentMethod}</td>
                 <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${d.status === "active" ? "bg-emerald-100" : "bg-zinc-200"}`}>{t(`status.${d.status}`)}</span></td>
@@ -258,6 +262,29 @@ export default function DepositsPage() {
             </tbody>
             </table>
           </div>
+        </div>
+        <div className="md:hidden divide-y">
+          {visibleDeposits.map((d) => (
+            <div key={d.id} className="p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm flex-1 min-w-0 truncate">{members.find((m) => m.id === d.memberId)?.fullName || t("finance.unknownMember")}</span>
+                <span className="font-bold text-sm tabular-nums text-emerald-700">{formatCurrency(d.amountPaisa, locale)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span>{formatDateBD(d.date, locale)}</span>
+                <span>{{ cash: t("market.payCash"), bank: t("market.payBank"), mobile: t("market.payMobile"), other: t("market.payOther") }[d.paymentMethod] || d.paymentMethod}</span>
+                <span className={`ml-auto rounded-full px-2 py-1 ${d.status === "active" ? "bg-emerald-100" : "bg-zinc-200"}`}>{t(`status.${d.status}`)}</span>
+              </div>
+              {d.status === "active" && canManage ? (
+                <div className="flex gap-2">
+                  <button onClick={() => openEdit(d)} className="flex-1 text-sm border rounded-full px-4 py-2.5 hover:bg-zinc-50 min-h-[48px]">✏️ {t("common.edit")}</button>
+                  <button onClick={() => voidDeposit(d)} className="flex-1 text-sm border rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[48px]">{t("finance.voidBtn")}</button>
+                </div>
+              ) : d.status !== "active" && isManager ? (
+                <button onClick={() => deleteDeposit(d)} className="w-full text-sm border border-red-200 rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[48px]">স্থায়ীভাবে মুছুন</button>
+              ) : null}
+            </div>
+          ))}
         </div>
         {visibleDeposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
         {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">সদস্য তালিকা খালি — প্রথমে <Link href={`/messes/${id}/members`} className="underline">সদস্য যোগ করুন</Link></div>}
@@ -286,7 +313,7 @@ export default function DepositsPage() {
       <ConfirmSheet
         open={!!voidTarget}
         title={voidTarget?.mode === "delete" ? `স্থায়ীভাবে মুছবেন? ${voidTarget ? formatCurrency(voidTarget.deposit.amountPaisa, locale) : ""}` : (t("finance.voidConfirm") as string)}
-        body={voidTarget?.mode === "delete" ? "এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে।" : undefined}
+        body={voidTarget?.mode === "delete" ? "এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে।" : t("finance.voidKeepsLedger")}
         confirmLabel={voidTarget?.mode === "delete" ? "স্থায়ীভাবে মুছুন" : t("finance.voidBtn") as string}
         danger={voidTarget?.mode === "delete"}
         busy={voidBusy}

@@ -49,7 +49,7 @@ export default function ExpensesPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
-        <Link href={`/messes/${id}/expenses/add`} className="ml-auto px-4 py-2 rounded-full bg-zinc-900 text-white text-sm">{t("expenses.addBtn")}</Link>
+        <Link href={`/messes/${id}/expenses/add`} className="ml-auto px-5 py-2.5 rounded-full bg-zinc-900 text-white text-sm min-h-[44px] inline-flex items-center">{t("expenses.addBtn")}</Link>
       </div>
       <h1 className="text-lg font-bold">{t("expenses.title")}</h1>
 
@@ -69,7 +69,7 @@ export default function ExpensesPage() {
 
       <div className="bg-white border rounded-2xl overflow-hidden">
         <div className="overflow-x-auto -mx-0">
-          <div className="min-w-[600px]">
+          <div className="min-w-[600px] hidden md:block">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 text-xs text-zinc-500"><tr><th className="text-left p-3">{t("expenses.dateCol")}</th><th className="text-left p-3">{t("expenses.descCol")}</th><th className="text-right p-3">{t("expenses.amountCol")}</th><th className="text-center p-3">{t("expenses.statusCol")}</th><th className="text-right p-3">{t("expenses.actionCol")}</th></tr></thead>
           <tbody>
@@ -92,6 +92,26 @@ export default function ExpensesPage() {
             </tbody>
             </table>
           </div>
+        </div>
+        <div className="md:hidden divide-y">
+          {expenses.map((e) => (
+            <div key={e.id} className="p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm flex-1 min-w-0 truncate">{e.description || "—"}</span>
+                <span className="font-bold text-sm tabular-nums">{formatCurrency(e.amountPaisa, locale)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span>{e.date}</span>
+                <span className={`rounded-full px-2 py-1 ${e.status === "pending" ? "bg-amber-100" : e.status === "approved" ? "bg-emerald-100" : e.status === "rejected" ? "bg-red-100" : "bg-zinc-100"}`}>{t(`status.${e.status}`)}</span>
+              </div>
+              {e.status === "pending" && (
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => setSheet({ expId: e.id, mode: "approve", note: "" })} className="w-full text-sm border rounded-full px-4 py-2.5 bg-emerald-50 min-h-[48px]">{t("expenses.approve")}</button>
+                  <button onClick={() => setSheet({ expId: e.id, mode: "reject", note: "" })} className="w-full text-sm border rounded-full px-4 py-2.5 bg-red-50 min-h-[48px]">{t("expenses.reject")}</button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
         {expenses.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("expenses.noExpenses")}</div>}
       </div>

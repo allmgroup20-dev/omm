@@ -82,8 +82,10 @@ export default function SettlementDetailPage() {
         <div><div className="text-xs text-zinc-500">{t("settlements.marketCol")}</div><div className="font-bold">{formatCurrency(settlement.totalMarketPaisa, locale)}</div></div>
       </div>
 
+      <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">{t("settlements.howToRead")}</div>
+
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden lg:block">
           <table className="w-full text-xs">
             <thead className="bg-zinc-50"><tr><th className="text-left p-2">{t("settlements.memberCol")}</th><th className="text-center p-2">{t("settlements.mealsCol")}</th><th className="text-right p-2">{t("settlements.mealCostCol")}</th><th className="text-right p-2">{t("settlements.otherAllocCol")}</th><th className="text-right p-2">{t("settlements.depositCol")}</th><th className="text-right p-2">{t("settlements.prevBalCol")}</th><th className="text-right p-2">{t("settlements.closingCol")}</th><th className="text-center p-2">{t("common.status")}</th><th className="text-center p-2">{t("settlements.dispCol")}</th></tr></thead>
             <tbody>
@@ -114,6 +116,41 @@ export default function SettlementDetailPage() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="lg:hidden divide-y">
+          {members.map((m) => {
+            const owes = m.closingBalancePaisa < 0;
+            const gets = m.closingBalancePaisa > 0;
+            return (
+              <div key={m.memberId} className="p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm flex-1 min-w-0 truncate">{m.fullName}</span>
+                  <span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-zinc-500">
+                  <span>{t("settlements.mealsCol")}: <b className="text-zinc-900">{formatNumber(m.totalMeals, locale)}</b></span>
+                  <span>{t("settlements.mealCostCol")}: <b className="text-zinc-900 tabular-nums">{formatCurrency(m.mealCostPaisa, locale)}</b></span>
+                  <span>{t("settlements.otherAllocCol")}: <b className="text-zinc-900 tabular-nums">{formatCurrency(m.allocatedExpensePaisa, locale)}</b></span>
+                  <span>{t("settlements.depositCol")}: <b className="text-emerald-700 tabular-nums">{formatCurrency(m.depositPaisa, locale)}</b></span>
+                  <span>{t("settlements.prevBalCol")}: <b className="text-zinc-900 tabular-nums">{formatCurrency(m.previousBalancePaisa, locale)}</b></span>
+                </div>
+                <div className={`rounded-xl p-3 text-center font-bold tabular-nums ${owes ? "bg-red-50 text-red-700" : gets ? "bg-emerald-50 text-emerald-700" : "bg-zinc-50 text-zinc-700"}`}>
+                  {owes ? `${t("finance.youOwe")} ${formatCurrency(-m.closingBalancePaisa, locale)}` : gets ? `${t("finance.youGet")} ${formatCurrency(m.closingBalancePaisa, locale)}` : t("finance.settledOk")}
+                </div>
+                {m.closingBalancePaisa > 0 && (
+                  <div className="flex flex-col gap-2 items-stretch">
+                    {dispBadge(m.memberId)}
+                    {isManager && (
+                      <div className="flex gap-2">
+                        <button onClick={() => setDispTarget({ memberId: m.memberId, kind: "carry", note: "" })} className="flex-1 text-xs border rounded-full px-3 py-2.5 hover:bg-emerald-50 min-h-[48px]">{t("settlements.carryBtn")}</button>
+                        <button onClick={() => setDispTarget({ memberId: m.memberId, kind: "refund", note: "" })} className="flex-1 text-xs border rounded-full px-3 py-2.5 hover:bg-sky-50 min-h-[48px]">{t("settlements.refundBtn")}</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         <div className="p-3 text-xs text-zinc-500">{t("settlements.formulaNote")}</div>
       </div>

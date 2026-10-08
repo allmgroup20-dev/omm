@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
-import { formatCurrency } from "@/i18n/dict";
+import { formatCurrency, formatNumber } from "@/i18n/dict";
 import { useMyRole } from "@/hooks/useMyRole";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
@@ -102,9 +102,10 @@ export default function DuesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">বাকি বকেয়া</div><div className="text-xl font-bold text-red-600">{formatCurrency(totalDue, locale)}</div></div>
-        <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">এ মাসে আদায়</div><div className="text-xl font-bold text-emerald-700">{formatCurrency(totalCollected, locale)}</div></div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">বাকি বকেয়া</div><div className="text-lg sm:text-xl font-bold text-red-600 tabular-nums">{formatCurrency(totalDue, locale)}</div></div>
+        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">এ মাসে আদায়</div><div className="text-lg sm:text-xl font-bold text-emerald-700 tabular-nums">{formatCurrency(totalCollected, locale)}</div></div>
+        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">বাকি আছে</div><div className="text-lg sm:text-xl font-bold tabular-nums">{formatNumber(members.length, locale)} জন</div></div>
       </div>
       <p className="text-xs text-zinc-500">নিয়ম: বকেয়া অংশ গত মাসের শেষ তারিখে + বাড়তি স্বয়ংক্রিয়ভাবে এই মাসে জমা হয়।</p>
       <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">

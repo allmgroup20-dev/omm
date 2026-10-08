@@ -143,11 +143,11 @@ export default function EntriesPage() {
       )}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-sm">
             <thead className="bg-zinc-50 border-b">
               <tr>
-                <th className="p-3"><input type="checkbox" checked={entries.length > 0 && selected.size === entries.length} onChange={toggleAll} /></th>
+                <th className="p-3"><input type="checkbox" checked={entries.length > 0 && selected.size === entries.length} onChange={toggleAll} className="w-6 h-6 rounded accent-zinc-900" /></th>
                 <th className="text-left p-3">তারিখ (DD-MM-YYYY)</th>
                 <th className="text-left p-3">কে করেছে</th>
                 <th className="text-left p-3">শ্রেণি</th>
@@ -164,25 +164,52 @@ export default function EntriesPage() {
                 const names = (e.purchaserNames && e.purchaserNames.length ? e.purchaserNames : e.purchaserName ? [e.purchaserName] : []) as string[];
                 return (
                   <tr key={e.id} className="border-b last:border-0 hover:bg-zinc-50">
-                    <td className="p-3"><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} /></td>
+                    <td className="p-3"><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} className="w-6 h-6 rounded accent-zinc-900" /></td>
                     <td className="p-3 font-mono text-xs" title={e.date}>{formatDateBD(e.date, locale)}</td>
                     <td className="p-3 text-xs font-medium">{names.length ? names.join(", ") : "—"}</td>
-                    <td className="p-3 text-xs">{e.classification}</td>
+                    <td className="p-3 text-xs">{e.classification === "food" ? t("market.classFood") : e.classification === "shared" ? t("market.classShared") : t("market.classNonFood")}</td>
                     <td className="p-3 text-xs">{e.items?.length || 0} • {e.items?.slice(0, 2).map((it) => it.productNameSnapshot).join(", ")}{e.items && e.items.length > 2 ? "…" : ""} {e.transportPaisa ? " + গাড়ি" : ""}</td>
                     <td className="p-3 text-right text-xs">{formatCurrency(e.totalPaisa, locale)}</td>
                     <td className="p-3 text-right text-xs">{formatCurrency(e.transportPaisa || 0, locale)}</td>
                     <td className="p-3 text-right font-semibold text-xs">{formatCurrency(e.finalPaisa, locale)}</td>
-                  <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status}</span></td>
+                  <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status === "active" ? t("status.active") : t("status.voided")}</span></td>
                   <td className="p-3 flex gap-1"><Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-4 py-2.5 hover:bg-white min-h-[44px] inline-flex items-center">দেখুন</Link><button onClick={() => deleteOne(e.id)} title="স্থায়ীভাবে মুছুন" aria-label="স্থায়ীভাবে মুছুন" className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600 min-h-[44px]">✕</button></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          {entries.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">এখনো এন্ট্রি নেই — Add থেকে সংরক্ষণ করুন, এখানে কতটুকু/কোথায় দেখাবে</div>}
         </div>
-      </div>
-      {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
+        <div className="md:hidden divide-y">
+          {entries.map((e) => {
+            const names = (e.purchaserNames && e.purchaserNames.length ? e.purchaserNames : e.purchaserName ? [e.purchaserName] : []) as string[];
+            return (
+              <div key={e.id} className="p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} className="w-6 h-6 rounded accent-zinc-900 shrink-0" aria-label={formatDateBD(e.date, locale)} />
+                  <span className="font-mono text-xs">{formatDateBD(e.date, locale)}</span>
+                  <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status === "active" ? t("status.active") : t("status.voided")}</span>
+                </div>
+                <div className="text-xs font-medium">{names.length ? names.join(", ") : "—"}</div>
+                <div className="text-xs text-zinc-500">{e.items?.length || 0} • {e.items?.slice(0, 2).map((it) => it.productNameSnapshot).join(", ")}{e.items && e.items.length > 2 ? "…" : ""}{e.transportPaisa ? " + গাড়ি" : ""}</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm tabular-nums">{formatCurrency(e.finalPaisa, locale)}</span>
+                  <span className="flex gap-2">
+                    <Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-4 py-2.5 hover:bg-white min-h-[44px] inline-flex items-center">দেখুন</Link>
+                    <button onClick={() => deleteOne(e.id)} title="স্থায়ীভাবে মুছুন" aria-label="স্থায়ীভাবে মুছুন" className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600 min-h-[44px] min-w-[44px]">✕</button>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+          {entries.length === 0 && (
+            <div className="p-8 text-center text-sm text-zinc-500 space-y-3">
+              <div>এখনো এন্ট্রি নেই</div>
+              <Link href={`/messes/${id}/market/add`} className="inline-flex items-center px-5 py-2.5 rounded-full bg-zinc-900 text-white text-sm min-h-[48px]">+ নতুন বাজার যোগ</Link>
+            </div>
+          )}
+        </div>
       <ConfirmSheet
         open={!!confirmState}
         title={

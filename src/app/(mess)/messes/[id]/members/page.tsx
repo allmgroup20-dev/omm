@@ -308,7 +308,7 @@ export default function MembersPage() {
       ) : (
         <div className="bg-white border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm hidden md:table">
               <thead className="bg-zinc-50 text-xs text-zinc-500">
                 <tr>
                   <th className="text-left p-3">{t("members.nameCol")}</th>
@@ -356,6 +356,36 @@ export default function MembersPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="md:hidden divide-y">
+            {members.map((m) => (
+              <div key={m.id} className="p-4 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">{m.fullName}</span>
+                  {m.isPrimaryManager && <span className="text-xs bg-zinc-900 text-white rounded-full px-2 py-0.5">Primary</span>}
+                  {m.isPlaceholder && <span className="text-xs bg-amber-100 rounded-full px-2 py-0.5">{t("members.noAccountBadge")}</span>}
+                  <span className={`ml-auto text-xs rounded-full px-2 py-1 ${m.status === "active" ? "bg-emerald-100" : m.status === "left" ? "bg-zinc-200" : "bg-amber-100"}`}>{t(`status.${m.status}`)}</span>
+                </div>
+                <div className="text-xs text-zinc-500">{m.email || "—"} • {m.joinedAt.slice(0, 10)}</div>
+                {privileged && (
+                  <select value={m.role} onChange={(e) => updateRole(m.id, e.target.value)} className="w-full border rounded-xl px-3 py-2.5 text-sm min-h-[44px] bg-white">
+                    <option value="member">{t("roles.member")}</option>
+                    <option value="assistant_manager">{t("roles.assistant_manager")}</option>
+                    <option value="manager">{t("roles.manager")}</option>
+                  </select>
+                )}
+                {privileged && (
+                  <div className="flex flex-col gap-2">
+                    {m.isPlaceholder ? (
+                      <button onClick={() => setLinkFor(m)} className="w-full text-sm border rounded-full px-4 py-2.5 bg-amber-50 min-h-[48px]">{t("members.linkBtn")}</button>
+                    ) : m.claimedAt ? (
+                      <button onClick={() => unlinkAccount(m)} className="w-full text-sm border rounded-full px-4 py-2.5 min-h-[48px]">{t("members.unlinkBtn")}</button>
+                    ) : null}
+                    <button onClick={() => askStatus(m.id, m.status === "active" ? "left" : "active")} className="w-full text-sm border rounded-full px-4 py-2.5 hover:bg-zinc-50 min-h-[48px]">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
           {members.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("members.noMembers")}</div>}
           <p className="p-3 text-xs text-zinc-500">{t("members.historyNote")}</p>
