@@ -5,7 +5,6 @@ import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import NotificationBell from "@/app/(dashboard)/notification-bell";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider } from "@/components/ui/toast";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getServerDict } from "@/i18n/server";
@@ -28,9 +27,9 @@ export default async function MessLayout({ children, params }: { children: React
     <div className="min-h-screen bg-zinc-50 overflow-x-hidden">
       <header className="border-b bg-white sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2 relative">
-          <Link href={`/messes/${id}`} className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Link href={`/messes/${id}`} className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white grid place-items-center font-bold text-sm shrink-0">OM</div>
-            <span className="font-bold text-sm sm:text-base">{m.name}</span>
+            <span className="font-bold text-sm sm:text-base truncate max-w-[40vw]">{m.name}</span>
             <span className="text-xs text-zinc-500 hidden sm:inline truncate">{m.code}</span>
           </Link>
           {/* Desktop nav */}
@@ -41,7 +40,6 @@ export default async function MessLayout({ children, params }: { children: React
             <Link href={`/messes/${id}/members`} className="px-3 py-2 rounded-full border hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.members")}</Link>
             <Link href={`/messes/${id}/settlements`} className="px-3 py-2 rounded-full border hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.settlements")}</Link>
             <NotificationBell />
-            <ThemeToggle />
             <LocaleSwitcher />
             <span className="text-zinc-600 hidden xl:inline truncate max-w-[120px]">{user.fullName}</span>
             <form action="/api/auth/logout" method="post">
@@ -51,14 +49,13 @@ export default async function MessLayout({ children, params }: { children: React
           {/* Mobile: visible controls + hamburger */}
           <div className="flex lg:hidden items-center gap-1.5">
             <NotificationBell />
-            <ThemeToggle />
             <LocaleSwitcher />
             <DashboardMobileNav userName={user.fullName} messName={m.name} messId={m.id} />
           </div>
         </div>
       </header>
       <ToastProvider>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-24 lg:pb-6">{children}</div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6">{children}</div>
       </ToastProvider>
       <MobileActionBar />
     </div>

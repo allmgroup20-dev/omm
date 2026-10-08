@@ -173,7 +173,7 @@ export default function EntriesPage() {
                     <td className="p-3 text-right text-xs">{formatCurrency(e.transportPaisa || 0, locale)}</td>
                     <td className="p-3 text-right font-semibold text-xs">{formatCurrency(e.finalPaisa, locale)}</td>
                   <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-0.5 ${e.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{e.status}</span></td>
-                  <td className="p-3 flex gap-1"><Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-3 py-1.5 hover:bg-white min-h-[36px] inline-flex items-center">দেখুন</Link><button onClick={() => deleteOne(e.id)} title="স্থায়ীভাবে মুছুন" aria-label="স্থায়ীভাবে মুছুন" className="text-xs border rounded-full px-3 py-1.5 hover:bg-red-50 text-red-600 min-h-[36px]">✕</button></td>
+                  <td className="p-3 flex gap-1"><Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-4 py-2.5 hover:bg-white min-h-[44px] inline-flex items-center">দেখুন</Link><button onClick={() => deleteOne(e.id)} title="স্থায়ীভাবে মুছুন" aria-label="স্থায়ীভাবে মুছুন" className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600 min-h-[44px]">✕</button></td>
                   </tr>
                 );
               })}

@@ -226,7 +226,7 @@ export default function DepositsPage() {
       <div className="bg-white border rounded-2xl overflow-hidden">
         <div className="flex gap-2 px-3 pt-3">
           {(["active", "voided", "all"] as const).map((s) => (
-            <button key={s} onClick={() => setStatusFilter(s)} className={`text-xs rounded-full px-3 py-1.5 min-h-[36px] border ${statusFilter === s ? "bg-zinc-900 text-white border-zinc-900" : "hover:bg-zinc-50"}`}>
+            <button key={s} onClick={() => setStatusFilter(s)} className={`text-xs rounded-full px-4 py-2.5 min-h-[44px] border ${statusFilter === s ? "bg-zinc-900 text-white border-zinc-900" : "hover:bg-zinc-50"}`}>
               {s === "active" ? t("status.active") : s === "voided" ? t("status.voided") : t("common.all")}
             </button>
           ))}
@@ -246,11 +246,11 @@ export default function DepositsPage() {
                 <td className="p-3 text-center whitespace-nowrap">
                   {d.status === "active" && canManage ? (
                     <span className="inline-flex gap-2">
-                      <button onClick={() => openEdit(d)} className="text-xs border rounded-full px-3 py-1.5 hover:bg-zinc-50 min-h-[36px]">✏️ {t("common.edit")}</button>
-                      <button onClick={() => voidDeposit(d)} className="text-xs border rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50 min-h-[36px]">{t("finance.voidBtn")}</button>
+                      <button onClick={() => openEdit(d)} className="text-xs border rounded-full px-4 py-2.5 hover:bg-zinc-50 min-h-[44px]">✏️ {t("common.edit")}</button>
+                      <button onClick={() => voidDeposit(d)} className="text-xs border rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[44px]">{t("finance.voidBtn")}</button>
                     </span>
                   ) : d.status !== "active" && isManager ? (
-                    <button onClick={() => deleteDeposit(d)} className="text-xs border border-red-200 rounded-full px-3 py-1.5 text-red-700 hover:bg-red-50 min-h-[36px]">স্থায়ীভাবে মুছুন</button>
+                    <button onClick={() => deleteDeposit(d)} className="text-xs border border-red-200 rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[44px]">স্থায়ীভাবে মুছুন</button>
                   ) : <span className="text-xs text-zinc-400">—</span>}
                 </td>
               </tr>

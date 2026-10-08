@@ -57,7 +57,8 @@
     "members": "Members",
     "settlements": "Settlements",
     "currentMess": "Current mess",
-    "todayMeals": "🍚 Today's Meals"
+    "todayMeals": "🍚 Today's Meals",
+    "notifications": "Notifications"
   },
   "auth": {
     "loginTitle": "Log in",

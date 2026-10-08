@@ -57,7 +57,8 @@
     "members": "সদস্য",
     "settlements": "সেটেলমেন্ট",
     "currentMess": "বর্তমান মেস",
-    "todayMeals": "🍚 আজকের মিল"
+    "todayMeals": "🍚 আজকের মিল",
+    "notifications": "নোটিফিকেশন"
   },
   "auth": {
     "loginTitle": "লগইন করুন",

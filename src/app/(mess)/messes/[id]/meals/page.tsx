@@ -220,7 +220,7 @@ export default function MealsPage() {
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
 
       <details className="bg-white border rounded-2xl px-4 py-2.5">
-        <summary className="text-sm font-medium cursor-pointer py-1.5 list-none flex items-center justify-between gap-2">
+        <summary className="text-sm font-medium cursor-pointer py-2.5 list-none flex items-center justify-between gap-2 min-h-[44px]">
           <span>⚙️ অটো টেমপ্লেট <span className="text-zinc-500 font-normal">• {templateSummary || "—"}</span></span>
           <span className="text-zinc-400 text-xs">▾</span>
         </summary>
@@ -285,7 +285,7 @@ export default function MealsPage() {
           {members.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("meals.noActiveMembers")}</div>}
         </div>
 
-        <div className="sticky bottom-0 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-white via-white to-transparent">
+        <div className="sticky bottom-[calc(68px+env(safe-area-inset-bottom))] lg:bottom-0 z-20 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-white via-white to-transparent">
           <div className="rounded-2xl bg-zinc-900 text-white p-3 flex items-center justify-between gap-2">
             <span className="text-sm font-bold pl-1">মোট {formatNumber(dayTotal, locale)} মিল</span>
             <span className="flex gap-2">

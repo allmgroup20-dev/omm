@@ -18,8 +18,8 @@ export function MobileActionBar() {
     { href: `/messes/${id}/finance/dues`, label: t("mess.qaDues") },
   ];
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur">
-      <div className="grid grid-cols-4 gap-1 px-2 py-2">
+    <nav aria-label={t("mess.dailyTitle")} className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur">
+      <div className="grid grid-cols-4 gap-1 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
         {items.map((it) => (
           <Link
             key={it.href}

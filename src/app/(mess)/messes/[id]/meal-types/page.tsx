@@ -71,8 +71,8 @@ export default function MealTypesPage() {
                 <div className="text-xs text-zinc-500">{mt.sortOrder} • {mt.isActive ? t("status.active") : t("status.archived")}</div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => toggleActive(mt)} className="text-xs border rounded-full px-3 py-1">{mt.isActive ? t("meals.deactivate") : t("meals.activateBtn")}</button>
-                <button onClick={() => archive(mt)} className="text-xs border rounded-full px-3 py-1 bg-amber-50">{t("meals.archive")}</button>
+                <button onClick={() => toggleActive(mt)} className="text-xs border rounded-full px-4 py-2.5">{mt.isActive ? t("meals.deactivate") : t("meals.activateBtn")}</button>
+                <button onClick={() => archive(mt)} className="text-xs border rounded-full px-4 py-2.5 bg-amber-50">{t("meals.archive")}</button>
               </div>
             </div>
           ))}

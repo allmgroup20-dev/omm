@@ -251,7 +251,7 @@ export default function AddMarketPage() {
               <div key={idx} className="border rounded-xl p-3 sm:p-4 bg-white space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-500">পণ্য {idx + 1}{rowTotal > 0 && <span className="ml-2 text-zinc-900">• {formatCurrency(Math.round(rowTotal * 100), locale)}</span>}</span>
-                  {items.length > 1 && <button type="button" onClick={() => removeRow(idx)} className="text-xs text-red-600 min-h-[36px] px-2">{t("market.remove")}</button>}
+                  {items.length > 1 && <button type="button" onClick={() => removeRow(idx)} className="text-xs text-red-600 min-h-[44px] px-2">{t("market.remove")}</button>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="min-w-0">
@@ -377,8 +377,8 @@ export default function AddMarketPage() {
           <button type="button" onClick={addRow} className="w-full border-2 border-dashed rounded-xl py-3 text-sm bg-white text-zinc-700 font-medium min-h-[48px]">{t("market.addRow")}</button>
         </div>
 
-        {/* sticky save bar */}
-        <div className="sticky bottom-0 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent">
+        {/* sticky save bar — offset above the mobile action bar */}
+        <div className="sticky bottom-[calc(68px+env(safe-area-inset-bottom))] lg:bottom-0 z-20 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent">
           <div className="rounded-2xl bg-zinc-900 text-white p-3 flex items-center justify-between gap-2">
             <span className="text-sm font-bold pl-1">{t("market.final")}: {formatCurrency(Math.round(final * 100), locale)}</span>
             <button disabled={saving} className="rounded-full bg-white text-zinc-900 px-6 py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{saving ? t("market.saving") : t("market.saveBtn")}</button>
@@ -387,9 +387,9 @@ export default function AddMarketPage() {
       </form>
       <div className="flex flex-wrap gap-2 text-xs">
         <span className="text-zinc-500 py-2">{t("market.setupLinks")}</span>
-        <Link href={`/messes/${id}/market/categories`} className="px-3 py-2 rounded-full border bg-white min-h-[36px] inline-flex items-center">{t("market.catTitle")}</Link>
-        <Link href={`/messes/${id}/market/products`} className="px-3 py-2 rounded-full border bg-white min-h-[36px] inline-flex items-center">{t("market.prodTitle")}</Link>
-        <Link href={`/messes/${id}/market/vendors`} className="px-3 py-2 rounded-full border bg-white min-h-[36px] inline-flex items-center">{t("market.vendorTitle")}</Link>
+        <Link href={`/messes/${id}/market/categories`} className="px-3 py-2 rounded-full border bg-white min-h-[44px] inline-flex items-center">{t("market.catTitle")}</Link>
+        <Link href={`/messes/${id}/market/products`} className="px-3 py-2 rounded-full border bg-white min-h-[44px] inline-flex items-center">{t("market.prodTitle")}</Link>
+        <Link href={`/messes/${id}/market/vendors`} className="px-3 py-2 rounded-full border bg-white min-h-[44px] inline-flex items-center">{t("market.vendorTitle")}</Link>
       </div>
     </div>
   );

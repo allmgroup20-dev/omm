@@ -58,7 +58,7 @@ export default function BalancesPage() {
                     <td className="p-3 text-center">{formatNumber(m.totalMeals, locale)}</td>
                     <td className="p-3 text-right">{formatCurrency(m.mealCostPaisa, locale)}</td>
                     <td className="p-3 text-right text-emerald-700">{formatCurrency(m.depositPaisa, locale)}</td>
-                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.dueRemainingPaisa || 0) > 0 && <Link href={`/messes/${id}/finance/dues`} className="block mx-auto mt-1 text-[11px] border border-red-200 text-red-700 rounded-full px-2 py-1 min-h-[32px]">বকেয়া জমা →</Link>}</td>
+                    <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${m.status === "due" ? "bg-red-100" : m.status === "advance" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`finance.${m.status}`)}</span>{(m.dueRemainingPaisa || 0) > 0 && <Link href={`/messes/${id}/finance/dues`} className="block mx-auto mt-1 text-[11px] border border-red-200 text-red-700 rounded-full px-2 py-1 min-h-[44px]">বকেয়া জমা →</Link>}</td>
                     <td className="p-3 text-right font-bold">{formatCurrency(m.balancePaisa, locale)}</td>
                   </tr>
                 ))}

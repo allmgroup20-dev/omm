@@ -104,8 +104,8 @@ export default function CategoriesPage() {
               <span className="text-xs bg-amber-100 rounded-full px-2 py-0.5">#{c.sortOrder}</span>
               <span className="font-medium flex-1 truncate" title={c.name}>{c.name}</span>
               <span className="text-xs text-zinc-500 truncate">({c.slug})</span>
-              <button onClick={() => startEdit(c)} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50">{t("common.edit")}</button>
-              <button onClick={() => del(c.id)} className="text-xs border rounded-full px-3 py-1 hover:bg-red-50 text-red-600">{t("common.delete")}</button>
+              <button onClick={() => startEdit(c)} className="text-xs border rounded-full px-4 py-2.5 hover:bg-zinc-50">{t("common.edit")}</button>
+              <button onClick={() => del(c.id)} className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600">{t("common.delete")}</button>
             </div>
           ))}
           {cats.length === 0 && <div className="text-center text-sm text-zinc-500 py-4">{t("market.noData")}</div>}

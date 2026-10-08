@@ -82,8 +82,8 @@ export default function ExpensesPage() {
                 <td className="p-3 text-right flex gap-1 justify-end">
                   {e.status === "pending" && (
                     <>
-                      <button onClick={() => setSheet({ expId: e.id, mode: "approve", note: "" })} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">{t("expenses.approve")}</button>
-                      <button onClick={() => setSheet({ expId: e.id, mode: "reject", note: "" })} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">{t("expenses.reject")}</button>
+                      <button onClick={() => setSheet({ expId: e.id, mode: "approve", note: "" })} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[44px]">{t("expenses.approve")}</button>
+                      <button onClick={() => setSheet({ expId: e.id, mode: "reject", note: "" })} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[44px]">{t("expenses.reject")}</button>
                     </>
                   )}
                 </td>

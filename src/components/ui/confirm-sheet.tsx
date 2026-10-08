@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { useLocale } from "@/i18n/provider";
 
 type SheetProps = {
   open: boolean;
@@ -22,7 +23,9 @@ type SheetProps = {
  * Shared bottom-sheet replacing window.confirm/prompt/alert.
  * Mobile-first: slides from bottom, 44px targets, Esc/backdrop close.
  */
-export function ConfirmSheet({ open, title, body, confirmLabel, cancelLabel = "বাতিল", danger, busy, altLabel, onAlt, input, onConfirm, onClose }: SheetProps) {
+export function ConfirmSheet({ open, title, body, confirmLabel, cancelLabel, danger, busy, altLabel, onAlt, input, onConfirm, onClose }: SheetProps) {
+  const { t } = useLocale();
+  const cancel = cancelLabel ?? t("common.cancel");
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -35,7 +38,8 @@ export function ConfirmSheet({ open, title, body, confirmLabel, cancelLabel = "�
   const invalid = !!input?.required && !input.value.trim();
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-3 max-h-[92vh] overflow-y-auto">
+      <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-3 max-h-[92vh] overflow-y-auto">
+        <div className="w-10 h-1 rounded-full bg-zinc-200 mx-auto" aria-hidden="true" />
         <div className="font-semibold text-[15px]">{title}</div>
         {body && <p className="text-sm text-zinc-600">{body}</p>}
         {input && (
@@ -48,23 +52,38 @@ export function ConfirmSheet({ open, title, body, confirmLabel, cancelLabel = "�
             className="w-full border rounded-xl px-3 py-3 text-base min-h-[48px]"
           />
         )}
-        <div className="flex gap-2">
-          <button onClick={onClose} disabled={busy} className="flex-1 rounded-full border py-3 text-sm min-h-[48px] disabled:opacity-50">
-            {cancelLabel}
-          </button>
-          {altLabel && onAlt && (
-            <button onClick={onAlt} disabled={busy} className="flex-1 rounded-full border border-amber-300 bg-amber-50 py-3 text-sm min-h-[48px] disabled:opacity-50">
+        {altLabel && onAlt ? (
+          <div className="space-y-2">
+            <button onClick={onAlt} disabled={busy} className="w-full rounded-full border border-amber-300 bg-amber-50 py-3 text-sm min-h-[48px] disabled:opacity-50">
               {altLabel}
             </button>
-          )}
-          <button
-            onClick={onConfirm}
-            disabled={busy || invalid}
-            className={`flex-1 rounded-full py-3 text-sm font-medium min-h-[48px] disabled:opacity-50 ${danger ? "bg-red-600 text-white" : "bg-zinc-900 text-white"}`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+            <div className="flex gap-2">
+              <button onClick={onClose} disabled={busy} className="flex-1 rounded-full border py-3 text-sm min-h-[48px] disabled:opacity-50">
+                {cancel}
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={busy || invalid}
+                className={`flex-1 rounded-full py-3 text-sm font-medium min-h-[48px] disabled:opacity-50 ${danger ? "bg-red-600 text-white" : "bg-zinc-900 text-white"}`}
+              >
+                {confirmLabel}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button onClick={onClose} disabled={busy} className="flex-1 rounded-full border py-3 text-sm min-h-[48px] disabled:opacity-50">
+              {cancel}
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={busy || invalid}
+              className={`flex-1 rounded-full py-3 text-sm font-medium min-h-[48px] disabled:opacity-50 ${danger ? "bg-red-600 text-white" : "bg-zinc-900 text-white"}`}
+            >
+              {confirmLabel}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

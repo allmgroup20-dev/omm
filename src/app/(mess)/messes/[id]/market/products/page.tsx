@@ -119,8 +119,8 @@ export default function ProductsPage() {
                   {p.name} <span className="text-xs text-zinc-500">({t(`units.${p.defaultUnit}`)})</span> {p.isArchived && <span className="text-xs bg-zinc-200 rounded-full px-2">archived</span>}
                 </span>
                 <span className="text-xs text-zinc-500 truncate">{cats.find((c) => c.id === p.categoryId)?.name || "—"}</span>
-                <button onClick={() => startEdit(p)} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50">{t("common.edit")}</button>
-                <button onClick={() => del(p.id)} className="text-xs border rounded-full px-3 py-1 hover:bg-red-50 text-red-600">{t("common.delete")}</button>
+                <button onClick={() => startEdit(p)} className="text-xs border rounded-full px-4 py-2.5 hover:bg-zinc-50">{t("common.edit")}</button>
+                <button onClick={() => del(p.id)} className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600">{t("common.delete")}</button>
               </div>
             ))}
           {prods.length === 0 && <div className="text-center text-sm text-zinc-500 py-4">{t("market.noProducts")}</div>}

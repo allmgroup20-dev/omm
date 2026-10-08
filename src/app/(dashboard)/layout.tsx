@@ -2,7 +2,6 @@ import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import NotificationBell from "./notification-bell";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider } from "@/components/ui/toast";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getServerDict } from "@/i18n/server";
@@ -26,7 +25,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <nav className="hidden lg:flex items-center gap-2 text-sm">
             <Link href="/profile" className="px-3 py-2 rounded-full border hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.profile")}</Link>
             <NotificationBell />
-            <ThemeToggle />
             <LocaleSwitcher />
             <Link href="/messes/new" className="px-4 py-2 rounded-full bg-zinc-900 text-white whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.newMess")}</Link>
             <span className="text-zinc-600 hidden xl:inline truncate max-w-[120px]">{user.fullName}</span>
@@ -37,7 +35,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {/* Mobile: visible controls + hamburger */}
           <div className="flex lg:hidden items-center gap-1.5">
             <NotificationBell />
-            <ThemeToggle />
             <LocaleSwitcher />
             <DashboardMobileNav userName={user.fullName} />
           </div>

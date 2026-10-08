@@ -274,7 +274,7 @@ export default function MembersPage() {
                   <div key={inv.id} className="flex items-center gap-2 border rounded-xl px-3 py-2 text-sm">
                     <span className="font-mono text-xs">{inv.code}</span>
                     <span className="text-xs text-zinc-500">{t(`roles.${inv.role}`)} • {inv.status}</span>
-                    <button onClick={() => copyText(`${window.location.origin}${link}`, inv.id)} className="ml-auto shrink-0 px-3 py-1.5 rounded-full border text-xs min-h-[36px]">{copied === inv.id ? t("common.copied") : t("common.copy")}</button>
+                    <button onClick={() => copyText(`${window.location.origin}${link}`, inv.id)} className="ml-auto shrink-0 px-4 py-2.5 rounded-full border text-xs min-h-[44px]">{copied === inv.id ? t("common.copied") : t("common.copy")}</button>
                   </div>
                 );
               })}
@@ -294,7 +294,7 @@ export default function MembersPage() {
           {found.map((u) => (
             <div key={u.id} className="flex items-center justify-between border rounded-xl px-3 py-2">
               <div className="text-sm"><b>{u.fullName}</b> <span className="text-xs text-zinc-500">{u.email}{u.phone ? ` • ${u.phone}` : ""}</span></div>
-              <button onClick={() => linkAccount(u.id)} className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1.5">{t("members.linkConfirm")}</button>
+              <button onClick={() => linkAccount(u.id)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2.5">{t("members.linkConfirm")}</button>
             </div>
           ))}
           {search && !searching && found.length === 0 && <div className="text-xs text-zinc-500">{t("members.foundNone")}</div>}
@@ -329,7 +329,7 @@ export default function MembersPage() {
                     <td className="p-3 text-xs">{m.email || "—"}</td>
                     <td className="p-3">
                       {privileged ? (
-                        <select value={m.role} onChange={(e) => updateRole(m.id, e.target.value)} className="border rounded-full px-2 py-1 text-xs">
+                        <select value={m.role} onChange={(e) => updateRole(m.id, e.target.value)} className="border rounded-xl px-3 py-2.5 text-sm min-h-[44px]">
                           <option value="member">{t("roles.member")}</option>
                           <option value="assistant_manager">{t("roles.assistant_manager")}</option>
                           <option value="manager">{t("roles.manager")}</option>
@@ -344,11 +344,11 @@ export default function MembersPage() {
                       {privileged && (
                         <>
                           {m.isPlaceholder ? (
-                            <button onClick={() => setLinkFor(m)} className="text-xs border rounded-full px-3 py-1 bg-amber-50 min-h-[36px]">{t("members.linkBtn")}</button>
+                            <button onClick={() => setLinkFor(m)} className="text-xs border rounded-full px-4 py-2.5 bg-amber-50 min-h-[44px]">{t("members.linkBtn")}</button>
                           ) : m.claimedAt ? (
-                            <button onClick={() => unlinkAccount(m)} className="text-xs border rounded-full px-3 py-1 min-h-[36px]">{t("members.unlinkBtn")}</button>
+                            <button onClick={() => unlinkAccount(m)} className="text-xs border rounded-full px-4 py-2.5 min-h-[44px]">{t("members.unlinkBtn")}</button>
                           ) : null}
-                          <button onClick={() => askStatus(m.id, m.status === "active" ? "left" : "active")} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50 min-h-[36px]">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
+                          <button onClick={() => askStatus(m.id, m.status === "active" ? "left" : "active")} className="text-xs border rounded-full px-4 py-2.5 hover:bg-zinc-50 min-h-[44px]">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
                         </>
                       )}
                     </td>
@@ -373,8 +373,8 @@ export default function MembersPage() {
                 </div>
                 {r.status === "pending" && privileged && (
                   <div className="flex gap-1">
-                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1 min-h-[36px]">Approve</button>
-                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-3 py-1 min-h-[36px]">Reject</button>
+                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2.5 min-h-[44px]">Approve</button>
+                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-4 py-2.5 min-h-[44px]">Reject</button>
                   </div>
                 )}
               </div>

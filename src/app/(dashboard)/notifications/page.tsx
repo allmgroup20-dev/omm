@@ -39,8 +39,8 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex gap-2 text-sm">
-        <button onClick={() => setFilter("all")} className={`px-3 py-1 rounded-full border ${filter === "all" ? "bg-zinc-900 text-white" : "bg-white"}`}>{t("notifications.allTab")}</button>
-        <button onClick={() => setFilter("unread")} className={`px-3 py-1 rounded-full border ${filter === "unread" ? "bg-zinc-900 text-white" : "bg-white"}`}>{t("notifications.unreadTab")}</button>
+        <button onClick={() => setFilter("all")} className={`px-4 py-2.5 rounded-full border ${filter === "all" ? "bg-zinc-900 text-white" : "bg-white"}`}>{t("notifications.allTab")}</button>
+        <button onClick={() => setFilter("unread")} className={`px-4 py-2.5 rounded-full border ${filter === "unread" ? "bg-zinc-900 text-white" : "bg-white"}`}>{t("notifications.unreadTab")}</button>
       </div>
 
       <div className="space-y-2">

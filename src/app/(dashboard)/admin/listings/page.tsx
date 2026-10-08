@@ -63,8 +63,8 @@ export default function AdminListingsPage() {
                 <td className="p-3 text-right flex gap-1 justify-end">
                   {status === "pending" && (
                     <>
-                      <button onClick={() => askModerate(l.id, "approve")} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">Approve</button>
-                      <button onClick={() => askModerate(l.id, "reject")} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">Reject</button>
+                      <button onClick={() => askModerate(l.id, "approve")} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[44px]">Approve</button>
+                      <button onClick={() => askModerate(l.id, "reject")} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[44px]">Reject</button>
                     </>
                   )}
                 </td>

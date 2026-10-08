@@ -20,7 +20,7 @@ export default function NotificationBell() {
   }, []);
 
   return (
-    <Link href="/notifications" className="relative px-3 py-1.5 rounded-full border hover:bg-zinc-50">
+    <Link href="/notifications" aria-label="Notifications" className="relative w-11 h-11 grid place-items-center rounded-full border hover:bg-zinc-50 text-base shrink-0">
       🔔
       {unread > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] rounded-full w-5 h-5 grid place-items-center">{unread > 99 ? "99+" : unread}</span>}
     </Link>

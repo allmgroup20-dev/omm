@@ -7,14 +7,14 @@ export function LocaleSwitcher() {
     <div className="flex items-center border rounded-full overflow-hidden text-xs" role="group" aria-label="Language">
       <button
         onClick={() => setLocale("bn")}
-        className={`px-3 py-1.5 ${locale === "bn" ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"}`}
+        className={`px-4 py-2.5 ${locale === "bn" ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"}`}
         aria-pressed={locale === "bn"}
       >
         বাং
       </button>
       <button
         onClick={() => setLocale("en")}
-        className={`px-3 py-1.5 ${locale === "en" ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"}`}
+        className={`px-4 py-2.5 ${locale === "en" ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"}`}
         aria-pressed={locale === "en"}
       >
         EN

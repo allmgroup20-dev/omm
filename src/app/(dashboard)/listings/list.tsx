@@ -39,8 +39,8 @@ export default function MyListings() {
             <div className="text-xs text-zinc-500 mt-1">{[l.district, l.area].filter(Boolean).join(", ")} • ৳{(l.pricePaisa / 100).toLocaleString("bn-BD")} • <span className="border rounded-full px-2 py-0.5">{STATUS_BN[l.status] || l.status}</span></div>
           </div>
           <div className="flex gap-2 shrink-0">
-            <Link href={`/listings/${l.slug}`} className="text-xs border rounded-full px-3 py-1.5">দেখুন</Link>
-            <Link href={`/listings/${l.slug}/edit`} className="text-xs border rounded-full px-3 py-1.5 bg-zinc-50">এডিট</Link>
+            <Link href={`/listings/${l.slug}`} className="text-xs border rounded-full px-4 py-2.5">দেখুন</Link>
+            <Link href={`/listings/${l.slug}/edit`} className="text-xs border rounded-full px-4 py-2.5 bg-zinc-50">এডিট</Link>
           </div>
         </div>
       ))}
