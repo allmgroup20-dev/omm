@@ -100,6 +100,9 @@ export default function DuesPage() {
         <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">এ মাসে আদায়</div><div className="text-xl font-bold text-emerald-700">{formatCurrency(totalCollected, locale)}</div></div>
       </div>
       <p className="text-xs text-zinc-500">নিয়ম: বকেয়া অংশ গত মাসের শেষ তারিখে + বাড়তি স্বয়ংক্রিয়ভাবে এই মাসে জমা হয়।</p>
+      <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
+        সংখ্যা না মিললে সংশ্লিষ্ট মাস <Link href={`/messes/${id}/settlements`} className="underline font-medium">সেটেলমেন্টে পুনর্গণনা</Link> করুন (একই মাসে "তৈরি করুন" চাপলেই হয়)।
+      </div>
 
       {members.length === 0 ? (
         <div className="rounded-2xl border bg-white p-8 text-center text-sm text-zinc-500">🎉 কোনো বকেয়া নেই — সব হিসাব পরিষ্কার</div>

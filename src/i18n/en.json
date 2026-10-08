@@ -416,6 +416,7 @@
   "settlements": {
     "title": "Monthly Settlement",
     "generate": "Generate",
+    "regenHint": "Pressing again for the same month regenerates — press here after due collection",
     "formula": "Formula: Food Cost ÷ Total Meals = Rate",
     "period": "Period",
     "mealsCol": "Meals",

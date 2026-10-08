@@ -64,7 +64,7 @@ export default function SettlementsPage() {
         <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.year")} />
         <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.month")} />
         <button onClick={generate} className="px-6 py-3 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">{t("settlements.generate")}</button>
-        <span className="text-xs text-zinc-500 w-full sm:w-auto">{t("settlements.formula")}</span>
+        <span className="text-xs text-zinc-500 w-full sm:w-auto">{t("settlements.formula")}<br />{t("settlements.regenHint")}</span>
       </div>
 
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
