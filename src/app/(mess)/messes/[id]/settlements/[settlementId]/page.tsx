@@ -85,7 +85,7 @@ export default function SettlementDetailPage() {
       <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">{t("settlements.howToRead")}</div>
 
       <div className="bg-white border rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto hidden lg:block">
+        <div className="overflow-x-auto hidden lg:block print:block">
           <table className="w-full text-xs">
             <thead className="bg-zinc-50"><tr><th className="text-left p-2">{t("settlements.memberCol")}</th><th className="text-center p-2">{t("settlements.mealsCol")}</th><th className="text-right p-2">{t("settlements.mealCostCol")}</th><th className="text-right p-2">{t("settlements.otherAllocCol")}</th><th className="text-right p-2">{t("settlements.depositCol")}</th><th className="text-right p-2">{t("settlements.prevBalCol")}</th><th className="text-right p-2">{t("settlements.closingCol")}</th><th className="text-center p-2">{t("common.status")}</th><th className="text-center p-2">{t("settlements.dispCol")}</th></tr></thead>
             <tbody>
@@ -117,7 +117,7 @@ export default function SettlementDetailPage() {
             </tbody>
           </table>
         </div>
-        <div className="lg:hidden divide-y">
+        <div className="lg:hidden print:hidden divide-y">
           {members.map((m) => {
             const owes = m.closingBalancePaisa < 0;
             const gets = m.closingBalancePaisa > 0;
@@ -155,7 +155,7 @@ export default function SettlementDetailPage() {
         <div className="p-3 text-xs text-zinc-500">{t("settlements.formulaNote")}</div>
       </div>
 
-      <button onClick={() => window.print()} className="px-5 py-2 border rounded-full text-sm min-h-[44px]">{t("common.print")}</button>
+      <button onClick={() => window.print()} className="px-5 py-2 border rounded-full text-sm min-h-[44px] no-print">{t("common.print")}</button>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       <ConfirmSheet
         open={!!dispTarget}

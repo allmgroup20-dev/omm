@@ -160,6 +160,10 @@
     "quickActions": "Quick Actions",
     "dailyTitle": "Today's work",
     "dailyNote": "Everyday tasks — start here",
+    "setupChecklist": "Setup checklist",
+    "step1Members": "1. Add members",
+    "step2MealTypes": "2. Set meal types",
+    "step3Meals": "3. Add today's meals",
     "weeklyTitle": "Weekly & Monthly",
     "setupTitle": "Setup & more",
     "qaMembers": "+ Members/Invites",
@@ -492,7 +496,8 @@
     "useDepositInstead": "For this month's deposits use",
     "sheetTitle": "Collect due",
     "amountPh": "Amount",
-    "collectConfirm": "Collect"
+    "collectConfirm": "Collect",
+    "myDue": "💳 My due"
   },
   "settlements": {
     "title": "Monthly Settlement",
@@ -547,6 +552,16 @@
     "month": "Month",
     "exportJson": "Export JSON",
     "printBtn": "Print",
+    "kpiMeals": "Total meals",
+    "kpiMarket": "Total market",
+    "kpiExpenses": "Total expenses",
+    "kpiDeposits": "Total deposits",
+    "rateLabel": "Meal rate",
+    "monthCol": "Month",
+    "viewSettlement": "View settlement",
+    "goDues": "Collect dues",
+    "devJson": "Developer JSON",
+    "emptyReport": "No data for this period — add meals/market",
     "singleSource": "All reports derive from the same source (meals/market/expenses/deposits) — single truth, reproducible."
   },
   "settings": {

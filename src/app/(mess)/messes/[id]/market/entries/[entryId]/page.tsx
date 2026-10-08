@@ -240,6 +240,10 @@ export default function EntryDetailPage() {
         <div className="flex justify-between"><span>গাড়ি ভাড়া</span><span>{formatCurrency(entry.transportPaisa || 0, locale)}</span></div>
         <div className="flex justify-between"><span>ছাড়</span><span>{formatCurrency(entry.discountPaisa, locale)}</span></div>
         <div className="flex justify-between font-semibold"><span>সর্বমোট (মোট + গাড়ি - ছাড়)</span><span>{formatCurrency(entry.finalPaisa, locale)}</span></div>
+        <div className="flex justify-between"><span>{t("market.classification")}</span><span>{entry.classification === "food" ? t("market.classFood") : entry.classification === "shared" ? t("market.classShared") : t("market.classNonFood")}</span></div>
+        <div className="flex justify-between"><span>{t("market.payment")}</span><span>{entry.paymentMethod === "cash" ? t("market.payCash") : entry.paymentMethod === "bank" ? t("market.payBank") : entry.paymentMethod === "mobile" ? t("market.payMobile") : t("market.payOther")}</span></div>
+        <div className="flex justify-between"><span>{t("market.vendor")}</span><span>{vendors.find((v) => v.id === entry.vendorId)?.name || t("market.noVendor")}</span></div>
+        {entry.notes && <div className="flex justify-between gap-3"><span className="shrink-0">{t("market.notes")}</span><span className="text-right break-words">{entry.notes}</span></div>}
         <div className="text-xs text-zinc-500">সর্বমোট সেটেলমেন্ট ও রিপোর্টে যায়</div>
       </div>
 

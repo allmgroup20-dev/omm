@@ -160,6 +160,10 @@
     "quickActions": "দ্রুত কাজ",
     "dailyTitle": "আজকের কাজ",
     "dailyNote": "প্রতিদিনের কাজ — এখান থেকেই শুরু করুন",
+    "setupChecklist": "শুরু করার তালিকা",
+    "step1Members": "১. সদস্য যোগ করুন",
+    "step2MealTypes": "২. মিলের ধরন ঠিক করুন",
+    "step3Meals": "৩. আজকের মিল দিন",
     "weeklyTitle": "সাপ্তাহিক ও মাসিক",
     "setupTitle": "সেটআপ ও বাকি কাজ",
     "qaMembers": "+ সদস্য/আমন্ত্রণ",
@@ -492,7 +496,8 @@
     "useDepositInstead": "চলতি মাসের জমার জন্য ব্যবহার করুন",
     "sheetTitle": "বকেয়া জমা",
     "amountPh": "টাকার পরিমাণ",
-    "collectConfirm": "আদায় করুন"
+    "collectConfirm": "আদায় করুন",
+    "myDue": "💳 আমার বাকি"
   },
   "settlements": {
     "title": "মাসিক সেটেলমেন্ট",
@@ -547,6 +552,16 @@
     "month": "মাস",
     "exportJson": "JSON এক্সপোর্ট",
     "printBtn": "প্রিন্ট",
+    "kpiMeals": "মোট মিল",
+    "kpiMarket": "মোট বাজার",
+    "kpiExpenses": "মোট খরচ",
+    "kpiDeposits": "মোট জমা",
+    "rateLabel": "মিল রেট",
+    "monthCol": "মাস",
+    "viewSettlement": "সেটেলমেন্ট দেখো",
+    "goDues": "বকেয়া তোলো",
+    "devJson": "ডেভেলপার JSON",
+    "emptyReport": "এই সময়ে তথ্য নেই — মিল/বাজার যোগ করুন",
     "singleSource": "সব রিপোর্ট একই উৎস (মিল/বাজার/খরচ/জমা) থেকে — একক সত্য, পুনরুৎপাদনযোগ্য।"
   },
   "settings": {
