@@ -119,7 +119,7 @@ export default function MealsPage() {
       const res = await fetch(`/api/messes/${id}/meals/defaults`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || JSON.stringify(data));
-      setMsg("টেমপ্লেট সেভ হয়েছে — প্রতিদিন Auto-fill চাপলে এই মান বসবে");
+      setMsg(t("meals.templateSaved"));
       loadDefaults();
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : t("errors.saveFail"));
@@ -135,7 +135,7 @@ export default function MealsPage() {
       const res = await fetch(`/api/messes/${id}/meals/auto-fill`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || JSON.stringify(data));
-      setMsg(`Auto-filled ${data.inserted} meals for ${date} (skipped ${data.skipped})`);
+      setMsg(`${t("meals.autoFilled")} ${data.inserted} (${data.skipped} ${t("meals.skipNone")})`);
       loadDate(date);
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : t("errors.saveFail"));
@@ -161,7 +161,7 @@ export default function MealsPage() {
       map[r.memberId][r.mealTypeId] = r.quantityScaled / 100;
     }
     setGrid(map);
-    setMsg(`Copied from ${prev}`);
+    setMsg(`${t("meals.copiedFrom")} ${prev}`);
   }
 
   async function save() {
@@ -201,6 +201,7 @@ export default function MealsPage() {
 
   const dayTotal = members.reduce((a, m) => a + mealTypes.reduce((x, t) => x + (grid[m.id]?.[t.id] ?? 0), 0), 0);
   const templateSummary = mealTypes.map((mt) => `${mt.name} ${defaults[mt.id] === undefined ? "—" : defaults[mt.id]}`).join(", ");
+  const skipNone = t("meals.skipNone");
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
@@ -221,15 +222,15 @@ export default function MealsPage() {
 
       <details className="bg-white border rounded-2xl px-4 py-2.5">
         <summary className="text-sm font-medium cursor-pointer py-2.5 list-none flex items-center justify-between gap-2 min-h-[44px]">
-          <span>⚙️ অটো টেমপ্লেট <span className="text-zinc-500 font-normal">• {templateSummary || "—"}</span></span>
+          <span>{t("meals.autoTemplate")} <span className="text-zinc-500 font-normal">• {templateSummary || "—"}</span></span>
           <span className="text-zinc-400 text-xs">▾</span>
         </summary>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 pb-1">
-          {mealTypes.map((t) => (
-            <div key={t.id} className="border rounded-xl p-2.5 bg-zinc-50">
-              <div className="text-xs font-medium">{t.name}</div>
-              <select value={String(defaults[t.id] ?? 0)} onChange={(e) => setDefaults((prev) => ({ ...prev, [t.id]: parseFloat(e.target.value) }))} className="w-full border rounded-lg px-2 py-2 text-sm mt-1 bg-white min-h-[44px]">
-                <option value="0">0 — বাদ</option>
+          {mealTypes.map((mt) => (
+            <div key={mt.id} className="border rounded-xl p-2.5 bg-zinc-50">
+              <div className="text-xs font-medium">{mt.name}</div>
+              <select value={String(defaults[mt.id] ?? 0)} onChange={(e) => setDefaults((prev) => ({ ...prev, [mt.id]: parseFloat(e.target.value) }))} className="w-full border rounded-lg px-2 py-2 text-sm mt-1 bg-white min-h-[44px]">
+                <option value="0">0 — {skipNone}</option>
                 <option value="0.5">0.5</option>
                 <option value="1">1</option>
                 <option value="1.5">1.5</option>
@@ -239,8 +240,8 @@ export default function MealsPage() {
           ))}
         </div>
         <div className="flex gap-2 pb-2">
-          <button onClick={saveDefaults} disabled={defaultsSaving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{defaultsSaving ? "সেভ হচ্ছে..." : "টেমপ্লেট সেভ করুন"}</button>
-          <button onClick={autoFillToday} disabled={autoSaving} className="px-5 rounded-full border bg-white text-sm disabled:opacity-50 min-h-[44px]">{autoSaving ? "ভরছে..." : `Auto-fill`}</button>
+          <button onClick={saveDefaults} disabled={defaultsSaving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{defaultsSaving ? t("meals.savingTemplate") : t("meals.saveTemplate")}</button>
+          <button onClick={autoFillToday} disabled={autoSaving} className="px-5 rounded-full border bg-white text-sm disabled:opacity-50 min-h-[44px]">{autoSaving ? t("meals.filling") : `Auto-fill`}</button>
         </div>
       </details>
 
@@ -287,13 +288,13 @@ export default function MealsPage() {
 
         <div className="sticky bottom-[calc(68px+env(safe-area-inset-bottom))] lg:bottom-0 z-20 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-white via-white to-transparent">
           <div className="rounded-2xl bg-zinc-900 text-white p-3 flex items-center justify-between gap-2">
-            <span className="text-sm font-bold pl-1">মোট {formatNumber(dayTotal, locale)} মিল</span>
+            <span className="text-sm font-bold pl-1">{t("meals.dayTotalMeals")} {formatNumber(dayTotal, locale)} {t("meals.total")}</span>
             <span className="flex gap-2">
               <button onClick={save} disabled={saving} className="rounded-full bg-white text-zinc-900 px-6 py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{saving ? t("meals.saving") : t("meals.saveBtn")}</button>
             </span>
           </div>
         </div>
-        <p className="text-xs text-zinc-500">পরিমাণ ০ / ০.৫ / ১… • সংশোধন অডিট হয়</p>
+        <p className="text-xs text-zinc-500">{t("meals.precisionNote")}</p>
       </div>
 
       <div className="flex justify-center gap-4 text-xs text-zinc-400">
@@ -301,7 +302,7 @@ export default function MealsPage() {
       </div>
       <ConfirmSheet
         open={clearAsk}
-        title="সব ঘর শূন্য করবেন? সেভ না করা পর্যন্ত কিছু বদলাবে না।"
+        title={t("meals.clearTitle")}
         confirmLabel={t("meals.clearAll")}
         danger
         onConfirm={() => { bulkSet(0); setClearAsk(false); }}

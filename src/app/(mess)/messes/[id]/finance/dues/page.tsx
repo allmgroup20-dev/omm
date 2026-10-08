@@ -63,7 +63,7 @@ export default function DuesPage() {
     if (!collectFor?.dueSourceYm) return;
     const amount = parseFloat(collectAmt);
     if (!amount || amount <= 0) {
-      setMsg("সঠিক টাকা লিখুন");
+      setMsg(t("dues.invalidAmount"));
       return;
     }
     const m = collectFor;
@@ -91,50 +91,51 @@ export default function DuesPage() {
   return (
     <div className="space-y-4 max-w-3xl mx-auto">
       <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
-      <h1 className="text-lg font-bold">🔴 বকেয়া আদায়</h1>
+      <h1 className="text-lg font-bold">{t("dues.title")}</h1>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       <div className="flex gap-2 items-center flex-wrap">
         <input type="month" value={ym} onChange={(e) => e.target.value && setYm(e.target.value)} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px] bg-white max-w-full" aria-label={`${t("reports.year")}-${t("reports.month")}`} />
       </div>
       {ym >= currentYm && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          চলতি/ভবিষ্যৎ মাসের বকেয়া আদায় হয় না — চলতি মাসের জমার জন্য <Link href={`/messes/${id}/finance/deposits`} className="underline font-medium">+ টাকা জমা</Link> ব্যবহার করুন।
+          {t("dues.currentMonthWarn")} — {t("dues.useDepositInstead")} <Link href={`/messes/${id}/finance/deposits`} className="underline font-medium">{t("mess.qaDeposit")}</Link>।
         </div>
       )}
 
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">বাকি বকেয়া</div><div className="text-lg sm:text-xl font-bold text-red-600 tabular-nums">{formatCurrency(totalDue, locale)}</div></div>
-        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">এ মাসে আদায়</div><div className="text-lg sm:text-xl font-bold text-emerald-700 tabular-nums">{formatCurrency(totalCollected, locale)}</div></div>
-        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">বাকি আছে</div><div className="text-lg sm:text-xl font-bold tabular-nums">{formatNumber(members.length, locale)} জন</div></div>
+        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">{t("dues.remainingDue")}</div><div className="text-lg sm:text-xl font-bold text-red-600 tabular-nums">{formatCurrency(totalDue, locale)}</div></div>
+        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">{t("dues.collectedThisMonth")}</div><div className="text-lg sm:text-xl font-bold text-emerald-700 tabular-nums">{formatCurrency(totalCollected, locale)}</div></div>
+        <div className="rounded-2xl border bg-white p-3 sm:p-4"><div className="text-xs text-zinc-500">{t("dues.membersLeft")}</div><div className="text-lg sm:text-xl font-bold tabular-nums">{formatNumber(members.length, locale)} {t("dues.personSuffix")}</div></div>
       </div>
-      <p className="text-xs text-zinc-500">নিয়ম: বকেয়া অংশ গত মাসের শেষ তারিখে + বাড়তি স্বয়ংক্রিয়ভাবে এই মাসে জমা হয়।</p>
-      <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
-        সংখ্যা না মিললে সংশ্লিষ্ট মাস <Link href={`/messes/${id}/settlements`} className="underline font-medium">সেটেলমেন্টে পুনর্গণনা</Link> করুন (একই মাসে "তৈরি করুন" চাপলেই হয়)।
-      </div>
+      <details className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
+        <summary className="text-xs font-medium text-sky-800 cursor-pointer py-1 min-h-[44px] inline-flex items-center">{t("dues.rule")}</summary>
+        <p className="text-xs text-sky-800 pb-2">{t("dues.whatIsDue")} {t("dues.regenHint")}</p>
+      </details>
 
       {members.length === 0 ? (
-        <div className="rounded-2xl border bg-white p-8 text-center text-sm text-zinc-500">🎉 কোনো বকেয়া নেই — সব হিসাব পরিষ্কার</div>
+        <div className="rounded-2xl border bg-white p-8 text-center text-sm text-zinc-500">{t("dues.empty")}</div>
       ) : (
         <div className="space-y-2">
           {members.map((m) => (
             <div key={m.memberId} className="rounded-2xl border bg-white px-4 py-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium text-sm truncate min-w-0">{names[m.memberId] || m.displayName}</span>
-                <span className="text-[11px] rounded-full px-2 py-0.5 bg-red-100 text-red-700 shrink-0">{m.dueSourceYm} বকেয়া</span>
+                <span className="text-[11px] rounded-full px-2 py-0.5 bg-red-100 text-red-700 shrink-0">{m.dueSourceYm} {t("dues.monthDueSuffix")}</span>
               </div>
-              <div className="flex items-center justify-between gap-2 text-xs text-zinc-600">
-                <span>মিল খরচ {formatCurrency(m.mealCostPaisa, locale)} • জমা {formatCurrency(m.depositPaisa, locale)}</span>
-                <b className="text-red-600 shrink-0">বাকি {formatCurrency(m.dueRemainingPaisa, locale)}</b>
+              <div className="grid grid-cols-3 gap-2 text-xs text-zinc-600">
+                <span>{t("dues.mealCostLabel")} <b className="tabular-nums">{formatCurrency(m.mealCostPaisa, locale)}</b></span>
+                <span>{t("dues.depositLabel")} <b className="tabular-nums">{formatCurrency(m.depositPaisa, locale)}</b></span>
+                <b className="text-red-600 tabular-nums text-right">{t("dues.remainingLabel")} {formatCurrency(m.dueRemainingPaisa, locale)}</b>
               </div>
               {(m.dueCollectedPaisa || 0) > 0 && (
-                <div className="text-[11px] text-emerald-700">এ মাসে আদায় {formatCurrency(m.dueCollectedPaisa, locale)}</div>
+                <div className="text-[11px] text-emerald-700">{t("dues.collectedLabel")} {formatCurrency(m.dueCollectedPaisa, locale)}</div>
               )}
               {canManage ? (
                 <button onClick={() => { setCollectFor(m); setCollectAmt(m.dueRemainingPaisa ? String(m.dueRemainingPaisa / 100) : ""); }} disabled={busyId === m.memberId} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm min-h-[44px] disabled:opacity-50">
-                  {busyId === m.memberId ? "নেওয়া হচ্ছে..." : "বকেয়া জমা"}
+                  {busyId === m.memberId ? t("dues.collecting") : t("dues.collectBtn")}
                 </button>
               ) : (
-                <div className="text-[11px] text-zinc-400 text-center">শুধু ম্যানেজার আদায় করতে পারে</div>
+                <div className="text-[11px] text-zinc-400 text-center">{t("dues.managerOnly")}</div>
               )}
             </div>
           ))}
@@ -142,11 +143,11 @@ export default function DuesPage() {
       )}
       <ConfirmSheet
         open={!!collectFor}
-        title={collectFor ? `বকেয়া জমা — ${names[collectFor.memberId] || ""}` : "বকেয়া জমা"}
+        title={collectFor ? `${t("dues.sheetTitle")} — ${names[collectFor.memberId] || ""}` : t("dues.sheetTitle")}
         body={collectFor ? `${collectFor.dueSourceYm}-এর বকেয়া ${formatCurrency(collectFor.dueRemainingPaisa || 0, locale)} — আজকের তারিখে নেওয়া হবে। বাড়তি অংশ এই মাসে জমা হবে।` : undefined}
-        confirmLabel="আদায় করুন"
+        confirmLabel={t("dues.collectConfirm")}
         busy={busyId !== null}
-        input={{ value: collectAmt, onChange: setCollectAmt, placeholder: "টাকার পরিমাণ", inputMode: "decimal", required: true }}
+        input={{ value: collectAmt, onChange: setCollectAmt, placeholder: t("dues.amountPh"), inputMode: "decimal", required: true }}
         onConfirm={confirmCollect}
         onClose={() => { setCollectFor(null); setCollectAmt(""); }}
       />

@@ -27,7 +27,7 @@ export default function EntriesPage() {
     const res = await fetch(`/api/messes/${id}/market/entries?${qs.toString()}`);
     const data = await res.json();
     if (res.ok) setEntries(data.entries);
-    else setMsg(data.error || "Load failed");
+    else setMsg(data.error || t("errors.loadFail"));
   }
   useEffect(() => { load(); }, [id, filterDate, filterPurchaser]);
   useEffect(() => {
@@ -72,18 +72,20 @@ export default function EntriesPage() {
       res = await fetch(`/api/messes/${id}/market/entries/merge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entryIds: [...selected] }) });
       data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setMsg(`Merged → ${(data.entry as { id: string })?.id?.slice(0, 8)} (${(data.mergedIds as string[])?.length || 0} → 1)`);
+        setMsg(`${t("market.mergedOk")} (${(data.mergedIds as string[])?.length || 0} → 1)`);
         setSelected(new Set());
         load();
+      } else {
+        setMsg(typeof data.error === "string" && data.error ? data.error : t("errors.saveFail"));
       }
     } else if (target.kind === "deleteOne") {
       res = await fetch(`/api/messes/${id}/market/entries/${target.entryId}`, { method: "DELETE" });
       data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setMsg("মুছে ফেলা হয়েছে");
+        setMsg(t("market.deletedOk"));
         load();
       } else {
-        setMsg(`${data.error || "Delete failed"} — আপনার role ${data.role ? data.role : ""} হলে Members → role manager করুন`);
+        setMsg(`${data.error || t("market.deleteFail")} — ${t("market.deleteHint")}`);
       }
     } else if (target.kind === "deleteSelected") {
       let ok = 0;
@@ -96,7 +98,7 @@ export default function EntriesPage() {
         if (resDel.ok) ok++; else { fail++; lastErr = String(data.error || "Failed"); }
         if (!resForDeleteSelected) resForDeleteSelected = resDel;
       }
-      setMsg(fail > 0 ? `মুছেছে ${ok}, ব্যর্থ ${fail} (${lastErr})` : `${ok}টি মুছে ফেলা হয়েছে`);
+      setMsg(fail > 0 ? `${t("market.deletedOk")} ${ok}, ${t("market.deleteFail")} ${fail} (${lastErr})` : `${t("market.deletedOk")} ${ok}`);
       if (ok > 0) load();
     }
     setConfirmBusy(false);
@@ -115,28 +117,28 @@ export default function EntriesPage() {
     <div className="max-w-4xl mx-auto space-y-4">
       <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold">বাজার এন্ট্রি</h1>
-        <Link href={`/messes/${id}/market/add`} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm min-h-[44px] inline-flex items-center">+ নতুন</Link>
+        <h1 className="text-lg font-bold">{t("market.entriesTitle")}</h1>
+        <Link href={`/messes/${id}/market/add`} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm min-h-[44px] inline-flex items-center">{t("market.addMarketCta")}</Link>
       </div>
-      <p className="text-xs text-zinc-500">তারিখ বা কে বাজার করেছে — ফিল্টার করে যাচাই করুন</p>
+      <p className="text-xs text-zinc-500">{t("market.filterHint")}</p>
       <div className="bg-white border rounded-2xl p-4 flex flex-wrap gap-3 items-end">
-        <div><label className="text-xs">তারিখ (DD-MM-YYYY)</label><input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /><div className="text-[11px] text-zinc-500 mt-1">{filterDate ? formatDateBD(filterDate, locale) : ""}</div></div>
-        <div><label className="text-xs">কে বাজার করেছে</label><select value={filterPurchaser} onChange={(e) => setFilterPurchaser(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">— সবাই —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
-        <button onClick={() => { setFilterDate(""); setFilterPurchaser(""); }} className="px-4 py-2 border rounded-full text-sm min-h-[44px]">ফিল্টার মুছুন</button>
-        {selected.size >= 2 && <button onClick={mergeSelected} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">Merge ({selected.size}) → একটিতে</button>}
-        {selected.size > 0 && <button onClick={deleteSelected} className="px-4 py-2 rounded-full bg-red-600 text-white text-sm min-h-[44px]">মুছুন ({selected.size})</button>}
-        {selected.size > 0 && <button onClick={() => setSelected(new Set())} className="px-4 py-2 border rounded-full text-sm min-h-[44px]">নির্বাচন বাদ</button>}
+        <div><label className="text-xs">{t("market.filterDate")}</label><input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /><div className="text-[11px] text-zinc-500 mt-1">{filterDate ? formatDateBD(filterDate, locale) : ""}</div></div>
+        <div><label className="text-xs">{t("market.filterWho")}</label><select value={filterPurchaser} onChange={(e) => setFilterPurchaser(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">{t("market.filterAll")}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
+        <button onClick={() => { setFilterDate(""); setFilterPurchaser(""); }} className="px-4 py-2 border rounded-full text-sm min-h-[44px]">{t("market.clearFilters")}</button>
+        {selected.size >= 2 && <button onClick={mergeSelected} className="px-4 py-2 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">{t("market.mergeBtn")} ({selected.size})</button>}
+        {selected.size > 0 && <button onClick={deleteSelected} className="px-4 py-2 rounded-full bg-red-600 text-white text-sm min-h-[44px]">{t("market.deleteBtn")} ({selected.size})</button>}
+        {selected.size > 0 && <button onClick={() => setSelected(new Set())} className="px-4 py-2 border rounded-full text-sm min-h-[44px]">{t("market.clearSel")}</button>}
       </div>
       {filterDate && entries.length > 0 && (
         <div className="rounded-xl border bg-amber-50 p-3 text-sm">
-          {filterDate} ({formatDateBD(filterDate, locale)}) — এই দিনে <b>{entries.length}</b> এন্ট্রি — {(() => {
+          {filterDate} ({formatDateBD(filterDate, locale)}) — {t("market.dayEntries")} <b>{entries.length}</b> {t("market.entriesCount")} — {(() => {
             const byPurchaser: Record<string, number> = {};
             for (const e of entries) {
-              const key = e.purchaserName || "অজানা";
+              const key = e.purchaserName || t("market.unknownPerson");
               byPurchaser[key] = (byPurchaser[key] || 0) + 1;
             }
             const parts = Object.entries(byPurchaser).map(([name, cnt]) => `${name} (${cnt})`);
-            const allOne = entries.length === 1 ? " — সব বাজার একজনে করেছে" : entries.length > 1 && Object.keys(byPurchaser).length === 1 ? " — সব বাজার একজনে করেছে" : "";
+            const allOne = entries.length === 1 ? ` ${t("market.allOnePerson")}` : entries.length > 1 && Object.keys(byPurchaser).length === 1 ? ` ${t("market.allOnePerson")}` : "";
             return parts.join(", ") + allOne;
           })()}
         </div>
@@ -148,15 +150,15 @@ export default function EntriesPage() {
             <thead className="bg-zinc-50 border-b">
               <tr>
                 <th className="p-3"><input type="checkbox" checked={entries.length > 0 && selected.size === entries.length} onChange={toggleAll} className="w-6 h-6 rounded accent-zinc-900" /></th>
-                <th className="text-left p-3">তারিখ (DD-MM-YYYY)</th>
-                <th className="text-left p-3">কে করেছে</th>
-                <th className="text-left p-3">শ্রেণি</th>
-                <th className="text-left p-3">আইটেম</th>
-                <th className="text-right p-3">মোট</th>
-                <th className="text-right p-3">গাড়ি ভাড়া</th>
-                <th className="text-right p-3">সর্বমোট</th>
-                <th className="text-center p-3">অবস্থা</th>
-                <th className="p-3">কাজ</th>
+                <th className="text-left p-3">{t("market.filterDate")}</th>
+                <th className="text-left p-3">{t("market.colWho")}</th>
+                <th className="text-left p-3">{t("market.colClass")}</th>
+                <th className="text-left p-3">{t("market.colItems")}</th>
+                <th className="text-right p-3">{t("common.total")}</th>
+                <th className="text-right p-3">{t("market.colTransport")}</th>
+                <th className="text-right p-3">{t("market.colFinal")}</th>
+                <th className="text-center p-3">{t("common.status")}</th>
+                <th className="p-3">{t("market.colAction")}</th>
               </tr>
             </thead>
             <tbody>
@@ -195,8 +197,8 @@ export default function EntriesPage() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm tabular-nums">{formatCurrency(e.finalPaisa, locale)}</span>
                   <span className="flex gap-2">
-                    <Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-4 py-2.5 hover:bg-white min-h-[44px] inline-flex items-center">দেখুন</Link>
-                    <button onClick={() => deleteOne(e.id)} title="স্থায়ীভাবে মুছুন" aria-label="স্থায়ীভাবে মুছুন" className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600 min-h-[44px] min-w-[44px]">✕</button>
+                    <Link href={`/messes/${id}/market/entries/${e.id}`} className="text-xs border rounded-full px-4 py-2.5 hover:bg-white min-h-[44px] inline-flex items-center">{t("market.viewBtn")}</Link>
+                    <button onClick={() => deleteOne(e.id)} title={t("market.deleteBtn")} aria-label={t("market.deleteBtn")} className="text-xs border rounded-full px-4 py-2.5 hover:bg-red-50 text-red-600 min-h-[44px] min-w-[44px]">✕</button>
                   </span>
                 </div>
               </div>
@@ -205,8 +207,8 @@ export default function EntriesPage() {
         </div>
           {entries.length === 0 && (
             <div className="p-8 text-center text-sm text-zinc-500 space-y-3">
-              <div>এখনো এন্ট্রি নেই</div>
-              <Link href={`/messes/${id}/market/add`} className="inline-flex items-center px-5 py-2.5 rounded-full bg-zinc-900 text-white text-sm min-h-[48px]">+ নতুন বাজার যোগ</Link>
+              <div>{t("market.emptyTitle")}</div>
+              <Link href={`/messes/${id}/market/add`} className="inline-flex items-center px-5 py-2.5 rounded-full bg-zinc-900 text-white text-sm min-h-[48px]">{t("market.addMarketCta")}</Link>
             </div>
           )}
         </div>
@@ -215,14 +217,14 @@ export default function EntriesPage() {
         title={
           !confirmState ? "" :
           confirmState.kind === "merge"
-            ? `${confirmState.count}টি এন্ট্রি একটিতে মার্জ করবেন? আইটেম + গাড়ি ভাড়া যোগ হবে, পুরনোগুলো বাদ যাবে`
+            ? `${confirmState.count} ${t("market.mergeTitle")}`
             : confirmState.kind === "deleteOne"
-              ? "এই এন্ট্রি স্থায়ীভাবে মুছবেন? মোট ও বিক্রেতার হিসাব থেকে বাদ যাবে।"
-              : `${confirmState.count}টি এন্ট্রি একসাথে স্থায়ীভাবে মুছবেন?`
+              ? t("market.deleteOneTitle")
+              : `${confirmState.count} ${t("market.deleteManyTitle")}`
         }
         confirmLabel={
           !confirmState ? t("common.confirm") :
-          confirmState.kind === "merge" ? "মার্জ করুন" : "স্থায়ীভাবে মুছুন"
+          confirmState.kind === "merge" ? t("market.mergeBtn") : t("market.deleteForever")
         }
         danger={confirmState?.kind !== "merge"}
         busy={confirmBusy}

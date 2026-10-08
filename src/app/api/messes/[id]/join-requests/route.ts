@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { messJoinRequests, messMembers, notifications } from "@/db/schema";
+import { messJoinRequests, messMembers, notifications, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -12,7 +12,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const db = await getRequestDb();
   const access = await db.select().from(messMembers).where(and(eq(messMembers.messId, id), eq(messMembers.userId, user.id))).limit(1);
   if (!access[0] || access[0].role !== "manager") return NextResponse.json({ error: "Only manager" }, { status: 403 });
-  const rows = await db.select().from(messJoinRequests).where(eq(messJoinRequests.messId, id));
+  const rows = await db
+    .select({
+      id: messJoinRequests.id,
+      userId: messJoinRequests.userId,
+      status: messJoinRequests.status,
+      requestedAt: messJoinRequests.requestedAt,
+      fullName: users.fullName,
+      email: users.email,
+      phone: users.phone,
+    })
+    .from(messJoinRequests)
+    .leftJoin(users, eq(users.id, messJoinRequests.userId))
+    .where(eq(messJoinRequests.messId, id));
   return NextResponse.json({ requests: rows });
 }
 

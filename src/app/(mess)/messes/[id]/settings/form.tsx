@@ -63,39 +63,53 @@ export default function SettingsForm({ mess, role }: { mess: Mess; role: string 
 
   return (
     <form onSubmit={submit} className="bg-white border rounded-2xl p-4 sm:p-6 space-y-4">
-      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("settings.namePh")} className="w-full border rounded-xl px-4 py-3 text-sm" />
-      <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("settings.descPh")} className="w-full border rounded-xl px-4 py-3 text-sm" rows={2} />
-      <div className="rounded-xl border p-4 bg-zinc-50/50">
-        <div className="text-xs font-semibold mb-2">{t("settings.addressTitle")}</div>
-        <AddressSelect value={geo} onChange={setGeo} />
-      </div>
-      <input value={form.contactInfo} onChange={(e) => setForm({ ...form, contactInfo: e.target.value })} placeholder={t("settings.contactPh")} className="w-full border rounded-xl px-4 py-3 text-sm" />
-      <input value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} placeholder="Timezone" className="w-full border rounded-xl px-4 py-3 text-sm" />
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs text-zinc-600">{t("settings.allocation")} {isManager ? "" : t("settings.managerOnly")}</label>
-          <select value={form.costAllocation} onChange={(e) => setForm({ ...form, costAllocation: e.target.value })} disabled={!isManager} className="w-full border rounded-xl px-3 py-3 text-sm mt-1 disabled:bg-zinc-100">
-            <option value="equal">equal</option>
-            <option value="meal_proportional">meal_proportional</option>
-            <option value="member_specific">member_specific</option>
-            <option value="custom">custom</option>
-          </select>
+      <div className="space-y-3">
+        <div className="text-sm font-semibold">{t("settings.basicSec")}</div>
+        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("settings.namePh")} aria-label={t("settings.namePh")} className="w-full border rounded-xl px-4 py-3 text-base sm:text-sm min-h-[52px]" />
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("settings.descPh")} aria-label={t("settings.descPh")} className="w-full border rounded-xl px-4 py-3 text-base sm:text-sm min-h-[52px]" rows={2} />
+        <div className="rounded-xl border p-4 bg-zinc-50/50">
+          <div className="text-xs font-semibold mb-2">{t("settings.addressTitle")}</div>
+          <AddressSelect value={geo} onChange={setGeo} />
         </div>
+        <input value={form.contactInfo} onChange={(e) => setForm({ ...form, contactInfo: e.target.value })} placeholder={t("settings.contactPh")} aria-label={t("settings.contactPh")} className="w-full border rounded-xl px-4 py-3 text-base sm:text-sm min-h-[52px]" />
         <div>
-          <label className="text-xs text-zinc-600">{t("settings.costing")} {isManager ? "" : t("settings.managerOnly")}</label>
-          <select value={form.mealCostingModel} onChange={(e) => setForm({ ...form, mealCostingModel: e.target.value })} disabled={!isManager} className="w-full border rounded-xl px-3 py-3 text-sm mt-1 disabled:bg-zinc-100">
-            <option value="food_only">food_only</option>
-            <option value="food_plus_expenses">food_plus_expenses</option>
-            <option value="custom">custom</option>
+          <label className="text-xs text-zinc-600">{t("settings.timezone")}</label>
+          <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px] bg-white">
+            <option value="Asia/Dhaka">Asia/Dhaka (Bangladesh — default)</option>
+            <option value="UTC">UTC</option>
           </select>
         </div>
       </div>
-      <div>
-        <label className="text-xs text-zinc-600">{t("settings.threshold")} {isManager ? "" : t("settings.managerOnly")}</label>
-        <input type="number" value={form.threshold} onChange={(e) => setForm({ ...form, threshold: e.target.value })} disabled={!isManager} className="w-full border rounded-xl px-4 py-3 text-sm mt-1 disabled:bg-zinc-100" />
+      <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+        <div className="text-sm font-semibold">💰 {t("settings.moneySec")} 🔒</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-zinc-600">{t("settings.allocation")} {isManager ? "" : t("settings.managerOnly")}</label>
+            <select value={form.costAllocation} onChange={(e) => setForm({ ...form, costAllocation: e.target.value })} disabled={!isManager} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px] bg-white disabled:bg-zinc-100">
+              <option value="equal">{t("settings.allocEqual")}</option>
+              <option value="meal_proportional">{t("settings.allocMeals")}</option>
+              <option value="member_specific">{t("settings.allocMember")}</option>
+              <option value="custom">{t("settings.allocCustom")}</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-zinc-600">{t("settings.costing")} {isManager ? "" : t("settings.managerOnly")}</label>
+            <select value={form.mealCostingModel} onChange={(e) => setForm({ ...form, mealCostingModel: e.target.value })} disabled={!isManager} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px] bg-white disabled:bg-zinc-100">
+              <option value="food_only">{t("settings.costingFood")}</option>
+              <option value="food_plus_expenses">{t("settings.costingFoodPlus")}</option>
+              <option value="custom">{t("settings.costingCustom")}</option>
+            </select>
+          </div>
+        </div>
+        <p className="text-xs text-zinc-500">{t("settings.allocationHint")}</p>
+        <div>
+          <label className="text-xs text-zinc-600">{t("settings.threshold")} {isManager ? "" : t("settings.managerOnly")}</label>
+          <input type="number" min={0} inputMode="numeric" value={form.threshold} onChange={(e) => setForm({ ...form, threshold: e.target.value })} disabled={!isManager} className="w-full border rounded-xl px-4 py-3 text-base sm:text-sm mt-1 min-h-[52px] disabled:bg-zinc-100" />
+          <p className="text-xs text-zinc-500 mt-1">{t("settings.thresholdHint")}</p>
+        </div>
       </div>
       {msg && <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm">{msg}</div>}
-      <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm">{t("settings.saveBtn")}</button>
+      <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm min-h-[48px]">{t("settings.saveBtn")}</button>
       {!isManager && <p className="text-xs text-zinc-500 text-center">{t("settings.managerNote")}</p>}
     </form>
   );

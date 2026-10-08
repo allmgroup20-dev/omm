@@ -83,6 +83,25 @@ export default function EntryDetailPage() {
     fetch(`/api/messes/${id}/market/products`).then((r) => r.json()).then((d) => { if (d.products) setProducts(d.products); }).catch(() => {});
   }, [id, entryId]);
 
+  // Resolve snapshot names to real catalog ids when possible (load() defaults to CUSTOM).
+  // Idempotent: only replaces CUSTOM selectors that exactly match a catalog name.
+  useEffect(() => {
+    if (!products.length && !categories.length) return;
+    setEditItems((prev) => prev.map((it) => {
+      let productSel = it.productSel;
+      let categorySel = it.categorySel;
+      if (productSel === CUSTOM) {
+        const hit = products.find((p) => p.name === it.productName);
+        if (hit) productSel = hit.id;
+      }
+      if (categorySel === CUSTOM) {
+        const hit = categories.find((c) => c.name === it.categoryName);
+        if (hit) categorySel = hit.id;
+      }
+      return productSel === it.productSel && categorySel === it.categorySel ? it : { ...it, productSel, categorySel };
+    }));
+  }, [products, categories]);
+
   function updateItem(idx: number, patch: Partial<Row>) {
     setEditItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   }
@@ -351,14 +370,14 @@ export default function EntryDetailPage() {
         ) : null}
         {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
         <div className="flex gap-2 pt-2">
-          {isActive && canManage && <button onClick={voidEntry} className="px-4 py-2 rounded-full border text-sm text-red-600 min-h-[44px]">Delete (স্থায়ীভাবে মুছুন)</button>}
+          {isActive && canManage && <button onClick={voidEntry} className="px-4 py-2 rounded-full border text-sm text-red-600 min-h-[44px]">Delete ({t("market.deleteForever").toLowerCase()})</button>}
           <button onClick={() => router.push(`/messes/${id}/market/entries`)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">Back to list</button>
         </div>
       </div>
       <ConfirmSheet
         open={voidConfirm}
-        title="এই এন্ট্রি স্থায়ীভাবে মুছবেন? মোট ও বিক্রেতার হিসাব থেকে বাদ যাবে।"
-        confirmLabel="স্থায়ীভাবে মুছুন"
+        title={t("market.deleteOneTitle")}
+        confirmLabel={t("market.deleteForever")}
         danger
         busy={voidBusy}
         onConfirm={confirmVoid}

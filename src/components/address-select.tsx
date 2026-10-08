@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/i18n/provider";
 
 export type AddressValue = {
   division: string;
@@ -32,6 +33,7 @@ export default function AddressSelect({
   showUnion?: boolean;
   showDetail?: boolean;
 }) {
+  const { t } = useLocale();
   const [divisions, setDivisions] = useState<Opt[]>([]);
   const [districts, setDistricts] = useState<Opt[]>([]);
   const [upazilas, setUpazilas] = useState<Opt[]>([]);
@@ -93,34 +95,34 @@ export default function AddressSelect({
     onChange(next);
   };
 
-  const sel = "w-full border rounded-xl px-3 py-2.5 text-sm mt-1 bg-white";
+  const sel = "w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 bg-white min-h-[52px]";
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl bg-zinc-50 border px-3 py-2 text-xs">🇧🇩 রাষ্ট্র: <b>বাংলাদেশ</b> (সরকারি তালিকা অনুযায়ী বেছে নিন)</div>
+      <div className="rounded-xl bg-zinc-50 border px-3 py-2 text-xs">{t("geo.country")} <b>{t("geo.countryName")}</b> {t("geo.countryHint")}</div>
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-zinc-600">বিভাগ *</label>
+          <label className="text-xs text-zinc-600">{t("geo.division")} *</label>
           <select value={value.division} onChange={(e) => set({ division: e.target.value })} className={sel} required>
-            <option value="">— বিভাগ —</option>
+            <option value="">{t("geo.divisionPh")}</option>
             {divisions.map((d) => (
               <option key={d.en} value={d.en}>{d.bn} ({d.en})</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-600">জেলা *</label>
+          <label className="text-xs text-zinc-600">{t("geo.district")} *</label>
           <select value={value.district} onChange={(e) => set({ district: e.target.value })} className={sel} required disabled={!value.division}>
-            <option value="">— জেলা —</option>
+            <option value="">{t("geo.districtPh")}</option>
             {districts.map((d) => (
               <option key={d.en} value={d.en}>{d.bn} ({d.en})</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-600">উপজেলা / থানা *</label>
+          <label className="text-xs text-zinc-600">{t("geo.upazila")} *</label>
           <select value={value.upazila} onChange={(e) => set({ upazila: e.target.value })} className={sel} required disabled={!value.district}>
-            <option value="">— উপজেলা —</option>
+            <option value="">{t("geo.upazilaPh")}</option>
             {upazilas.map((d) => (
               <option key={d.en} value={d.en}>{d.bn} ({d.en})</option>
             ))}
@@ -128,11 +130,11 @@ export default function AddressSelect({
         </div>
         {showUnion && (
           <div>
-            <label className="text-xs text-zinc-600">ইউনিয়ন / পৌরসভা</label>
+            <label className="text-xs text-zinc-600">{t("geo.union")}</label>
             <select value={value.unionName} onChange={(e) => set({ unionName: e.target.value })} className={sel} disabled={!value.upazila}>
-              <option value="">— ইউনিয়ন (ঐচ্ছিক) —</option>
+              <option value="">{t("geo.unionPh")}</option>
               {unions.map((d) => (
-                <option key={`${d.type}-${d.en}`} value={d.en}>{d.bn} ({d.type === "union" ? "ইউনিয়ন" : d.type === "pourashava" ? "পৌরসভা" : "সিটি"})</option>
+                <option key={`${d.type}-${d.en}`} value={d.en}>{d.bn} ({d.type === "union" ? t("geo.unionOpt") : d.type === "pourashava" ? t("geo.pourashavaOpt") : t("geo.cityOpt")})</option>
               ))}
             </select>
           </div>
@@ -140,18 +142,18 @@ export default function AddressSelect({
       </div>
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-zinc-600">এলাকা / মহল্লা</label>
-          <input value={value.area} onChange={(e) => set({ area: e.target.value })} placeholder="যেমন: মিরপুর ১০" className="w-full border rounded-xl px-3 py-2.5 text-sm mt-1" />
+          <label className="text-xs text-zinc-600">{t("geo.area")}</label>
+          <input value={value.area} onChange={(e) => set({ area: e.target.value })} placeholder={t("geo.areaPh")} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px]" />
         </div>
         <div>
-          <label className="text-xs text-zinc-600">পোস্টাল কোড</label>
-          <input value={value.postalCode} onChange={(e) => set({ postalCode: e.target.value })} placeholder="যেমন: ১২১৬" className="w-full border rounded-xl px-3 py-2.5 text-sm mt-1" />
+          <label className="text-xs text-zinc-600">{t("geo.postal")}</label>
+          <input value={value.postalCode} onChange={(e) => set({ postalCode: e.target.value })} placeholder={t("geo.postalPh")} inputMode="numeric" className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px]" />
         </div>
       </div>
       {showDetail && (
         <div>
-          <label className="text-xs text-zinc-600">বিস্তারিত ঠিকানা</label>
-          <textarea value={value.address} onChange={(e) => set({ address: e.target.value })} placeholder="বাসা/হোল্ডিং, রোড, ল্যান্ডমার্ক — যেমন: বাসা ১২, রোড ৫" className="w-full border rounded-xl px-3 py-2.5 text-sm mt-1" rows={2} />
+          <label className="text-xs text-zinc-600">{t("geo.detail")}</label>
+          <textarea value={value.address} onChange={(e) => set({ address: e.target.value })} placeholder={t("geo.detailPh")} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px]" rows={2} />
         </div>
       )}
     </div>

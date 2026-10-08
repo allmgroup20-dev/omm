@@ -53,17 +53,17 @@ export default function DepositsPage() {
           .filter((m) => isMemberVisibleForEntry(m, today));
         setMembers(visible.map((m) => ({ id: m.id, fullName: m.fullName })));
       } else {
-        const err = mData.error || `সদস্য লোড ব্যর্থ (${mRes.status})`;
+        const err = mData.error || `${t("finance.membersLoadFail")} (${mRes.status})`;
         setLoadError((prev) => prev ? `${prev} | ${err}` : err);
         setMembers([]);
       }
       if (dRes.ok) setDeposits(dData.deposits || []);
       else {
-        const err = dData.error || `জমা লোড ব্যর্থ (${dRes.status})`;
+        const err = dData.error || `${t("finance.depositsLoadFail")} (${dRes.status})`;
         setLoadError((prev) => prev ? `${prev} | ${err}` : err);
         setDeposits([]);
       }
-      if (!mRes.ok && !dRes.ok) setLoadError("ডাটাবেস সংযোগ বা সেশন সমস্যা — পুনরায় লগইন করুন");
+      if (!mRes.ok && !dRes.ok) setLoadError(t("finance.connFail"));
       // closed (final) settlement months → deposits there can't be edited until reopen
       if (sRes.ok && Array.isArray(sData.settlements)) {
         const finals = sData.settlements
@@ -72,7 +72,7 @@ export default function DepositsPage() {
         if (finals.length) setLockedPeriods((prev) => [...new Set([...prev, ...finals])].sort());
       }
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "নেটওয়ার্ক ত্রুটি — আবার চেষ্টা করুন");
+      setLoadError(e instanceof Error ? e.message : t("finance.networkFail"));
     } finally {
       setLoading(false);
     }
@@ -202,7 +202,7 @@ export default function DepositsPage() {
         <div className="rounded-2xl border bg-white p-4"><div className="text-xs text-zinc-500">{t("finance.countDeposits")}</div><div className="text-xl font-bold tabular-nums">{visibleDeposits.length}</div></div>
       </div>
       {loading && <div className="rounded-xl border p-3 text-sm bg-white text-zinc-500">লোড হচ্ছে...</div>}
-      {loadError && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError} <button onClick={load} className="ml-2 underline">আবার চেষ্টা করুন</button> <Link href="/login" className="ml-2 underline">লগইন</Link></div>}
+      {loadError && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError} <button onClick={load} className="ml-2 underline min-h-[44px] px-2">{t("common.retry")}</button></div>}
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       {lockedPeriods.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
@@ -224,7 +224,7 @@ export default function DepositsPage() {
         <button className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm min-h-[48px]">{t("finance.addBtn")}</button>
       </form>
       ) : (
-        <div className="rounded-xl border bg-zinc-50 p-4 text-sm text-zinc-500 text-center">শুধু ম্যানেজার জমা যোগ/এডিট করতে পারে — তথ্য দেখা যাবে</div>
+        <div className="rounded-xl border bg-zinc-50 p-4 text-sm text-zinc-500 text-center">{t("finance.managerOnlyDeposits")}</div>
       )}
 
       <div className="bg-white border rounded-2xl overflow-hidden">
@@ -281,13 +281,13 @@ export default function DepositsPage() {
                   <button onClick={() => voidDeposit(d)} className="flex-1 text-sm border rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[48px]">{t("finance.voidBtn")}</button>
                 </div>
               ) : d.status !== "active" && isManager ? (
-                <button onClick={() => deleteDeposit(d)} className="w-full text-sm border border-red-200 rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[48px]">স্থায়ীভাবে মুছুন</button>
+                <button onClick={() => deleteDeposit(d)} className="w-full text-sm border border-red-200 rounded-full px-4 py-2.5 text-red-700 hover:bg-red-50 min-h-[48px]">{t("market.deleteForever")}</button>
               ) : null}
             </div>
           ))}
         </div>
         {visibleDeposits.length === 0 && !loading && !loadError && <div className="p-6 text-center text-sm text-zinc-500">{t("finance.noDeposits")}</div>}
-        {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">সদস্য তালিকা খালি — প্রথমে <Link href={`/messes/${id}/members`} className="underline">সদস্য যোগ করুন</Link></div>}
+        {deposits.length === 0 && !loading && members.length === 0 && !loadError && <div className="p-4 text-center text-xs text-zinc-400">{t("finance.emptyNoMembers")} <Link href={`/messes/${id}/members`} className="underline">{t("mess.qaMembers")}</Link></div>}
       </div>
 
       {editing && (
@@ -314,7 +314,7 @@ export default function DepositsPage() {
         open={!!voidTarget}
         title={voidTarget?.mode === "delete" ? `স্থায়ীভাবে মুছবেন? ${voidTarget ? formatCurrency(voidTarget.deposit.amountPaisa, locale) : ""}` : (t("finance.voidConfirm") as string)}
         body={voidTarget?.mode === "delete" ? "এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে।" : t("finance.voidKeepsLedger")}
-        confirmLabel={voidTarget?.mode === "delete" ? "স্থায়ীভাবে মুছুন" : t("finance.voidBtn") as string}
+        confirmLabel={voidTarget?.mode === "delete" ? t("market.deleteForever") : t("finance.voidBtn") as string}
         danger={voidTarget?.mode === "delete"}
         busy={voidBusy}
         input={{ value: voidTarget?.reason || "", onChange: (v) => setVoidTarget((p) => (p ? { ...p, reason: v } : p)), placeholder: t("finance.reasonPh") as string, required: voidTarget?.mode === "delete" }}

@@ -43,7 +43,7 @@ export default function MembersPage() {
   const [invLoading, setInvLoading] = useState(false);
   const [invMsg, setInvMsg] = useState("");
   const [copied, setCopied] = useState("");
-  const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; status: string; requestedAt: string }[]>([]);
+  const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; status: string; requestedAt: string; fullName: string | null; email: string | null; phone: string | null }[]>([]);
   const { role: myRole, isPrimary } = useMyRole(id);
   const privileged = myRole === "manager" || isPrimary;
   const [confirmState, setConfirmState] = useState<null | { kind: "status"; memberId: string; status: string } | { kind: "link"; userId: string } | { kind: "unlink"; member: Member }>(null);
@@ -93,7 +93,7 @@ export default function MembersPage() {
     const data = await res.json();
     if (!res.ok) setMsg(data.error);
     else {
-      setMsg(action === "approve" ? "Approved" : "Rejected");
+      setMsg(action === "approve" ? t("members.approvedMsg") : t("members.rejectedMsg"));
       load();
       loadJoinRequests();
     }
@@ -242,15 +242,19 @@ export default function MembersPage() {
       {msg && <div className="rounded-xl border bg-white p-3 text-sm">{msg}</div>}
 
       {showAdd && (
-        <form onSubmit={quickAdd} className="bg-white border rounded-2xl p-4 flex gap-2">
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("members.addPh")} className="flex-1 border rounded-full px-4 py-2 text-sm" minLength={2} maxLength={80} required />
-          <button disabled={adding} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm disabled:opacity-50">{adding ? "..." : t("members.addBtn")}</button>
+        <form onSubmit={quickAdd} className="bg-white border rounded-2xl p-4 space-y-2">
+          <p className="text-xs text-zinc-500">{t("members.quickAddHelp")}</p>
+          <div className="flex gap-2">
+            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("members.addPh")} className="flex-1 border rounded-full px-4 py-2 text-sm min-h-[44px]" minLength={2} maxLength={80} required />
+            <button disabled={adding} className="px-5 py-2 rounded-full bg-zinc-900 text-white text-sm disabled:opacity-50 min-h-[44px]">{adding ? "..." : t("members.addBtn")}</button>
+          </div>
         </form>
       )}
 
       {showInvite && privileged && (
         <div className="bg-white border rounded-2xl p-4 space-y-3">
           <div className="font-medium text-sm">{t("invitations.title")}</div>
+          <p className="text-xs text-zinc-500">{t("members.inviteHelp")}</p>
           <div className="flex gap-2 items-center flex-wrap">
             <select value={invRole} onChange={(e) => setInvRole(e.target.value)} className="flex-1 sm:flex-none border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]">
               <option value="member">{t("roles.member")}</option>
@@ -286,6 +290,7 @@ export default function MembersPage() {
       {linkFor && (
         <div className="bg-white border rounded-2xl p-4 space-y-3">
           <div className="font-medium text-sm">"{linkFor.displayName}" — {t("members.linkBtn")}</div>
+          <p className="text-xs text-zinc-500">{t("members.linkHelp")}</p>
           <div className="flex gap-2">
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("members.linkSearchPh")} className="flex-1 border rounded-full px-4 py-2 text-sm" />
             <button onClick={searchUsers} disabled={searching} className="px-4 py-2 rounded-full border text-sm disabled:opacity-50">{t("members.linkSearchBtn")}</button>
@@ -323,7 +328,7 @@ export default function MembersPage() {
                 {members.map((m) => (
                   <tr key={m.id} className="border-t">
                     <td className="p-3 font-medium">
-                      {m.fullName} {m.isPrimaryManager && <span className="text-xs bg-zinc-900 text-white rounded-full px-2 py-0.5">Primary</span>}
+                      {m.fullName} {m.isPrimaryManager && <span className="text-xs bg-zinc-900 text-white rounded-full px-2 py-0.5">{t("members.primaryBadge")}</span>}
                       {m.isPlaceholder && <span className="ml-1 text-xs bg-amber-100 rounded-full px-2 py-0.5">{t("members.noAccountBadge")}</span>}
                     </td>
                     <td className="p-3 text-xs">{m.email || "—"}</td>
@@ -362,7 +367,7 @@ export default function MembersPage() {
               <div key={m.id} className="p-4 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-sm">{m.fullName}</span>
-                  {m.isPrimaryManager && <span className="text-xs bg-zinc-900 text-white rounded-full px-2 py-0.5">Primary</span>}
+                  {m.isPrimaryManager && <span className="text-xs bg-zinc-900 text-white rounded-full px-2 py-0.5">{t("members.primaryBadge")}</span>}
                   {m.isPlaceholder && <span className="text-xs bg-amber-100 rounded-full px-2 py-0.5">{t("members.noAccountBadge")}</span>}
                   <span className={`ml-auto text-xs rounded-full px-2 py-1 ${m.status === "active" ? "bg-emerald-100" : m.status === "left" ? "bg-zinc-200" : "bg-amber-100"}`}>{t(`status.${m.status}`)}</span>
                 </div>
@@ -394,17 +399,20 @@ export default function MembersPage() {
 
       {joinRequests.length > 0 && (
         <div className="bg-white border rounded-2xl p-4 space-y-3">
-          <div className="font-semibold text-sm">Join Requests — ম্যানেজার Approval (পাবলিক শেয়ার থেকে)</div>
+          <div className="font-semibold text-sm">{t("members.joinRequests")}</div>
+          <div className="text-xs text-zinc-500">{t("members.joinRequestsHint")}</div>
           <div className="space-y-2">
             {joinRequests.map((r) => (
-              <div key={r.id} className="flex items-center justify-between border rounded-xl px-3 py-2 text-sm">
-                <div>
-                  <span className="font-mono text-xs">{r.userId.slice(0, 8)}</span> <span className={`text-xs rounded-full px-2 py-0.5 ${r.status === "pending" ? "bg-amber-100" : r.status === "approved" ? "bg-emerald-100" : "bg-zinc-200"}`}>{r.status}</span> <span className="text-xs text-zinc-500">{new Date(r.requestedAt).toLocaleString()}</span>
+              <div key={r.id} className="flex items-center justify-between gap-2 border rounded-xl px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{r.fullName || r.email || t("finance.unknownMember")}</div>
+                  <div className="text-xs text-zinc-500 truncate">{[r.email, r.phone].filter(Boolean).join(" • ")}</div>
+                  <div><span className={`text-xs rounded-full px-2 py-0.5 ${r.status === "pending" ? "bg-amber-100" : r.status === "approved" ? "bg-emerald-100" : "bg-zinc-200"}`}>{t(`status.${r.status}`)}</span> <span className="text-xs text-zinc-500">{new Date(r.requestedAt).toLocaleDateString()}</span></div>
                 </div>
                 {r.status === "pending" && privileged && (
-                  <div className="flex gap-1">
-                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2.5 min-h-[44px]">Approve</button>
-                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-4 py-2.5 min-h-[44px]">Reject</button>
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => handleJoinRequest(r.id, "approve")} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2.5 min-h-[44px]">{t("common.approve")}</button>
+                    <button onClick={() => handleJoinRequest(r.id, "reject")} className="text-xs border rounded-full px-4 py-2.5 min-h-[44px]">{t("common.reject")}</button>
                   </div>
                 )}
               </div>
