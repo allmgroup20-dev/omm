@@ -73,8 +73,6 @@ describe("ui guards — tables ship card alternatives on mobile", () => {
       "src/app/(mess)/messes/[id]/expenses/page.tsx",
       "src/app/(mess)/messes/[id]/market/entries/page.tsx",
       "src/app/(mess)/messes/[id]/finance/deposits/page.tsx",
-      "src/app/(mess)/messes/[id]/finance/ledger/page.tsx",
-      "src/app/(mess)/messes/[id]/finance/balances/page.tsx",
       "src/app/(mess)/messes/[id]/settlements/page.tsx",
       "src/app/(mess)/messes/[id]/settlements/[settlementId]/page.tsx",
       "src/app/(mess)/messes/[id]/audit-logs/page.tsx",

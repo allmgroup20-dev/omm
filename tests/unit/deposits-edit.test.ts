@@ -71,7 +71,6 @@ describe("deposit update — 100% dynamic edit validation", () => {
 
 describe("deposit closed-month UX — i18n + 409 contract", () => {
   const financeKeys = [
-    "finance.closedBlock",
     "finance.closedBanner",
     "finance.reopenLink",
     "finance.editTitle",
@@ -80,6 +79,9 @@ describe("deposit closed-month UX — i18n + 409 contract", () => {
     "finance.voidBtn",
     "finance.editDone",
     "finance.voidDone",
+    "finance.voidKeepsLedger",
+    "finance.totalDeposits",
+    "finance.unknownMember",
   ];
 
   it("bn/en both have all deposit-edit keys (no missing labels in UI)", () => {

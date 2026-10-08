@@ -73,7 +73,9 @@ export default async function MessOverviewPage({ params }: { params: Promise<{ i
           <Link href={`/messes/${id}/meals`} className="rounded-xl border border-zinc-900 bg-zinc-900 text-white p-4 text-center font-medium min-h-[64px] inline-flex items-center justify-center hover:bg-zinc-800">{t("mess.qaMealToday")}</Link>
           <Link href={`/messes/${id}/market/add`} className="rounded-xl border p-4 text-center font-medium min-h-[64px] inline-flex items-center justify-center hover:bg-zinc-50">{t("mess.qaMarket")}</Link>
           <Link href={`/messes/${id}/finance/deposits`} className="rounded-xl border p-4 text-center font-medium min-h-[64px] inline-flex items-center justify-center hover:bg-zinc-50">{t("mess.qaDeposit")}</Link>
-          <Link href={`/messes/${id}/finance/dues`} className="rounded-xl border border-red-200 text-red-700 p-4 text-center font-medium min-h-[64px] inline-flex items-center justify-center hover:bg-red-50">{isManager ? t("mess.qaDues") : t("dues.myDue")}</Link>
+          {isManager && (
+            <Link href={`/messes/${id}/dashboard`} className="rounded-xl border border-zinc-900 bg-zinc-900 text-white p-4 text-center font-medium min-h-[64px] inline-flex items-center justify-center hover:bg-zinc-800">{t("mess.qaDashboard")}</Link>
+          )}
         </div>
       </div>
 
@@ -85,6 +87,7 @@ export default async function MessOverviewPage({ params }: { params: Promise<{ i
           <Link href={`/messes/${id}/settlements`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaSettlement")}</Link>
           <Link href={`/messes/${id}/reports`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaReports")}</Link>
           <Link href={`/messes/${id}/meals/matrix`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaMatrix")}</Link>
+          <Link href={`/messes/${id}/finance/dues`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaDues")}</Link>
         </div>
       </div>
 
@@ -95,7 +98,6 @@ export default async function MessOverviewPage({ params }: { params: Promise<{ i
           <Link href={`/messes/${id}/expenses`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaExpenses")}</Link>
           {isManager && (
             <>
-              <Link href={`/messes/${id}/dashboard`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaDashboard")}</Link>
               <Link href={`/messes/${id}/audit-logs`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.qaAudit")}</Link>
               <Link href={`/messes/${id}/settings`} className="border rounded-xl p-3 text-center hover:bg-zinc-50 min-h-[48px] inline-flex items-center justify-center">{t("mess.settings")}</Link>
             </>

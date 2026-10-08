@@ -37,19 +37,24 @@ describe("mess overview IA — daily first, setup last", () => {
     expect(overview).toContain('t("mess.setupTitle")');
   });
 
-  it("puts the four daily essentials in the daily section", () => {
+  it("puts the daily essentials in the daily section (dues moved to weekly)", () => {
     const dailyBlock = overview.slice(overview.indexOf('t("mess.dailyTitle")'));
     const weeklyStart = dailyBlock.indexOf('t("mess.weeklyTitle")');
     const daily = dailyBlock.slice(0, weeklyStart === -1 ? dailyBlock.length : weeklyStart);
-    for (const href of ["/meals`", "/market/add`", "/finance/deposits`", "/finance/dues`"]) {
+    for (const href of ["/meals`", "/market/add`", "/finance/deposits`", "/dashboard`"]) {
       expect(daily).toContain(href);
     }
+    expect(daily).not.toContain("/finance/dues`");
   });
 
-  it("keeps settings and dashboard out of the daily section", () => {
+  it("puts dues in the weekly section", () => {
+    const weeklyBlock = overview.slice(overview.indexOf('t("mess.weeklyTitle")'));
+    expect(weeklyBlock).toContain("/finance/dues`");
+  });
+
+  it("keeps settings out of the daily section", () => {
     const dailyBlock = overview.slice(overview.indexOf('t("mess.dailyTitle")'), overview.indexOf('t("mess.weeklyTitle")'));
     expect(dailyBlock).not.toContain("/settings`");
-    expect(dailyBlock).not.toContain("/dashboard`");
   });
 
   it("resolves the new overview labels in both locales", () => {
@@ -82,7 +87,14 @@ describe("mess overview IA — daily first, setup last", () => {
     }
   });
 
-  it("hides ledger + balances from the weekly section", () => {
+  it("deleted ledger + balances pages entirely", () => {
+    const { existsSync } = require("node:fs");
+    for (const p of [
+      "src/app/(mess)/messes/[id]/finance/ledger/page.tsx",
+      "src/app/(mess)/messes/[id]/finance/balances/page.tsx",
+    ]) {
+      expect(existsSync(join(process.cwd(), p))).toBe(false);
+    }
     expect(overview).not.toContain("/finance/ledger`");
     expect(overview).not.toContain("/finance/balances`");
   });

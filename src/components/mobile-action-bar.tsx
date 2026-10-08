@@ -2,20 +2,27 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useLocale } from "@/i18n/provider";
+import { useMyRole } from "@/hooks/useMyRole";
 
 /**
- * Sticky bottom bar (mobile only) with the 4 daily tasks.
+ * Sticky bottom bar (mobile only) with the daily tasks.
+ * 4th slot is role-aware: managers get Dashboard (daily check),
+ * members get Dues (month-end need).
  * Rendered inside the mess layout — mess home cards remain the desktop path.
  */
 export function MobileActionBar() {
   const { id } = useParams<{ id: string }>();
   const { t } = useLocale();
+  const { canManage } = useMyRole(id || "");
   if (!id) return null;
+  const fourth = canManage
+    ? { href: `/messes/${id}/dashboard`, label: t("mess.qaDashboard") }
+    : { href: `/messes/${id}/finance/dues`, label: t("dues.myDue") };
   const items = [
     { href: `/messes/${id}/meals`, label: t("mess.qaMealToday") },
     { href: `/messes/${id}/market/add`, label: t("mess.qaMarket") },
     { href: `/messes/${id}/finance/deposits`, label: t("mess.qaDeposit") },
-    { href: `/messes/${id}/finance/dues`, label: t("mess.qaDues") },
+    fourth,
   ];
   return (
     <nav aria-label={t("mess.dailyTitle")} className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur">

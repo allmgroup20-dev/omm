@@ -22,7 +22,7 @@ export default async function AdminPage() {
         </div>
         <div className="rounded-2xl border bg-white p-5">
           <div className="font-semibold">Audit</div>
-          <Link href="/admin/audit" className="text-xs underline">View audit logs</Link>
+          <div className="text-xs text-zinc-500 mt-1">Mess-level audit logs live inside each mess (Setup → Audit Log).</div>
         </div>
       </div>
       <p className="text-xs text-zinc-500">Admin sees only moderation queue, not private financial data unnecessarily.</p>
