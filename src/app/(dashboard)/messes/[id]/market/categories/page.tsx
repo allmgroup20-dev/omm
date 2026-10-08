@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Cat = { id: string; name: string; slug: string; parentId: string | null; level: number; sortOrder: number };
 
@@ -18,6 +19,8 @@ export default function CategoriesPage() {
   const [editParentId, setEditParentId] = useState("");
   const [editSort, setEditSort] = useState("0");
   const [msg, setMsg] = useState("");
+  const [delTarget, setDelTarget] = useState<string | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/messes/${id}/market/categories`);
@@ -60,12 +63,19 @@ export default function CategoriesPage() {
   }
 
   async function del(id2: string) {
-    if (!confirm("Delete category?")) return;
-    const res = await fetch(`/api/messes/${id}/market/categories/${id2}`, { method: "DELETE" });
+    setDelTarget(id2);
+  }
+
+  async function confirmDelete() {
+    if (!delTarget) return;
+    setDelBusy(true);
+    const res = await fetch(`/api/messes/${id}/market/categories/${delTarget}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
+    setDelBusy(false);
     if (!res.ok) setMsg(data.error || "Delete failed");
     else {
       setMsg(t("common.success"));
+      setDelTarget(null);
       load();
     }
   }
@@ -117,6 +127,15 @@ export default function CategoriesPage() {
           </div>
         </div>
       )}
+      <ConfirmSheet
+        open={!!delTarget}
+        title="Delete category?"
+        confirmLabel={t("common.delete")}
+        danger
+        busy={delBusy}
+        onConfirm={confirmDelete}
+        onClose={() => !delBusy && setDelTarget(null)}
+      />
     </div>
   );
 }

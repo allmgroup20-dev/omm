@@ -1,27 +1,42 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Listing = { id: string; slug: string; title: string; district: string | null; area: string | null; pricePaisa: number; status: string; createdAt: string };
 
 export default function AdminListingsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [status, setStatus] = useState("pending");
+  const [msg, setMsg] = useState("");
+  const [moderateTarget, setModerateTarget] = useState<null | { id: string; action: "approve" | "reject"; reason: string }>(null);
+  const [moderateBusy, setModerateBusy] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/admin/listings?status=${status}`);
     const data = await res.json();
     if (res.ok) setListings(data.listings);
-    else alert(data.error);
+    else setMsg(data.error);
   }
   useEffect(() => { load(); }, [status]);
 
-  async function moderate(id: string, action: string) {
-    const reason = action === "reject" ? prompt("Reason?") || "" : "";
-    const res = await fetch(`/api/admin/listings/${id}/moderate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, reason }) });
+  function askModerate(id: string, action: "approve" | "reject") {
+    setModerateTarget({ id, action, reason: "" });
+  }
+
+  async function confirmModerate() {
+    const target = moderateTarget;
+    if (!target) return;
+    setModerateBusy(true);
+    const res = await fetch(`/api/admin/listings/${target.id}/moderate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: target.action, reason: target.reason }) });
     const data = await res.json();
-    if (!res.ok) alert(data.error);
-    else load();
+    setModerateBusy(false);
+    if (!res.ok) setMsg(data.error);
+    else {
+      setMsg(target.action === "approve" ? "Approved" : "Rejected");
+      setModerateTarget(null);
+      load();
+    }
   }
 
   return (
@@ -48,8 +63,8 @@ export default function AdminListingsPage() {
                 <td className="p-3 text-right flex gap-1 justify-end">
                   {status === "pending" && (
                     <>
-                      <button onClick={() => moderate(l.id, "approve")} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">Approve</button>
-                      <button onClick={() => moderate(l.id, "reject")} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">Reject</button>
+                      <button onClick={() => askModerate(l.id, "approve")} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">Approve</button>
+                      <button onClick={() => askModerate(l.id, "reject")} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">Reject</button>
                     </>
                   )}
                 </td>
@@ -61,6 +76,17 @@ export default function AdminListingsPage() {
         </div>
         {listings.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">No {status} listings</div>}
       </div>
+      {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
+      <ConfirmSheet
+        open={!!moderateTarget}
+        title={moderateTarget?.action === "approve" ? "Approve this listing?" : "Reject this listing?"}
+        confirmLabel={moderateTarget?.action === "approve" ? "Approve" : "Reject"}
+        danger={moderateTarget?.action === "reject"}
+        busy={moderateBusy}
+        input={moderateTarget?.action === "reject" ? { value: moderateTarget.reason, onChange: (v) => setModerateTarget(t => t ? { ...t, reason: v } : null), placeholder: "Reason?" } : undefined}
+        onConfirm={confirmModerate}
+        onClose={() => !moderateBusy && setModerateTarget(null)}
+      />
     </div>
   );
 }

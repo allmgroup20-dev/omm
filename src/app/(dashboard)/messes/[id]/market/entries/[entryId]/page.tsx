@@ -6,6 +6,7 @@ import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatDateBD } from "@/i18n/dict";
 import { buildMarketItemsPayload, previewItemsTotalBDT } from "@/lib/market-view";
 import { useMyRole } from "@/hooks/useMyRole";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Entry = { id: string; date: string; vendorId: string | null; classification: string; paymentMethod: string; totalPaisa: number; transportPaisa: number; discountPaisa: number; finalPaisa: number; notes: string | null; status: string };
 type Item = { id: string; productNameSnapshot: string; categoryNameSnapshot: string | null; quantityScaled: number; unit: string; unitPricePaisa: number; totalPaisa: number };
@@ -38,6 +39,8 @@ export default function EntryDetailPage() {
   const [closedPeriod, setClosedPeriod] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [voidConfirm, setVoidConfirm] = useState(false);
+  const [voidBusy, setVoidBusy] = useState(false);
   const [form, setForm] = useState({ date: "", classification: "food", paymentMethod: "cash", discount: "0", transport: "0", purchasedBy: [] as string[], vendorId: "", notes: "" });
   const [editItems, setEditItems] = useState<Row[]>([]);
   const endOfRowsRef = useRef<HTMLDivElement>(null);
@@ -182,12 +185,18 @@ export default function EntryDetailPage() {
   }
 
   async function voidEntry() {
-    if (!confirm("Void this entry?")) return;
+    setVoidConfirm(true);
+  }
+
+  async function confirmVoid() {
+    setVoidBusy(true);
     const res = await fetch(`/api/messes/${id}/market/entries/${entryId}`, { method: "DELETE" });
     const data = await res.json();
+    setVoidBusy(false);
     if (!res.ok) setMsg(data.error);
     else {
       setMsg("Voided");
+      setVoidConfirm(false);
       load();
     }
   }
@@ -197,8 +206,8 @@ export default function EntryDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
-      <Link href={`/messes/${id}/market/entries`} className="text-sm text-zinc-500">← Entries</Link>
-      <h1 className="text-lg font-bold">এন্ট্রি {entry.id.slice(0, 8)} — {formatDateBD(entry.date, locale)}</h1>
+      <Link href={`/messes/${id}/market/entries`} className="text-sm text-zinc-500">← {t("market.entriesTitle")}</Link>
+      <h1 className="text-lg font-bold">{t("market.entryDetail")} {entry.id.slice(0, 8)} — {formatDateBD(entry.date, locale)}</h1>
       {closedPeriod && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           {t("finance.closedBanner")} <b>{closedPeriod}</b>{" "}
@@ -347,6 +356,15 @@ export default function EntryDetailPage() {
           <button onClick={() => router.push(`/messes/${id}/market/entries`)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">Back to list</button>
         </div>
       </div>
+      <ConfirmSheet
+        open={voidConfirm}
+        title="Void this entry?"
+        confirmLabel="Void"
+        danger
+        busy={voidBusy}
+        onConfirm={confirmVoid}
+        onClose={() => !voidBusy && setVoidConfirm(false)}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatNumber } from "@/i18n/dict";
 import { useMyRole } from "@/hooks/useMyRole";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type MemberSettle = { memberId: string; fullName: string; totalMeals: number; mealCostPaisa: number; allocatedExpensePaisa: number; previousBalancePaisa: number; depositPaisa: number; closingBalancePaisa: number; status: string };
 type Disposition = { memberId: string; kind: string; amountPaisa: number; createdAt: string };
@@ -17,6 +18,8 @@ export default function SettlementDetailPage() {
   const [dispositions, setDispositions] = useState<Record<string, Disposition>>({});
   const [msg, setMsg] = useState("");
   const { isManager } = useMyRole(id);
+  const [dispTarget, setDispTarget] = useState<{ memberId: string; kind: "carry" | "refund"; note: string } | null>(null);
+  const [dispBusy, setDispBusy] = useState(false);
 
   function load() {
     fetch(`/api/messes/${id}/settlements/${settlementId}`).then((r) => r.json()).then((d) => {
@@ -38,19 +41,22 @@ export default function SettlementDetailPage() {
     load();
   }, [id, settlementId]);
 
-  async function setDisposition(memberId: string, kind: "carry" | "refund") {
-    if (!confirm(kind === "carry" ? t("settlements.carryConfirm") : t("settlements.refundConfirm"))) return;
-    const note = window.prompt(t("settlements.dispNotePh") || "") || "";
+  async function confirmDisposition() {
+    const target = dispTarget;
+    if (!target) return;
+    setDispBusy(true);
     setMsg("");
-    const res = await fetch(`/api/messes/${id}/settlements/${settlementId}/members/${memberId}/disposition`, {
+    const res = await fetch(`/api/messes/${id}/settlements/${settlementId}/members/${target.memberId}/disposition`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, note }),
+      body: JSON.stringify({ kind: target.kind, note: target.note }),
     });
     const data = await res.json().catch(() => ({}));
+    setDispBusy(false);
     if (!res.ok) setMsg(data.error || t("errors.saveFail"));
     else {
-      setMsg(kind === "carry" ? t("settlements.dispCarried") : t("settlements.dispRefunded"));
+      setMsg(target.kind === "carry" ? t("settlements.dispCarried") : t("settlements.dispRefunded"));
+      setDispTarget(null);
       load();
     }
   }
@@ -97,8 +103,8 @@ export default function SettlementDetailPage() {
                         {dispBadge(m.memberId)}
                         {isManager && (
                           <span className="inline-flex gap-1">
-                            <button onClick={() => setDisposition(m.memberId, "carry")} className="text-[11px] border rounded-full px-2 py-1 hover:bg-emerald-50 min-h-[32px]">{t("settlements.carryBtn")}</button>
-                            <button onClick={() => setDisposition(m.memberId, "refund")} className="text-[11px] border rounded-full px-2 py-1 hover:bg-sky-50 min-h-[32px]">{t("settlements.refundBtn")}</button>
+                            <button onClick={() => setDispTarget({ memberId: m.memberId, kind: "carry", note: "" })} className="text-[11px] border rounded-full px-2 py-1 hover:bg-emerald-50 min-h-[44px]">{t("settlements.carryBtn")}</button>
+                            <button onClick={() => setDispTarget({ memberId: m.memberId, kind: "refund", note: "" })} className="text-[11px] border rounded-full px-2 py-1 hover:bg-sky-50 min-h-[44px]">{t("settlements.refundBtn")}</button>
                           </span>
                         )}
                       </span>
@@ -112,8 +118,17 @@ export default function SettlementDetailPage() {
         <div className="p-3 text-xs text-zinc-500">{t("settlements.formulaNote")}</div>
       </div>
 
-      <button onClick={() => window.print()} className="px-5 py-2 border rounded-full text-sm">🖨 {t("common.print")} / Export</button>
+      <button onClick={() => window.print()} className="px-5 py-2 border rounded-full text-sm min-h-[44px]">{t("common.print")}</button>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
+      <ConfirmSheet
+        open={!!dispTarget}
+        title={dispTarget?.kind === "carry" ? t("settlements.carryConfirm") : t("settlements.refundConfirm")}
+        confirmLabel={dispTarget?.kind === "carry" ? t("settlements.carryBtn") : t("settlements.refundBtn")}
+        busy={dispBusy}
+        input={{ value: dispTarget?.note || "", onChange: (v) => setDispTarget((p) => (p ? { ...p, note: v } : p)), placeholder: t("settlements.dispNotePh") }}
+        onConfirm={confirmDisposition}
+        onClose={() => !dispBusy && setDispTarget(null)}
+      />
     </div>
   );
 }

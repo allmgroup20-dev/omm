@@ -2,8 +2,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
 
 export default function CalendarPage() {
+  const { t } = useLocale();
   const { id } = useParams<{ id: string }>();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -24,11 +26,10 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← Overview</Link>
+      <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
       <div className="flex items-center gap-2 flex-wrap">
         <h1 className="text-lg font-bold flex-1 min-w-[140px]">Calendar — {year}-{String(month).padStart(2, "0")}</h1>
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
+        <input type="month" value={`${year}-${String(month).padStart(2, "0")}`} onChange={(e) => { const v = e.target.value; if (v) { setYear(Number(v.slice(0, 4))); setMonth(Number(v.slice(5, 7))); } }} className="flex-1 sm:flex-none sm:w-44 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" />
         <button onClick={load} className="px-6 py-3 border rounded-full text-sm min-h-[44px] bg-white">Go</button>
       </div>
 

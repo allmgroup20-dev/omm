@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Drawer } from "@/components/ui/drawers";
-import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/lib/money";import { useLocale } from "@/i18n/provider";
+import { classifyDashboardViewer, formatPaisaBnCompact, formatNumBn } from "@/lib/money";
+import { useLocale } from "@/i18n/provider";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { groupEntriesByDate, formatMarketQty, formatDayBn, type MarketDrawerEntry } from "@/lib/market-view";
 import { pickValidShareToken, shareUrl, dataUrlToBlob, TRANSPARENT_PNG } from "@/lib/share";
 import type { Insight } from "@/lib/dashboard";
@@ -79,6 +81,8 @@ export default function PublicDashboardPage() {
   const [shareTokens, setShareTokens] = useState<{ token: string; expiresAt: string | null; createdAt: string }[]>([]);
   const [shareMsg, setShareMsg] = useState("");
   const [shareBusy, setShareBusy] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
+  const [revokeBusy, setRevokeBusy] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   function toggleDate(ds: string) {
     setExpandedDates((prev) => (prev.includes(ds) ? prev.filter((d) => d !== ds) : [...prev, ds]));
@@ -193,14 +197,22 @@ export default function PublicDashboardPage() {
   }
 
   async function revokeShareLink(token: string) {
-    if (!window.confirm("এই শেয়ার লিংকটি বাতিল করবেন?")) return;
+    setRevokeTarget(token);
+  }
+
+  async function confirmRevoke() {
+    const token = revokeTarget;
+    if (!token) return;
+    setRevokeBusy(true);
     setShareMsg("");
     const res = await fetch(`/api/messes/${id}/share?token=${encodeURIComponent(token)}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
+    setRevokeBusy(false);
     if (!res.ok) setShareMsg(data.error || "বাতিল ব্যর্থ");
     else {
       setShareMsg("লিংক বাতিল হয়েছে");
       setShareTokens((prev) => prev.filter((t) => t.token !== token));
+      setRevokeTarget(null);
     }
   }
 
@@ -552,6 +564,15 @@ export default function PublicDashboardPage() {
       <Drawer open={drawer?.type === "member"} onClose={() => setDrawer(null)} title={drawer?.member?.displayName || "সদস্য"} subtitle={`${monthLabel} • ${drawer?.member?.totalMeals ?? 0} মিল`}>
         {drawerData.loading ? <div className="text-sm text-zinc-500">লোড হচ্ছে...</div> : <div className="space-y-5"><div><div className="text-xs font-semibold text-zinc-700 mb-2">দৈনিক মিল</div>{drawerData.memberMeals?.length ? <div className="rounded-xl border overflow-hidden"><div className="max-h-[260px] overflow-auto divide-y text-sm">{drawerData.memberMeals.map((r) => <div key={r.date} className="flex justify-between px-3 py-2"><span className="font-mono text-xs">{r.date}</span><b>{r.qty} মিল</b></div>)}</div></div> : <div className="text-xs text-zinc-500 border rounded-xl p-4 text-center">এই মাসে মিল নেই</div>}</div><div><div className="text-xs font-semibold text-zinc-700 mb-2">জমা</div>{drawer?.member && (drawer.member.dueRemainingPaisa || 0) > 0 && <a href={`/messes/${id}/finance/dues`} className="block text-center text-sm border border-red-200 bg-red-50 text-red-700 rounded-full py-2 mb-2 min-h-[44px]">বকেয়া আছে {fmt(drawer.member.dueRemainingPaisa)} — আদায় করতে যান →</a>}{drawerData.deposits?.length ? drawerData.deposits.map((d, i) => <div key={i} className="flex justify-between rounded-xl border bg-emerald-50 px-3 py-2 text-sm mb-2"><span>{d.date}</span><b className="text-emerald-700">{fmt(d.amountPaisa)}</b></div>) : <div className="text-xs text-zinc-500">{fmt(drawer?.member?.depositPaisa || 0)} — বিস্তারিত নেই</div>}</div></div>}
       </Drawer>
+      <ConfirmSheet
+        open={!!revokeTarget}
+        title="এই শেয়ার লিংকটি বাতিল করবেন?"
+        confirmLabel="বাতিল"
+        danger
+        busy={revokeBusy}
+        onConfirm={confirmRevoke}
+        onClose={() => !revokeBusy && setRevokeTarget(null)}
+      />
     </div>
   );
 }

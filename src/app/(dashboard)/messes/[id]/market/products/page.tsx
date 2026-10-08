@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Cat = { id: string; name: string };
 type Prod = { id: string; name: string; slug: string; categoryId: string | null; defaultUnit: string; isArchived: boolean; sortOrder: number };
@@ -24,6 +25,8 @@ export default function ProductsPage() {
   const [editUnit, setEditUnit] = useState("kg");
   const [editSort, setEditSort] = useState("0");
   const [msg, setMsg] = useState("");
+  const [delTarget, setDelTarget] = useState<string | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
 
   async function load() {
     const [cRes, pRes] = await Promise.all([fetch(`/api/messes/${id}/market/categories`), fetch(`/api/messes/${id}/market/products`)]);
@@ -68,12 +71,19 @@ export default function ProductsPage() {
   }
 
   async function del(pid: string) {
-    if (!confirm("Delete product?")) return;
-    const res = await fetch(`/api/messes/${id}/market/products/${pid}`, { method: "DELETE" });
+    setDelTarget(pid);
+  }
+
+  async function confirmDelete() {
+    if (!delTarget) return;
+    setDelBusy(true);
+    const res = await fetch(`/api/messes/${id}/market/products/${delTarget}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
+    setDelBusy(false);
     if (!res.ok) setMsg(data.error || "Delete failed");
     else {
       setMsg(data.archived ? "Archived (used in entries)" : t("common.success"));
+      setDelTarget(null);
       load();
     }
   }
@@ -134,6 +144,15 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+      <ConfirmSheet
+        open={!!delTarget}
+        title="Delete product?"
+        confirmLabel={t("common.delete")}
+        danger
+        busy={delBusy}
+        onConfirm={confirmDelete}
+        onClose={() => !delBusy && setDelTarget(null)}
+      />
     </div>
   );
 }

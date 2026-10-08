@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatDateBD } from "@/i18n/dict";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Entry = { id: string; date: string; purchasedBy: string | null; purchaserName: string | null; purchaserNames?: string[]; purchaserIds?: string[]; vendorId: string | null; classification: string; paymentMethod: string; totalPaisa: number; transportPaisa: number; discountPaisa: number; finalPaisa: number; status: string; items: { productNameSnapshot: string; quantityScaled: number; unit: string; totalPaisa: number }[] };
 
@@ -16,6 +17,8 @@ export default function EntriesPage() {
   const [filterPurchaser, setFilterPurchaser] = useState("");
   const [members, setMembers] = useState<{ id: string; displayName: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmState, setConfirmState] = useState<null | { kind: "merge"; count: number } | { kind: "deleteOne"; entryId: string } | { kind: "deleteSelected"; count: number }>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   async function load() {
     const qs = new URLSearchParams({ limit: "100" });
@@ -47,46 +50,65 @@ export default function EntriesPage() {
   }
   async function mergeSelected() {
     if (selected.size < 2) return;
-    if (!confirm(`${selected.size} টি এন্ট্রি একটিতে মার্জ করবেন? আইটেম + গাড়ি ভাড়া যোগ হবে, কে করেছে union হবে, পুরনোগুলো void হবে`)) return;
-    const res = await fetch(`/api/messes/${id}/market/entries/merge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entryIds: [...selected] }) });
-    const data = await res.json();
-    if (!res.ok) setMsg(data.error);
-    else {
-      setMsg(`Merged → ${data.entry.id.slice(0, 8)} (${data.mergedIds.length} → 1)`);
-      setSelected(new Set());
-      load();
-    }
+    setConfirmState({ kind: "merge", count: selected.size });
   }
 
   async function deleteOne(entryId: string) {
-    if (!confirm("এই এন্ট্রি ডিলিট (hard delete, DB থেকে vanish) করবেন?")) return;
-    const res = await fetch(`/api/messes/${id}/market/entries/${entryId}`, { method: "DELETE" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(`${data.error || "Delete failed"} — আপনার role ${data.role ? data.role : ""} হলে Members → role manager করুন`);
-    else {
-      setMsg("Deleted (hard vanish)");
-      load();
-    }
+    setConfirmState({ kind: "deleteOne", entryId });
   }
 
   async function deleteSelected() {
     if (selected.size === 0) return;
-    if (!confirm(`${selected.size} টি এন্ট্রি একসাথে ডিলিট (hard vanish) করবেন?`)) return;
-    let ok = 0;
-    let fail = 0;
-    let lastErr = "";
-    for (const eid of [...selected]) {
-      const res = await fetch(`/api/messes/${id}/market/entries/${eid}`, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) ok++;
-      else {
-        fail++;
-        lastErr = data.error || "Unknown";
+    setConfirmState({ kind: "deleteSelected", count: selected.size });
+  }
+
+  async function confirmAction() {
+    const target = confirmState;
+    if (!target) return;
+    setConfirmBusy(true);
+    let res: Response;
+    let data: Record<string, unknown> = {};
+    if (target.kind === "merge") {
+      res = await fetch(`/api/messes/${id}/market/entries/merge`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entryIds: [...selected] }) });
+      data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg(`Merged → ${(data.entry as { id: string })?.id?.slice(0, 8)} (${(data.mergedIds as string[])?.length || 0} → 1)`);
+        setSelected(new Set());
+        load();
       }
+    } else if (target.kind === "deleteOne") {
+      res = await fetch(`/api/messes/${id}/market/entries/${target.entryId}`, { method: "DELETE" });
+      data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg("Deleted (hard vanish)");
+        load();
+      } else {
+        setMsg(`${data.error || "Delete failed"} — আপনার role ${data.role ? data.role : ""} হলে Members → role manager করুন`);
+      }
+    } else if (target.kind === "deleteSelected") {
+      let ok = 0;
+      let fail = 0;
+      let lastErr = "";
+      let resForDeleteSelected: Response | undefined;
+      for (const eid of [...selected]) {
+        const resDel = await fetch(`/api/messes/${id}/market/entries/${eid}`, { method: "DELETE" });
+        data = await resDel.json().catch(() => ({}));
+        if (resDel.ok) ok++; else { fail++; lastErr = String(data.error || "Failed"); }
+        if (!resForDeleteSelected) resForDeleteSelected = resDel;
+      }
+      setMsg(fail > 0 ? `Deleted ${ok}, Failed ${fail} (${lastErr})` : `Deleted ${ok}`);
+      if (ok > 0) load();
     }
-    setMsg(`Deleted ${ok} — ${fail ? fail + " failed: " + lastErr + " (Members → role=manager করুন)" : "done (vanished)"}`);
-    setSelected(new Set());
-    load();
+    setConfirmBusy(false);
+    let shouldClose = false;
+    if (target.kind === "merge") {
+      shouldClose = true;
+    } else if (target.kind === "deleteOne") {
+      shouldClose = true;
+    } else if (target.kind === "deleteSelected") {
+      shouldClose = true;
+    }
+    if (shouldClose) setConfirmState(null);
   }
 
   return (
@@ -160,6 +182,26 @@ export default function EntriesPage() {
           {entries.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">এখনো এন্ট্রি নেই — Add থেকে সংরক্ষণ করুন, এখানে কতটুকু/কোথায় দেখাবে</div>}
         </div>
       </div>
+      {msg && <div className="rounded-xl border p-3 text-sm bg-white">{msg}</div>}
+      <ConfirmSheet
+        open={!!confirmState}
+        title={
+          !confirmState ? "" :
+          confirmState.kind === "merge"
+            ? `${confirmState.count} টি এন্ট্রি একটিতে মার্জ করবেন? আইটেম + গাড়ি ভাড়া যোগ হবে, কে করেছে union হবে, পুরনোগুলো void হবে`
+            : confirmState.kind === "deleteOne"
+              ? "এই এন্ট্রি ডিলিট (hard delete, DB থেকে vanish) করবেন?"
+              : `${confirmState.count} টি এন্ট্রি একসাথে ডিলিট (hard vanish) করবেন?`
+        }
+        confirmLabel={
+          !confirmState ? t("common.confirm") :
+          confirmState.kind === "merge" ? "মার্জ করুন" : "ডিলিট করুন"
+        }
+        danger={confirmState?.kind !== "merge"}
+        busy={confirmBusy}
+        onConfirm={confirmAction}
+        onClose={() => !confirmBusy && setConfirmState(null)}
+      />
     </div>
   );
 }

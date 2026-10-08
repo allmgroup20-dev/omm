@@ -6,6 +6,7 @@ import { useLocale } from "@/i18n/provider";
 import { formatCurrency } from "@/i18n/dict";
 import { isMemberVisibleForEntry } from "@/lib/money";
 import { useMyRole } from "@/hooks/useMyRole";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Member = { id: string; fullName: string };
 type Deposit = { id: string; memberId: string; date: string; amountPaisa: number; paymentMethod: string; status: string; note: string | null; transactionId?: string | null };
@@ -20,6 +21,8 @@ export default function DepositsPage() {
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Deposit | null>(null);
+  const [voidTarget, setVoidTarget] = useState<{ deposit: Deposit; mode: "void" | "delete"; reason: string } | null>(null);
+  const [voidBusy, setVoidBusy] = useState(false);
   const { canManage, isManager } = useMyRole(id);
   const [statusFilter, setStatusFilter] = useState<"active" | "voided" | "all">("active");
   const visibleDeposits = deposits.filter((d) =>
@@ -140,42 +143,52 @@ export default function DepositsPage() {
   }
 
   async function deleteDeposit(d: Deposit) {
-    if (!window.confirm(`স্থায়ীভাবে মুছবেন? এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে। (${formatCurrency(d.amountPaisa, locale)})`)) return;
-    const reason = window.prompt("মুছে ফেলার কারণ লিখুন (অডিটের জন্য বাধ্যতামূলক)") || "";
-    if (reason.trim().length < 3) {
-      setMsg("কারণ লিখুন (কমপক্ষে ৩ অক্ষর)");
-      return;
-    }
+    setVoidTarget({ deposit: d, mode: "delete", reason: "" });
+  }
+
+  async function confirmDelete() {
+    const target = voidTarget;
+    if (!target || target.mode !== "delete" || target.reason.trim().length < 3) return;
+    setVoidBusy(true);
     setMsg("");
-    const res = await fetch(`/api/messes/${id}/deposits/${d.id}`, {
+    const res = await fetch(`/api/messes/${id}/deposits/${target.deposit.id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason.trim() }),
+      body: JSON.stringify({ reason: target.reason.trim() }),
     });
     const data = await res.json().catch(() => ({}));
+    setVoidBusy(false);
     if (!res.ok) setMsg(data.error || t("errors.saveFail"));
     else {
       setMsg("স্থায়ীভাবে মুছে ফেলা হয়েছে");
+      setVoidTarget(null);
       load();
     }
   }
 
   async function voidDeposit(d: Deposit) {
-    if (!window.confirm(t("finance.voidConfirm"))) return;
-    const reason = window.prompt(t("finance.voidReasonPh") || "reason") || "";
+    setVoidTarget({ deposit: d, mode: "void", reason: "" });
+  }
+
+  async function confirmVoid() {
+    const target = voidTarget;
+    if (!target || target.mode !== "void") return;
+    setVoidBusy(true);
     setMsg("");
-    const res = await fetch(`/api/messes/${id}/deposits/${d.id}`, {
+    const res = await fetch(`/api/messes/${id}/deposits/${target.deposit.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "voided", reason }),
+      body: JSON.stringify({ status: "voided", reason: target.reason }),
     });
     const data = await res.json().catch(() => ({}));
+    setVoidBusy(false);
     if (!res.ok) {
       if (data.code === "MONTH_CLOSED" && data.period) addLockedPeriod(data.period);
       setMsg(data.error || t("errors.saveFail"));
     }
     else {
       setMsg(t("finance.voidDone"));
+      setVoidTarget(null);
       load();
     }
   }
@@ -263,12 +276,24 @@ export default function DepositsPage() {
               <div className="sm:col-span-2"><label className="text-xs font-medium">{t("finance.reasonLabel")}</label><input value={editForm.reason} onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px]" placeholder={t("finance.reasonPh")} required minLength={3} /></div>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setEditing(null)} disabled={editBusy} className="flex-1 rounded-full border py-3 text-sm">{t("common.cancel")}</button>
-              <button type="submit" disabled={editBusy} className="flex-1 rounded-full bg-zinc-900 text-white py-3 text-sm disabled:opacity-50">{editBusy ? t("finance.saving") : t("finance.updateBtn")}</button>
+              <button type="button" onClick={() => setEditing(null)} disabled={editBusy} className="flex-1 rounded-full border py-3 text-sm min-h-[48px]">{t("common.cancel")}</button>
+              <button type="submit" disabled={editBusy} className="flex-1 rounded-full bg-zinc-900 text-white py-3 text-sm disabled:opacity-50 min-h-[48px]">{editBusy ? t("finance.saving") : t("finance.updateBtn")}</button>
             </div>
           </form>
         </div>
       )}
+
+      <ConfirmSheet
+        open={!!voidTarget}
+        title={voidTarget?.mode === "delete" ? `স্থায়ীভাবে মুছবেন? ${voidTarget ? formatCurrency(voidTarget.deposit.amountPaisa, locale) : ""}` : (t("finance.voidConfirm") as string)}
+        body={voidTarget?.mode === "delete" ? "এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে।" : undefined}
+        confirmLabel={voidTarget?.mode === "delete" ? "স্থায়ীভাবে মুছুন" : t("finance.voidBtn") as string}
+        danger={voidTarget?.mode === "delete"}
+        busy={voidBusy}
+        input={{ value: voidTarget?.reason || "", onChange: (v) => setVoidTarget((p) => (p ? { ...p, reason: v } : p)), placeholder: t("finance.reasonPh") as string, required: voidTarget?.mode === "delete" }}
+        onConfirm={() => (voidTarget?.mode === "delete" ? confirmDelete() : confirmVoid())}
+        onClose={() => !voidBusy && setVoidTarget(null)}
+      />
     </div>
   );
 }

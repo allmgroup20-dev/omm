@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatNumber } from "@/i18n/dict";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Exp = { id: string; date: string; amountPaisa: number; status: string; description: string | null; categoryId: string | null };
 
@@ -13,6 +14,9 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Exp[]>([]);
   const [filter, setFilter] = useState("all");
   const [dash, setDash] = useState<{ counts: { pending: number; approved: number }; totals: { pendingPaisa: number; approvedPaisa: number } } | null>(null);
+  const [msg, setMsg] = useState("");
+  const [sheet, setSheet] = useState<null | { expId: string; mode: "approve" | "reject"; note: string }>(null);
+  const [sheetBusy, setSheetBusy] = useState(false);
 
   async function load() {
     const qs = filter === "all" ? "" : `?status=${filter}`;
@@ -25,16 +29,20 @@ export default function ExpensesPage() {
   }
   useEffect(() => { load(); }, [id, filter]);
 
-  async function approve(expId: string) {
-    const res = await fetch(`/api/messes/${id}/expenses/${expId}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
-    if (res.ok) load();
-    else alert((await res.json()).error);
-  }
-  async function reject(expId: string) {
-    const note = prompt(t("expenses.rejectReason") || "Reason?");
-    const res = await fetch(`/api/messes/${id}/expenses/${expId}/reject`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: note || "" }) });
-    if (res.ok) load();
-    else alert((await res.json()).error);
+  async function confirmSheet() {
+    const target = sheet;
+    if (!target) return;
+    setSheetBusy(true);
+    const url = target.mode === "approve" ? `/api/messes/${id}/expenses/${target.expId}/approve` : `/api/messes/${id}/expenses/${target.expId}/reject`;
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(target.mode === "reject" ? { note: target.note } : {}) });
+    const data = await res.json().catch(() => ({}));
+    setSheetBusy(false);
+    if (!res.ok) setMsg(data.error || t("errors.saveFail"));
+    else {
+      setMsg(target.mode === "approve" ? t("expenses.approvedMsg") : t("expenses.rejected"));
+      setSheet(null);
+      load();
+    }
   }
 
   return (
@@ -74,8 +82,8 @@ export default function ExpensesPage() {
                 <td className="p-3 text-right flex gap-1 justify-end">
                   {e.status === "pending" && (
                     <>
-                      <button onClick={() => approve(e.id)} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">{t("expenses.approve")}</button>
-                      <button onClick={() => reject(e.id)} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">{t("expenses.reject")}</button>
+                      <button onClick={() => setSheet({ expId: e.id, mode: "approve", note: "" })} className="text-xs border rounded-full px-3 py-2 bg-emerald-50 min-h-[36px]">{t("expenses.approve")}</button>
+                      <button onClick={() => setSheet({ expId: e.id, mode: "reject", note: "" })} className="text-xs border rounded-full px-3 py-2 bg-red-50 min-h-[36px]">{t("expenses.reject")}</button>
                     </>
                   )}
                 </td>
@@ -88,6 +96,17 @@ export default function ExpensesPage() {
         {expenses.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("expenses.noExpenses")}</div>}
       </div>
       <p className="text-xs text-zinc-500">{t("expenses.thresholdNote")}</p>
+      {msg && <div className="rounded-xl border bg-white p-3 text-sm">{msg}</div>}
+      <ConfirmSheet
+        open={!!sheet}
+        title={sheet?.mode === "approve" ? t("expenses.approveConfirm") : t("expenses.rejectConfirm")}
+        confirmLabel={sheet?.mode === "approve" ? t("expenses.approve") : t("expenses.reject")}
+        danger={sheet?.mode === "reject"}
+        busy={sheetBusy}
+        input={sheet?.mode === "reject" ? { value: sheet.note, onChange: (v) => setSheet(s => s ? { ...s, note: v } : null), placeholder: t("expenses.rejectReason") } : undefined}
+        onConfirm={confirmSheet}
+        onClose={() => !sheetBusy && setSheet(null)}
+      />
     </div>
   );
 }

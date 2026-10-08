@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency, formatNumber } from "@/i18n/dict";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Settlement = { id: string; year: number; month: number; mealRatePaisa: number; totalMealsScaled: number; totalMarketPaisa: number; totalOtherExpensePaisa: number; status: string };
 
@@ -11,9 +12,11 @@ export default function SettlementsPage() {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLocale();
   const [settlements, setSettlements] = useState<Settlement[]>([]);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const now0 = new Date();
+  const [ym, setYm] = useState(`${now0.getFullYear()}-${String(now0.getMonth() + 1).padStart(2, "0")}`);
   const [msg, setMsg] = useState("");
+  const [sheet, setSheet] = useState<null | { sid: string; mode: "close" | "reopen"; reason: string }>(null);
+  const [sheetBusy, setSheetBusy] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/messes/${id}/settlements`);
@@ -24,6 +27,7 @@ export default function SettlementsPage() {
 
   async function generate() {
     setMsg("");
+    const [year, month] = ym.split("-").map(Number);
     const res = await fetch(`/api/messes/${id}/settlements`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year, month }) });
     const data = await res.json();
     if (!res.ok) setMsg(data.error);
@@ -33,25 +37,31 @@ export default function SettlementsPage() {
     }
   }
 
-  async function close(sid: string) {
-    if (!confirm(t("settlements.closeConfirm"))) return;
-    const res = await fetch(`/api/messes/${id}/settlements/${sid}/close`, { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) setMsg(data.error);
-    else {
-      setMsg(`${t("common.success")}: ${(data.warnings || []).join("; ")}`);
-      load();
-    }
-  }
-  async function reopen(sid: string) {
-    const reason = prompt(t("settlements.reopenReasonPh"));
-    if (!reason) return;
-    const res = await fetch(`/api/messes/${id}/settlements/${sid}/reopen`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) });
-    const data = await res.json();
-    if (!res.ok) setMsg(data.error);
-    else {
-      setMsg(t("settlements.reopenedMsg"));
-      load();
+  async function confirmSheet() {
+    const target = sheet;
+    if (!target) return;
+    setSheetBusy(true);
+    if (target.mode === "close") {
+      const res = await fetch(`/api/messes/${id}/settlements/${target.sid}/close`, { method: "POST" });
+      const data = await res.json();
+      setSheetBusy(false);
+      if (!res.ok) setMsg(data.error);
+      else {
+        setMsg(`${t("common.success")}: ${(data.warnings || []).join("; ")}`);
+        setSheet(null);
+        load();
+      }
+    } else {
+      if (!target.reason.trim()) return;
+      const res = await fetch(`/api/messes/${id}/settlements/${target.sid}/reopen`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: target.reason.trim() }) });
+      const data = await res.json();
+      setSheetBusy(false);
+      if (!res.ok) setMsg(data.error);
+      else {
+        setMsg(t("settlements.reopenedMsg"));
+        setSheet(null);
+        load();
+      }
     }
   }
 
@@ -61,8 +71,7 @@ export default function SettlementsPage() {
       <h1 className="text-lg font-bold">{t("settlements.title")}</h1>
 
       <div className="bg-white border rounded-2xl p-4 sm:p-5 flex gap-2 items-center flex-wrap">
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.year")} />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.month")} />
+        <input type="month" value={ym} onChange={(e) => e.target.value && setYm(e.target.value)} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px] bg-white max-w-full" aria-label={`${t("reports.year")}-${t("reports.month")}`} />
         <button onClick={generate} className="px-6 py-3 rounded-full bg-zinc-900 text-white text-sm min-h-[44px]">{t("settlements.generate")}</button>
         <span className="text-xs text-zinc-500 w-full sm:w-auto">{t("settlements.formula")}<br />{t("settlements.regenHint")}</span>
       </div>
@@ -84,7 +93,7 @@ export default function SettlementsPage() {
                 <td className="p-3 text-right font-bold">{formatCurrency(s.mealRatePaisa, locale)}</td>
                 <td className="p-3 text-center"><span className={`text-xs rounded-full px-2 py-1 ${s.status === "final" ? "bg-emerald-100" : "bg-zinc-100"}`}>{t(`status.${s.status}`)}</span></td>
                 <td className="p-3 text-right flex gap-1 justify-end">
-                  {s.status !== "final" ? <button onClick={() => close(s.id)} className="text-xs border rounded-full px-3 py-2 bg-amber-50 min-h-[36px]">{t("settlements.closeBtn")}</button> : <button onClick={() => reopen(s.id)} className="text-xs border rounded-full px-3 py-2 min-h-[36px]">{t("settlements.reopenBtn")}</button>}
+                  {s.status !== "final" ? <button onClick={() => setSheet({ sid: s.id, mode: "close", reason: "" })} className="text-xs border rounded-full px-3 py-2 bg-amber-50 min-h-[44px]">{t("settlements.closeBtn")}</button> : <button onClick={() => setSheet({ sid: s.id, mode: "reopen", reason: "" })} className="text-xs border rounded-full px-3 py-2 min-h-[44px]">{t("settlements.reopenBtn")}</button>}
                 </td>
               </tr>
             ))}
@@ -95,6 +104,17 @@ export default function SettlementsPage() {
         {settlements.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">{t("settlements.noSettlements")}</div>}
       </div>
       <p className="text-xs text-zinc-500">{t("settlements.closeWarn")}</p>
+      <ConfirmSheet
+        open={!!sheet}
+        title={sheet?.mode === "close" ? t("settlements.closeConfirm") : t("settlements.reopenBtn")}
+        body={sheet?.mode === "close" ? t("settlements.closeWarn") : undefined}
+        confirmLabel={sheet?.mode === "close" ? t("settlements.closeBtn") : t("settlements.reopenBtn")}
+        danger={sheet?.mode === "close"}
+        busy={sheetBusy}
+        input={sheet?.mode === "reopen" ? { value: sheet.reason, onChange: (v) => setSheet((p) => (p ? { ...p, reason: v } : p)), placeholder: t("settlements.reopenReasonPh"), required: true } : undefined}
+        onConfirm={confirmSheet}
+        onClose={() => !sheetBusy && setSheet(null)}
+      />
     </div>
   );
 }

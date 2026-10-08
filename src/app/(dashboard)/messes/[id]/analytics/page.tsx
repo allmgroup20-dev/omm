@@ -2,10 +2,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/i18n/provider";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
 
 export default function AnalyticsPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useLocale();
   const [data, setData] = useState<{ dailyTrend: { date: string; market: number; other: number }[]; monthlyTrend: { ym: string; market: number; other: number; meals: number }[]; categorySpend: { name: string; value: number }[]; depositTrend: { ym: string; amount: number }[]; marketVsOther: { market: number; other: number } } | null>(null);
 
   useEffect(() => {
@@ -18,8 +20,8 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <Link href={`/messes/${id}/dashboard`} className="text-sm text-zinc-500">← Dashboard</Link>
-      <h1 className="text-xl font-bold">Analytics</h1>
+      <Link href={`/messes/${id}`} className="text-sm text-zinc-500">← {t("nav.overview")}</Link>
+      <h1 className="text-xl font-bold">{t("analytics.title")}</h1>
 
       <div className="rounded-2xl border bg-white p-5">
         <div className="font-semibold text-sm">Daily Expense Trend (30 days)</div>

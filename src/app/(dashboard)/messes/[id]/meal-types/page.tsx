@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatNumber } from "@/i18n/dict";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type MT = { id: string; name: string; slug: string; sortOrder: number; isActive: boolean };
 
@@ -13,6 +14,8 @@ export default function MealTypesPage() {
   const [types, setTypes] = useState<MT[]>([]);
   const [name, setName] = useState("");
   const [msg, setMsg] = useState("");
+  const [archiveTarget, setArchiveTarget] = useState<MT | null>(null);
+  const [archiveBusy, setArchiveBusy] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/messes/${id}/meal-types`);
@@ -37,8 +40,15 @@ export default function MealTypesPage() {
     load();
   }
   async function archive(mt: MT) {
-    if (!confirm(`${t("meals.archive")} ${mt.name}? ${t("meals.archiveConfirm")}`)) return;
-    await fetch(`/api/messes/${id}/meal-types/${mt.id}`, { method: "DELETE" });
+    setArchiveTarget(mt);
+  }
+
+  async function confirmArchive() {
+    if (!archiveTarget) return;
+    setArchiveBusy(true);
+    await fetch(`/api/messes/${id}/meal-types/${archiveTarget.id}`, { method: "DELETE" });
+    setArchiveBusy(false);
+    setArchiveTarget(null);
     load();
   }
 
@@ -70,6 +80,15 @@ export default function MealTypesPage() {
         </div>
         <p className="text-xs text-zinc-500">{t("meals.archiveNote")}</p>
       </div>
+      <ConfirmSheet
+        open={!!archiveTarget}
+        title={`${t("meals.archive")} ${archiveTarget?.name}? ${t("meals.archiveConfirm")}`}
+        confirmLabel={t("meals.archive")}
+        danger
+        busy={archiveBusy}
+        onConfirm={confirmArchive}
+        onClose={() => !archiveBusy && setArchiveTarget(null)}
+      />
     </div>
   );
 }

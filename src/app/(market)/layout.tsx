@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { MarketMobileNav } from "@/components/mobile-nav";
+import { getServerDict } from "@/i18n/server";
 
-export default function MarketLayout({ children }: { children: React.ReactNode }) {
+export default async function MarketLayout({ children }: { children: React.ReactNode }) {
+  const { t } = await getServerDict();
   return (
     <div className="min-h-screen bg-zinc-50 overflow-x-hidden">
       <header className="border-b bg-white sticky top-0 z-30">
@@ -12,14 +14,14 @@ export default function MarketLayout({ children }: { children: React.ReactNode }
             <span className="font-bold hidden sm:inline truncate">OMM</span>
             <span className="text-xs text-zinc-500 hidden md:inline truncate">মেস • সিট • প্রপার্টি</span>
           </Link>
-          <nav className="hidden sm:flex items-center gap-2 text-sm overflow-x-auto scrollbar-none">
-            <Link href="/" className="px-3 py-2 rounded-full hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">হোম</Link>
-            <Link href="/s" className="px-3 py-2 rounded-full border whitespace-nowrap min-h-[44px] inline-flex items-center">সিট খুঁজুন</Link>
-            <Link href="/s?type=flat" className="px-3 py-2 rounded-full border whitespace-nowrap min-h-[44px] inline-flex items-center">ফ্ল্যাট</Link>
+          <nav className="hidden lg:flex items-center gap-2 text-sm overflow-x-auto scrollbar-none">
+            <Link href="/" className="px-3 py-2 rounded-full hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.home")}</Link>
+            <Link href="/s" className="px-3 py-2 rounded-full border whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.findSeat")}</Link>
+            <Link href="/s?type=flat" className="px-3 py-2 rounded-full border whitespace-nowrap min-h-[44px] inline-flex items-center">{t("landing.findHome")}</Link>
             <LocaleSwitcher />
-            <Link href="/dashboard" className="px-4 py-2 rounded-full bg-zinc-900 text-white whitespace-nowrap min-h-[44px] inline-flex items-center">ড্যাশবোর্ড</Link>
+            <Link href="/dashboard" className="px-4 py-2 rounded-full bg-zinc-900 text-white whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.mess")}</Link>
           </nav>
-          <div className="flex sm:hidden items-center gap-1.5">
+          <div className="flex lg:hidden items-center gap-1.5">
             <LocaleSwitcher />
             <MarketMobileNav />
           </div>

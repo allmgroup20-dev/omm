@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { useMyRole } from "@/hooks/useMyRole";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type Member = {
   id: string;
@@ -39,6 +40,8 @@ export default function MembersPage() {
   const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; status: string; requestedAt: string }[]>([]);
   const { role: myRole, isPrimary } = useMyRole(id);
   const privileged = myRole === "manager" || isPrimary;
+  const [confirmState, setConfirmState] = useState<null | { kind: "status"; memberId: string; status: string } | { kind: "link"; userId: string } | { kind: "unlink"; member: Member }>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   async function loadJoinRequests() {
     const res = await fetch(`/api/messes/${id}/join-requests`).catch(() => null);
@@ -80,25 +83,30 @@ export default function MembersPage() {
   async function updateRole(memberId: string, role: string) {
     const res = await fetch(`/api/messes/${id}/members/${memberId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role }) });
     const data = await res.json();
-    if (!res.ok) alert(data.error);
+    if (!res.ok) setMsg(data.error);
     else load();
   }
-  async function updateStatus(memberId: string, status: string) {
-    if (!confirm(t("members.statusConfirm"))) return;
-    const body: Record<string, string> = { status };
-    if (status === "left") {
-      // effective date: keep in lists till month-end, or leave right now
-      const keepTillEnd = confirm(t("members.leaveTiming"));
-      if (keepTillEnd) {
-        const now = new Date();
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        body.leftAt = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
-      }
+  function askStatus(memberId: string, status: string) {
+    setConfirmState({ kind: "status", memberId, status });
+  }
+  async function doStatus(monthEnd: boolean) {
+    const target = confirmState;
+    if (!target || target.kind !== "status") return;
+    const body: Record<string, string> = { status: target.status };
+    if (target.status === "left" && monthEnd) {
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      body.leftAt = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
     }
-    const res = await fetch(`/api/messes/${id}/members/${memberId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setConfirmBusy(true);
+    const res = await fetch(`/api/messes/${id}/members/${target.memberId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) alert(data.error);
-    else load();
+    setConfirmBusy(false);
+    if (!res.ok) setMsg(data.error);
+    else {
+      setConfirmState(null);
+      load();
+    }
   }
 
   async function quickAdd(e: React.FormEvent) {
@@ -138,31 +146,49 @@ export default function MembersPage() {
 
   async function linkAccount(userId: string) {
     if (!linkFor) return;
-    if (!confirm(`"${linkFor.displayName}" — ${t("members.linkBtn")}? ${t("members.linkConfirmMsg")}`)) return;
+    setConfirmState({ kind: "link", userId });
+  }
+
+  async function confirmLink() {
+    const target = confirmState;
+    if (!target || target.kind !== "link" || !linkFor) return;
+    setConfirmBusy(true);
     try {
-      const res = await fetch(`/api/messes/${id}/members/${linkFor.id}/link`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) });
+      const res = await fetch(`/api/messes/${id}/members/${linkFor.id}/link`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: target.userId }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setLinkFor(null);
       setSearch("");
       setFound([]);
       setMsg(t("members.linkedMsg"));
+      setConfirmState(null);
       load();
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : t("errors.saveFail"));
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
   async function unlinkAccount(m: Member) {
-    if (!confirm(`"${m.displayName}" — ${t("members.unlinkBtn")}?`)) return;
+    setConfirmState({ kind: "unlink", member: m });
+  }
+
+  async function confirmUnlink() {
+    const target = confirmState;
+    if (!target || target.kind !== "unlink") return;
+    setConfirmBusy(true);
     try {
-      const res = await fetch(`/api/messes/${id}/members/${m.id}/unlink`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const res = await fetch(`/api/messes/${id}/members/${target.member.id}/unlink`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setMsg(t("members.unlinkedMsg"));
+      setConfirmState(null);
       load();
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : t("errors.saveFail"));
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
@@ -250,7 +276,7 @@ export default function MembersPage() {
                           ) : m.claimedAt ? (
                             <button onClick={() => unlinkAccount(m)} className="text-xs border rounded-full px-3 py-1 min-h-[36px]">{t("members.unlinkBtn")}</button>
                           ) : null}
-                          <button onClick={() => updateStatus(m.id, m.status === "active" ? "left" : "active")} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50 min-h-[36px]">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
+                          <button onClick={() => askStatus(m.id, m.status === "active" ? "left" : "active")} className="text-xs border rounded-full px-3 py-1 hover:bg-zinc-50 min-h-[36px]">{m.status === "active" ? t("members.markLeft") : t("members.activate")}</button>
                         </>
                       )}
                     </td>
@@ -284,6 +310,33 @@ export default function MembersPage() {
           </div>
         </div>
       )}
+      <ConfirmSheet
+        open={!!confirmState}
+        title={
+          !confirmState ? "" :
+          confirmState.kind === "status"
+            ? t("members.statusConfirm")
+            : confirmState.kind === "link"
+              ? `${t("members.linkBtn")}? ${t("members.linkConfirmMsg")}`
+              : `${t("members.unlinkBtn")}?`
+        }
+        confirmLabel={
+          !confirmState ? t("common.confirm") :
+          confirmState.kind === "status"
+            ? (confirmState.status === "active" ? t("members.activate") : t("members.markLeft"))
+            : confirmState.kind === "link" ? t("members.linkConfirm") : t("members.unlinkBtn")
+        }
+        altLabel={confirmState?.kind === "status" && confirmState.status === "left" ? "মাসান্ত পর্যন্ত রাখুন" : undefined}
+        onAlt={confirmState?.kind === "status" && confirmState.status === "left" ? () => doStatus(true) : undefined}
+        busy={confirmBusy}
+        onConfirm={() => {
+          if (!confirmState) return;
+          if (confirmState.kind === "status") doStatus(false);
+          else if (confirmState.kind === "link") confirmLink();
+          else confirmUnlink();
+        }}
+        onClose={() => !confirmBusy && setConfirmState(null)}
+      />
     </div>
   );
 }

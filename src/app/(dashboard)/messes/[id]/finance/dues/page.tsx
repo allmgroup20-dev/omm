@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 import { formatCurrency } from "@/i18n/dict";
 import { useMyRole } from "@/hooks/useMyRole";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type DueMember = {
   memberId: string;
@@ -29,17 +30,19 @@ export default function DuesPage() {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLocale();
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [ym, setYm] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
   const [members, setMembers] = useState<DueMember[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [collectFor, setCollectFor] = useState<DueMember | null>(null);
+  const [collectAmt, setCollectAmt] = useState("");
   const { canManage } = useMyRole(id);
 
   async function load() {
+    const [y, m] = ym.split("-").map(Number);
     const [bRes, mRes] = await Promise.all([
-      fetch(`/api/messes/${id}/finance/balances?year=${year}&month=${month}`),
+      fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`),
       fetch(`/api/messes/${id}/members`),
     ]);
     const bData = await bRes.json().catch(() => ({}));
@@ -51,20 +54,16 @@ export default function DuesPage() {
       setMembers(((bData.members || []) as DueMember[]).filter((m) => (m.dueRemainingPaisa || 0) > 0));
     }
   }
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [id, ym]);
 
-  async function collectDue(m: DueMember) {
-    if (!m.dueSourceYm) {
-      setMsg("উৎস মাস পাওয়া যায়নি — সেটেলমেন্ট তৈরি আছে কিনা দেখুন");
-      return;
-    }
-    const raw = window.prompt(`কত টাকা পেলেন? (${m.dueSourceYm}-এর বকেয়া ৳${((m.dueRemainingPaisa || 0) / 100).toFixed(2)} — আজকের তারিখে নেওয়া হবে)`);
-    if (!raw) return;
-    const amount = parseFloat(raw);
+  async function confirmCollect() {
+    if (!collectFor?.dueSourceYm) return;
+    const amount = parseFloat(collectAmt);
     if (!amount || amount <= 0) {
       setMsg("সঠিক টাকা লিখুন");
       return;
     }
+    const m = collectFor;
     setBusyId(m.memberId);
     setMsg("");
     const res = await fetch(`/api/messes/${id}/deposits/collect`, {
@@ -77,6 +76,8 @@ export default function DuesPage() {
     if (!res.ok) setMsg(data.error || t("errors.saveFail"));
     else {
       setMsg(`আদায় হয়েছে — ${m.dueSourceYm}-এ ${formatCurrency(data.split.toSourcePaisa, locale)} + এই মাসে ${formatCurrency(data.split.toCurrentPaisa, locale)}`);
+      setCollectFor(null);
+      setCollectAmt("");
       load();
     }
   }
@@ -90,9 +91,7 @@ export default function DuesPage() {
       <h1 className="text-lg font-bold">🔴 বকেয়া আদায়</h1>
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
       <div className="flex gap-2 items-center flex-wrap">
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px] bg-white" aria-label={t("reports.year")} />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px] bg-white" aria-label={t("reports.month")} />
-        <button onClick={load} className="px-6 py-3 border rounded-full text-sm min-h-[44px] bg-white">{t("common.load")}</button>
+        <input type="month" value={ym} onChange={(e) => e.target.value && setYm(e.target.value)} className="border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px] bg-white max-w-full" aria-label={`${t("reports.year")}-${t("reports.month")}`} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -122,7 +121,7 @@ export default function DuesPage() {
                 <div className="text-[11px] text-emerald-700">এ মাসে আদায় {formatCurrency(m.dueCollectedPaisa, locale)}</div>
               )}
               {canManage ? (
-                <button onClick={() => collectDue(m)} disabled={busyId === m.memberId} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm min-h-[44px] disabled:opacity-50">
+                <button onClick={() => { setCollectFor(m); setCollectAmt(m.dueRemainingPaisa ? String(m.dueRemainingPaisa / 100) : ""); }} disabled={busyId === m.memberId} className="w-full rounded-full bg-zinc-900 text-white py-2.5 text-sm min-h-[44px] disabled:opacity-50">
                   {busyId === m.memberId ? "নেওয়া হচ্ছে..." : "বকেয়া জমা"}
                 </button>
               ) : (
@@ -132,6 +131,16 @@ export default function DuesPage() {
           ))}
         </div>
       )}
+      <ConfirmSheet
+        open={!!collectFor}
+        title={collectFor ? `বকেয়া জমা — ${names[collectFor.memberId] || ""}` : "বকেয়া জমা"}
+        body={collectFor ? `${collectFor.dueSourceYm}-এর বকেয়া ${formatCurrency(collectFor.dueRemainingPaisa || 0, locale)} — আজকের তারিখে নেওয়া হবে। বাড়তি অংশ এই মাসে জমা হবে।` : undefined}
+        confirmLabel="আদায় করুন"
+        busy={busyId !== null}
+        input={{ value: collectAmt, onChange: setCollectAmt, placeholder: "টাকার পরিমাণ", inputMode: "decimal", required: true }}
+        onConfirm={confirmCollect}
+        onClose={() => { setCollectFor(null); setCollectAmt(""); }}
+      />
     </div>
   );
 }
