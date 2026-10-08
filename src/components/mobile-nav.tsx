@@ -29,8 +29,9 @@ export function DashboardMobileNav({ userName, messName, messId }: { userName: s
             {messId && (
               <>
                 <Link onClick={() => setOpen(false)} href={`/messes/${messId}`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.overview")}</Link>
-                <Link onClick={() => setOpen(false)} href={`/messes/${messId}/finance`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.finance")}</Link>
-                <Link onClick={() => setOpen(false)} href={`/messes/${messId}/market`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.market")}</Link>
+                <Link onClick={() => setOpen(false)} href={`/messes/${messId}/meals`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.todayMeals")}</Link>
+                <Link onClick={() => setOpen(false)} href={`/messes/${messId}/market/entries`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.market")}</Link>
+                <Link onClick={() => setOpen(false)} href={`/messes/${messId}/finance/dues`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.money")}</Link>
                 <Link onClick={() => setOpen(false)} href={`/messes/${messId}/members`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.members")}</Link>
                 <Link onClick={() => setOpen(false)} href={`/messes/${messId}/settlements`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.settlements")}</Link>
               </>

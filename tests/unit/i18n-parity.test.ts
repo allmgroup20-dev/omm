@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { rawDicts, leafKeys, tx } from "@/i18n/dict";
 
@@ -27,7 +27,7 @@ describe("i18n — BN/EN parity", () => {
 
 describe("mess overview IA — daily first, setup last", () => {
   const overview = readFileSync(
-    join(process.cwd(), "src/app/(dashboard)/messes/[id]/page.tsx"),
+    join(process.cwd(), "src/app/(mess)/messes/[id]/page.tsx"),
     "utf8",
   );
 
@@ -61,16 +61,30 @@ describe("mess overview IA — daily first, setup last", () => {
       "mess.qaMealToday",
       "mess.qaDues",
       "mess.qaEntries",
-      "mess.qaLedger",
-      "mess.qaBalances",
       "mess.qaExpenses",
       "mess.qaMatrix",
+      "mess.qaAudit",
       "nav.myMesses",
+      "nav.market",
+      "nav.money",
+      "nav.members",
+      "nav.settlements",
+      "nav.currentMess",
+      "nav.todayMeals",
+      "nav.overview",
+      "common.copy",
+      "common.copied",
+      "market.setupLinks",
     ]) {
       for (const locale of ["bn", "en"] as const) {
         expect(tx(locale, key)).not.toBe(key);
       }
     }
+  });
+
+  it("hides ledger + balances from the weekly section", () => {
+    expect(overview).not.toContain("/finance/ledger`");
+    expect(overview).not.toContain("/finance/balances`");
   });
 });
 
@@ -83,7 +97,7 @@ describe("mess scope — no stray native dialogs or legacy month pickers", () =>
     });
   }
 
-  const files = walk(join(process.cwd(), "src/app/(dashboard)/messes"));
+  const files = walk(join(process.cwd(), "src/app/(mess)/messes"));
   it("finds page files to scan", () => {
     expect(files.length).toBeGreaterThan(20);
   });
@@ -101,5 +115,56 @@ describe("mess scope — no stray native dialogs or legacy month pickers", () =>
       return hasMonthBox && !hasMonthInput;
     });
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("pruned IA — deleted routes stay deleted, nav keys resolve", () => {
+  const root = process.cwd();
+  const read = (p: string) => readFileSync(join(root, p), "utf8");
+
+  it("has no page files for removed routes", () => {
+    for (const p of [
+      "src/app/(mess)/messes/[id]/calendar/page.tsx",
+      "src/app/(mess)/messes/[id]/analytics/page.tsx",
+      "src/app/(mess)/messes/[id]/market/dashboard/page.tsx",
+      "src/app/(mess)/messes/[id]/invitations/page.tsx",
+      "src/app/api/messes/[id]/analytics/route.ts",
+      "src/app/api/messes/[id]/market/dashboard/route.ts",
+    ]) {
+      expect(existsSync(join(root, p))).toBe(false);
+    }
+  });
+
+  it("links nowhere to removed routes (overview, headers, mobile nav, action bar)", () => {
+    const sources = [
+      read("src/app/(mess)/messes/[id]/page.tsx"),
+      read("src/app/(mess)/messes/[id]/layout.tsx"),
+      read("src/app/(dashboard)/layout.tsx"),
+      read("src/components/mobile-nav.tsx"),
+      read("src/components/mobile-action-bar.tsx"),
+    ].join("\n");
+    for (const dead of [
+      "/calendar`",
+      "/analytics`",
+      "/market/dashboard",
+      "/invitations`",
+      "/market`}",
+      "/finance`}",
+    ]) {
+      expect(sources).not.toContain(dead);
+    }
+  });
+
+  it("every t() key used in nav shells resolves in both locales", () => {
+    const sources = [
+      read("src/app/(mess)/messes/[id]/layout.tsx"),
+      read("src/app/(dashboard)/layout.tsx"),
+      read("src/components/mobile-nav.tsx"),
+      read("src/components/mobile-action-bar.tsx"),
+    ].join("\n");
+    const keys = [...sources.matchAll(/\bt\("([^"]+)"\)/g)].map((m) => m[1]);
+    expect(keys.length).toBeGreaterThan(5);
+    const missing = keys.filter((k) => tx("bn", k) === k || tx("en", k) === k);
+    expect(missing).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import { getRequestDb } from "@/db";
 import { messes, messMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerDict } from "@/i18n/server";
 
 export default async function DashboardPage() {
@@ -11,6 +12,8 @@ export default async function DashboardPage() {
   const { t } = await getServerDict();
   const db = await getRequestDb();
   const rows = await db.select({ mess: messes, member: messMembers }).from(messMembers).innerJoin(messes, eq(messMembers.messId, messes.id)).where(eq(messMembers.userId, user.id));
+  // One mess only → skip the list, go straight home.
+  if (rows.length === 1) redirect(`/messes/${rows[0].mess.id}`);
 
   return (
     <div className="space-y-6">
