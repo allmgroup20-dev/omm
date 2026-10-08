@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { getRequestDb } from "@/db";
-import { auditLogs, messMembers } from "@/db/schema";
+import { auditLogs, messMembers, users } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,5 +26,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // never allow delete — no DELETE endpoint
 
-  return NextResponse.json({ auditLogs: rows, total: rows.length });
+  const withNames = await Promise.all(
+    rows.map(async (r) => {
+      let actorName: string | null = null;
+      if (r.actorId) {
+        const u = await db.select({ fullName: users.fullName }).from(users).where(eq(users.id, r.actorId)).limit(1);
+        actorName = u[0]?.fullName || null;
+      }
+      return { ...r, actorName };
+    }),
+  );
+
+  return NextResponse.json({ auditLogs: withNames, total: withNames.length });
 }

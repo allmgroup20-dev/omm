@@ -78,7 +78,7 @@ export default function DuesPage() {
     setBusyId(null);
     if (!res.ok) setMsg(data.error || t("errors.saveFail"));
     else {
-      setMsg(`আদায় হয়েছে — ${m.dueSourceYm}-এ ${formatCurrency(data.split.toSourcePaisa, locale)} + এই মাসে ${formatCurrency(data.split.toCurrentPaisa, locale)}`);
+      setMsg(t("dues.collectedMsg").replace("{ym}", m.dueSourceYm || "").replace("{src}", formatCurrency(data.split.toSourcePaisa, locale)).replace("{cur}", formatCurrency(data.split.toCurrentPaisa, locale)));
       setCollectFor(null);
       setCollectAmt("");
       load();
@@ -144,7 +144,7 @@ export default function DuesPage() {
       <ConfirmSheet
         open={!!collectFor}
         title={collectFor ? `${t("dues.sheetTitle")} — ${names[collectFor.memberId] || ""}` : t("dues.sheetTitle")}
-        body={collectFor ? `${collectFor.dueSourceYm}-এর বকেয়া ${formatCurrency(collectFor.dueRemainingPaisa || 0, locale)} — আজকের তারিখে নেওয়া হবে। বাড়তি অংশ এই মাসে জমা হবে।` : undefined}
+        body={collectFor ? t("dues.collectBody").replace("{ym}", collectFor.dueSourceYm || "").replace("{amt}", formatCurrency(collectFor.dueRemainingPaisa || 0, locale)) : undefined}
         confirmLabel={t("dues.collectConfirm")}
         busy={busyId !== null}
         input={{ value: collectAmt, onChange: setCollectAmt, placeholder: t("dues.amountPh"), inputMode: "decimal", required: true }}

@@ -75,8 +75,8 @@ export default function SettingsForm({ mess, role }: { mess: Mess; role: string 
         <div>
           <label className="text-xs text-zinc-600">{t("settings.timezone")}</label>
           <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[52px] bg-white">
-            <option value="Asia/Dhaka">Asia/Dhaka (Bangladesh — default)</option>
-            <option value="UTC">UTC</option>
+            <option value="Asia/Dhaka">{t("settings.tzDhaka")}</option>
+            <option value="UTC">{t("settings.tzUtc")}</option>
           </select>
         </div>
       </div>

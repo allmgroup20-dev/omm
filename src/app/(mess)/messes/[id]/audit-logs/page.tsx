@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/i18n/provider";
 
-type Log = { id: string; action: string; entityType: string; entityId: string; actorId: string | null; beforeJson: string | null; afterJson: string | null; reason: string | null; createdAt: string };
+type Log = { id: string; action: string; entityType: string; entityId: string; actorId: string | null; actorName: string | null; beforeJson: string | null; afterJson: string | null; reason: string | null; createdAt: string };
 
 export default function AuditLogsPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +17,7 @@ export default function AuditLogsPage() {
     const qs = filter ? `?entityType=${filter}` : "";
     const res = await fetch(`/api/messes/${id}/audit-logs${qs}`);
     const data = await res.json();
-    if (!res.ok) setMsg(data.error || "Failed");
+    if (!res.ok) setMsg(typeof data.error === "string" && data.error ? data.error : t("errors.loadFail"));
     else {
       setLogs(data.auditLogs);
       setMsg("");
@@ -69,10 +69,10 @@ export default function AuditLogsPage() {
               {logs.map((l) => (
                 <tr key={l.id} className="border-t">
                   <td className="p-2 font-mono">{new Date(l.createdAt).toLocaleString()}</td>
-                  <td className="p-2 font-mono text-[10px]">{l.actorId?.slice(0, 6) || "—"}</td>
+                  <td className="p-2 font-medium text-xs max-w-[140px] truncate" title={l.actorId || ""}>{l.actorName || t("finance.unknownMember")}</td>
                   <td className="p-2"><span className={`rounded-full px-2 py-0.5 ${l.action === "correct" ? "bg-amber-100" : l.action === "close" ? "bg-emerald-100" : l.action === "reopen" ? "bg-sky-100" : "bg-zinc-100"}`}>{humanAction(l.action)}</span></td>
                   <td className="p-2">{humanEntity(l.entityType)}</td>
-                  <td className="p-2 max-w-[260px] truncate"><div className="text-[10px]">Before: {l.beforeJson?.slice(0, 80) || "—"}</div><div className="text-[10px]">After: {l.afterJson?.slice(0, 80) || "—"}</div></td>
+                  <td className="p-2 max-w-[260px] truncate"><div className="text-[10px]">{t("audit.before")}: {l.beforeJson?.slice(0, 80) || "—"}</div><div className="text-[10px]">{t("audit.after")}: {l.afterJson?.slice(0, 80) || "—"}</div></td>
                   <td className="p-2">{l.reason || "—"}</td>
                 </tr>
               ))}

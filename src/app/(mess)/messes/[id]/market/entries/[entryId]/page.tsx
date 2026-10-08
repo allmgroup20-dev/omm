@@ -233,22 +233,22 @@ export default function EntryDetailPage() {
         </div>
       )}
       <div className="bg-white border rounded-2xl p-4 space-y-2 text-sm">
-        <div className="flex justify-between"><span>তারিখ (DD-MM-YYYY)</span><span className="font-mono">{formatDateBD(entry.date, locale)}</span></div>
-        <div className="flex justify-between"><span>কে বাজার করেছে</span><span className="font-medium">{((entry as unknown as { purchaserNames?: string[]; purchaserName: string | null }).purchaserNames?.length ? (entry as unknown as { purchaserNames: string[] }).purchaserNames.join(", ") : (entry as unknown as { purchaserName: string | null }).purchaserName) || "—"}</span></div>
-        <div className="flex justify-between"><span>অবস্থা</span><span className={`rounded-full px-2 py-0.5 text-xs ${entry.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{entry.status === "active" ? t("status.active") : t("status.voided")}</span></div>
-        <div className="flex justify-between"><span>মোট</span><span>{formatCurrency(entry.totalPaisa, locale)}</span></div>
-        <div className="flex justify-between"><span>গাড়ি ভাড়া</span><span>{formatCurrency(entry.transportPaisa || 0, locale)}</span></div>
-        <div className="flex justify-between"><span>ছাড়</span><span>{formatCurrency(entry.discountPaisa, locale)}</span></div>
-        <div className="flex justify-between font-semibold"><span>সর্বমোট (মোট + গাড়ি - ছাড়)</span><span>{formatCurrency(entry.finalPaisa, locale)}</span></div>
+        <div className="flex justify-between"><span>{t("market.filterDate")}</span><span className="font-mono">{formatDateBD(entry.date, locale)}</span></div>
+        <div className="flex justify-between"><span>{t("market.whoLabel")}</span><span className="font-medium">{((entry as unknown as { purchaserNames?: string[]; purchaserName: string | null }).purchaserNames?.length ? (entry as unknown as { purchaserNames: string[] }).purchaserNames.join(", ") : (entry as unknown as { purchaserName: string | null }).purchaserName) || "—"}</span></div>
+        <div className="flex justify-between"><span>{t("common.status")}</span><span className={`rounded-full px-2 py-0.5 text-xs ${entry.status === "active" ? "bg-green-100" : "bg-zinc-200"}`}>{entry.status === "active" ? t("status.active") : t("status.voided")}</span></div>
+        <div className="flex justify-between"><span>{t("common.total")}</span><span>{formatCurrency(entry.totalPaisa, locale)}</span></div>
+        <div className="flex justify-between"><span>{t("market.gariVara")}</span><span>{formatCurrency(entry.transportPaisa || 0, locale)}</span></div>
+        <div className="flex justify-between"><span>{t("market.discount")}</span><span>{formatCurrency(entry.discountPaisa, locale)}</span></div>
+        <div className="flex justify-between font-semibold"><span>{t("market.finalFormula")}</span><span>{formatCurrency(entry.finalPaisa, locale)}</span></div>
         <div className="flex justify-between"><span>{t("market.classification")}</span><span>{entry.classification === "food" ? t("market.classFood") : entry.classification === "shared" ? t("market.classShared") : t("market.classNonFood")}</span></div>
         <div className="flex justify-between"><span>{t("market.payment")}</span><span>{entry.paymentMethod === "cash" ? t("market.payCash") : entry.paymentMethod === "bank" ? t("market.payBank") : entry.paymentMethod === "mobile" ? t("market.payMobile") : t("market.payOther")}</span></div>
         <div className="flex justify-between"><span>{t("market.vendor")}</span><span>{vendors.find((v) => v.id === entry.vendorId)?.name || t("market.noVendor")}</span></div>
         {entry.notes && <div className="flex justify-between gap-3"><span className="shrink-0">{t("market.notes")}</span><span className="text-right break-words">{entry.notes}</span></div>}
-        <div className="text-xs text-zinc-500">সর্বমোট সেটেলমেন্ট ও রিপোর্টে যায়</div>
+        <div className="text-xs text-zinc-500">{t("market.finalGoesHint")}</div>
       </div>
 
       <div className="bg-white border rounded-2xl p-4">
-        <div className="font-medium text-sm mb-2">আইটেম ({items.length})</div>
+        <div className="font-medium text-sm mb-2">{t("market.itemsCount")} ({items.length})</div>
         <div className="space-y-2">
           {items.map((it) => (
             <div key={it.id} className="flex justify-between border rounded-lg px-3 py-2 text-sm bg-zinc-50">
@@ -260,26 +260,26 @@ export default function EntryDetailPage() {
       </div>
 
       <div className="bg-white border rounded-2xl p-4 space-y-3">
-        <div className="font-medium text-sm">Edit — সব ফিল্ড</div>
-        {!isActive && <div className="text-xs text-zinc-500">বাতিলকৃত এন্ট্রি এডিট করা যাবে না।</div>}
-        {isActive && !canManage && <div className="text-xs text-zinc-500">শুধু ম্যানেজার এডিট করতে পারে — তথ্য দেখা যাবে।</div>}
+        <div className="font-medium text-sm">{t("market.editAllFields")}</div>
+        {!isActive && <div className="text-xs text-zinc-500">{t("market.cannotEditVoided")}</div>}
+        {isActive && !canManage && <div className="text-xs text-zinc-500">{t("market.managerOnlyEdit")}</div>}
         {isActive && canManage && !editing ? (
           <button onClick={() => setEditing(true)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">Edit</button>
         ) : isActive && canManage ? (
           <div className="space-y-3">
             <div className="grid md:grid-cols-2 gap-3">
-              <div><label className="text-xs">তারিখ (DD-MM-YYYY)</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /><div className="text-[11px] text-zinc-500 mt-1">{form.date ? formatDateBD(form.date, locale) : ""}</div></div>
-              <div><label className="text-xs">কে বাজার করেছে * (একাধিক)</label><div className="border rounded-xl p-2 max-h-[120px] overflow-auto bg-white mt-1 space-y-1">{members.map((m) => <label key={m.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.purchasedBy.includes(m.id)} onChange={(e) => setForm({ ...form, purchasedBy: e.target.checked ? [...form.purchasedBy, m.id] : form.purchasedBy.filter((x) => x !== m.id) })} /><span>{m.displayName}</span></label>)} {members.length === 0 && <div className="text-xs text-zinc-500">কোনো সদস্য নেই</div>}</div></div>
+              <div><label className="text-xs">{t("market.filterDate")}</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" required /><div className="text-[11px] text-zinc-500 mt-1">{form.date ? formatDateBD(form.date, locale) : ""}</div></div>
+              <div><label className="text-xs">{t("market.whoMultiLabel")}</label><div className="border rounded-xl p-2 max-h-[120px] overflow-auto bg-white mt-1 space-y-1">{members.map((m) => <label key={m.id} className="flex items-center gap-2 text-sm min-h-[44px]"><input type="checkbox" checked={form.purchasedBy.includes(m.id)} onChange={(e) => setForm({ ...form, purchasedBy: e.target.checked ? [...form.purchasedBy, m.id] : form.purchasedBy.filter((x) => x !== m.id) })} className="w-5 h-5 accent-zinc-900" /><span>{m.displayName}</span></label>)} {members.length === 0 && <div className="text-xs text-zinc-500">{t("members.noMembers")}</div>}</div></div>
               <div><label className="text-xs">{t("market.vendor")}</label><select value={form.vendorId} onChange={(e) => setForm({ ...form, vendorId: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="">{t("market.noVendor")}</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
-              <div><label className="text-xs">শ্রেণি</label><select value={form.classification} onChange={(e) => setForm({ ...form, classification: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="food">খাদ্য</option><option value="shared">যৌথ</option><option value="non_food">অখাদ্য</option></select></div>
-              <div><label className="text-xs">পেমেন্ট</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">নগদ (ক্যাশ)</option><option value="bank">ব্যাংক</option><option value="mobile">মোবাইল</option><option value="other">অন্যান্য</option></select></div>
-              <div><label className="text-xs">গাড়ি ভাড়া (টাকা)</label><input type="number" step="0.01" value={form.transport} onChange={(e) => setForm({ ...form, transport: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" placeholder="যেমন ৪০" /></div>
-              <div><label className="text-xs">ছাড় (টাকা)</label><input type="number" step="0.01" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
+              <div><label className="text-xs">{t("market.classification")}</label><select value={form.classification} onChange={(e) => setForm({ ...form, classification: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
+              <div><label className="text-xs">{t("market.payment")}</label><select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
+              <div><label className="text-xs">{t("market.gariVara")}</label><input type="number" step="0.01" value={form.transport} onChange={(e) => setForm({ ...form, transport: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1 border-amber-200" placeholder={t("market.transportExPh")} /></div>
+              <div><label className="text-xs">{t("market.discount")}</label><input type="number" step="0.01" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
             </div>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="নোট" className="w-full border rounded-xl px-3 py-2 text-sm" rows={2} />
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t("market.notesShortPh")} aria-label={t("market.notes")} className="w-full border rounded-xl px-3 py-2 text-sm" rows={2} />
 
               <div className="space-y-3 pt-1">
-              <div className="font-medium text-sm">আইটেম ({editItems.length}) — দাম/পরিমাণ/পণ্য সব বদলানো যায়</div>
+              <div className="font-medium text-sm">{t("market.itemsCount")} ({editItems.length}) — {t("market.itemsEditableHint")}</div>
               {editItems.map((it, idx) => {
                 const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
                 return (
@@ -317,7 +317,7 @@ export default function EntryDetailPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
                       <div>
-                        <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? "(কেজি + গ্রাম)" : ""}</label>
+                        <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? t("market.kgGramHint") : ""}</label>
                         {it.unit === "kg" ? (
                           <div className="flex gap-1">
                             {(() => {
@@ -326,8 +326,12 @@ export default function EntryDetailPage() {
                               const g = Math.round((q - kg) * 1000);
                               return (
                                 <>
-                                  <input type="number" min={0} step={1} placeholder="কেজি" value={q ? String(kg) : it.quantity === "0" ? "0" : ""} onChange={(e) => onKgChange(idx, e.target.value, String(g))} className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white" />
-                                  <input type="number" min={0} max={999} step={1} placeholder="গ্রাম" value={q ? String(g) : ""} onChange={(e) => onKgChange(idx, String(kg), e.target.value)} className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white" />
+                                                                  <input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  placeholder={t("market.kgPh")} value={q ? String(kg) : it.quantity === "0" ? "0" : ""} onChange={(e) => onKgChange(idx, e.target.value, String(g))} className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white" />
+                                  <input type="number" min={0} max={999} step={1}                                   placeholder={t("market.gramPh")} value={q ? String(g) : ""} onChange={(e) => onKgChange(idx, String(kg), e.target.value)} className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white" />
                                 </>
                               );
                             })()}
@@ -347,8 +351,8 @@ export default function EntryDetailPage() {
                         <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white min-h-[44px]" />
                       </div>
                       <div>
-                        <label className="text-[11px] text-zinc-500">মোট (টাকা)</label>
-                        <input type="number" step="0.01" placeholder="যেমন ২৪৬০" value={it.total !== "" ? it.total : rowTotal ? rowTotal.toFixed(2).replace(/\.00$/, "") : ""} onChange={(e) => onTotalChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white border-amber-300" />
+                        <label className="text-[11px] text-zinc-500">{t("market.totalMoneyLabel")}</label>
+                        <input type="number" step="0.01" placeholder={t("market.totalKnownExamplePh")} value={it.total !== "" ? it.total : rowTotal ? rowTotal.toFixed(2).replace(/\.00$/, "") : ""} onChange={(e) => onTotalChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white border-amber-300" />
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
@@ -367,15 +371,15 @@ export default function EntryDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm disabled:opacity-50 min-h-[48px]">{saving ? t("market.saving") : "Save"}</button>
-              <button onClick={() => setEditing(false)} className="px-6 rounded-full border text-sm min-h-[48px]">Cancel</button>
+              <button onClick={save} disabled={saving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm disabled:opacity-50 min-h-[48px]">{saving ? t("market.saving") : t("common.save")}</button>
+              <button onClick={() => setEditing(false)} className="px-6 rounded-full border text-sm min-h-[48px]">{t("common.cancel")}</button>
             </div>
           </div>
         ) : null}
         {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
         <div className="flex gap-2 pt-2">
           {isActive && canManage && <button onClick={voidEntry} className="px-4 py-2 rounded-full border text-sm text-red-600 min-h-[44px]">Delete ({t("market.deleteForever").toLowerCase()})</button>}
-          <button onClick={() => router.push(`/messes/${id}/market/entries`)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">Back to list</button>
+          <button onClick={() => router.push(`/messes/${id}/market/entries`)} className="px-4 py-2 rounded-full border text-sm min-h-[44px]">{t("market.backToList")}</button>
         </div>
       </div>
       <ConfirmSheet

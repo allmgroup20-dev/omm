@@ -160,7 +160,7 @@ export default function DepositsPage() {
     setVoidBusy(false);
     if (!res.ok) setMsg(data.error || t("errors.saveFail"));
     else {
-      setMsg("স্থায়ীভাবে মুছে ফেলা হয়েছে");
+      setMsg(t("finance.deletedForeverMsg"));
       setVoidTarget(null);
       load();
     }
@@ -313,7 +313,7 @@ export default function DepositsPage() {
       <ConfirmSheet
         open={!!voidTarget}
         title={voidTarget?.mode === "delete" ? `স্থায়ীভাবে মুছবেন? ${voidTarget ? formatCurrency(voidTarget.deposit.amountPaisa, locale) : ""}` : (t("finance.voidConfirm") as string)}
-        body={voidTarget?.mode === "delete" ? "এই জমা ও খতিয়ান থেকে পুরোপুরি মুছে যাবে।" : t("finance.voidKeepsLedger")}
+        body={voidTarget?.mode === "delete" ? t("finance.deleteConfirmBody") : t("finance.voidKeepsLedger")}
         confirmLabel={voidTarget?.mode === "delete" ? t("market.deleteForever") : t("finance.voidBtn") as string}
         danger={voidTarget?.mode === "delete"}
         busy={voidBusy}

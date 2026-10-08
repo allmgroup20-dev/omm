@@ -241,7 +241,7 @@ export default function MealsPage() {
         </div>
         <div className="flex gap-2 pb-2">
           <button onClick={saveDefaults} disabled={defaultsSaving} className="flex-1 rounded-full bg-zinc-900 text-white py-2.5 text-sm font-medium disabled:opacity-50 min-h-[44px]">{defaultsSaving ? t("meals.savingTemplate") : t("meals.saveTemplate")}</button>
-          <button onClick={autoFillToday} disabled={autoSaving} className="px-5 rounded-full border bg-white text-sm disabled:opacity-50 min-h-[44px]">{autoSaving ? t("meals.filling") : `Auto-fill`}</button>
+          <button onClick={autoFillToday} disabled={autoSaving} className="px-5 rounded-full border bg-white text-sm disabled:opacity-50 min-h-[44px]">{autoSaving ? t("meals.filling") : t("meals.autoFill")}</button>
         </div>
       </details>
 

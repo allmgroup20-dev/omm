@@ -50,11 +50,11 @@ export default function NewMessPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || JSON.stringify(data.issues) || "Failed");
+      if (!res.ok) throw new Error(typeof data.error === "string" && data.error ? data.error : t("errors.saveFail"));
       router.push(`/messes/${data.mess.id}`);
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed");
+      setError(err instanceof Error ? err.message : t("errors.saveFail"));
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function NewMessPage() {
         </div>
         <div>
           <label className="text-xs text-zinc-600">{t("mess.mealTypesLabel")}</label>
-          <input value={form.mealTypes} onChange={(e) => setForm({ ...form, mealTypes: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-sm mt-1" placeholder="Breakfast,Lunch,Dinner" />
+          <input value={form.mealTypes} onChange={(e) => setForm({ ...form, mealTypes: e.target.value })} className="w-full rounded-xl border px-4 py-3 text-base sm:text-sm mt-1 min-h-[52px]" placeholder={t("mess.mealTypesPh")} />
           <p className="text-xs text-zinc-500 mt-1">{t("mess.mealTypesHint")}</p>
         </div>
         <button disabled={loading} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">{loading ? t("mess.creating") : t("mess.createBtn")}</button>

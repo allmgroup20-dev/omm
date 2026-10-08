@@ -277,7 +277,7 @@ export default function MembersPage() {
                 return (
                   <div key={inv.id} className="flex items-center gap-2 border rounded-xl px-3 py-2 text-sm">
                     <span className="font-mono text-xs">{inv.code}</span>
-                    <span className="text-xs text-zinc-500">{t(`roles.${inv.role}`)} • {inv.status}</span>
+                    <span className="text-xs text-zinc-500">{t(`roles.${inv.role}`)} • {t(`status.${inv.status}`) === `status.${inv.status}` ? inv.status : t(`status.${inv.status}`)}</span>
                     <button onClick={() => copyText(`${window.location.origin}${link}`, inv.id)} className="ml-auto shrink-0 px-4 py-2.5 rounded-full border text-xs min-h-[44px]">{copied === inv.id ? t("common.copied") : t("common.copy")}</button>
                   </div>
                 );

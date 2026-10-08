@@ -169,7 +169,7 @@ export default function AddMarketPage() {
     try {
       const validItems = items.filter((it) => it.productName.trim() && (parseFloat(it.quantity) || 0) > 0);
       if (validItems.length === 0 && transportNum === 0) {
-        throw new Error("পণ্য বা গাড়ি ভাড়া যেকোনো একটি দিন — শুধু গাড়ি ভাড়া ৪০৳ হলেও সেভ হবে");
+        throw new Error(t("market.needItemOrTransport"));
       }
       const res = await fetch(`/api/messes/${id}/market/entries`, {
         method: "POST",
@@ -221,17 +221,17 @@ export default function AddMarketPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium">কে বাজার করেছে *</label>
+            <label className="text-xs font-medium">{t("market.whoRequired")}</label>
             <div className="flex flex-wrap gap-2 mt-1.5">
               {members.map((m) => (
                 <button key={m.id} type="button" onClick={() => togglePurchaser(m.id)} className={`rounded-full px-4 py-2 text-sm min-h-[44px] border ${purchasedBy.includes(m.id) ? "bg-zinc-900 text-white border-zinc-900" : "bg-white hover:bg-zinc-50"}`}>{m.displayName}</button>
               ))}
-              {members.length === 0 && <div className="text-xs text-zinc-500">কোনো সদস্য নেই</div>}
+              {members.length === 0 && <div className="text-xs text-zinc-500">{t("members.noMembers")}</div>}
             </div>
-            {purchasedBy.length === 0 && <div className="text-xs text-red-500 mt-1">কমপক্ষে একজন বেছে নিন</div>}
+            {purchasedBy.length === 0 && <div className="text-xs text-red-500 mt-1">{t("market.pickOnePurchaser")}</div>}
           </div>
           <details className="rounded-xl border bg-zinc-50 px-3 py-2">
-            <summary className="text-sm font-medium cursor-pointer py-1">বিস্তারিত (শ্রেণি • পেমেন্ট • বিক্রেতা • নোট)</summary>
+            <summary className="text-sm font-medium cursor-pointer py-1">{t("market.detailsSummary")}</summary>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 pb-1">
               <div><label className="text-xs font-medium">{t("market.classification")}</label><select value={classification} onChange={(e) => setClassification(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px] bg-white"><option value="food">{t("market.classFood")}</option><option value="shared">{t("market.classShared")}</option><option value="non_food">{t("market.classNonFood")}</option></select></div>
               <div><label className="text-xs font-medium">{t("market.payment")}</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm mt-1 min-h-[44px] bg-white"><option value="cash">{t("market.payCash")}</option><option value="bank">{t("market.payBank")}</option><option value="mobile">{t("market.payMobile")}</option><option value="other">{t("market.payOther")}</option></select></div>
@@ -244,13 +244,13 @@ export default function AddMarketPage() {
         {/* items */}
         <div className="space-y-3">
           <div className="font-medium text-sm">{t("market.items")} ({items.length})</div>
-          <p className="text-xs text-zinc-500">মোট জানা থাকলে সেটি লিখুন — না থাকলে পরিমাণ × দাম থেকে হিসাব হবে।</p>
+          <p className="text-xs text-zinc-500">{t("market.totalKnownHint")}</p>
            {items.map((it, idx) => {
             const rowTotal = it.total ? parseFloat(it.total) || 0 : (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
             return (
               <div key={idx} className="border rounded-xl p-3 sm:p-4 bg-white space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-zinc-500">পণ্য {idx + 1}{rowTotal > 0 && <span className="ml-2 text-zinc-900">• {formatCurrency(Math.round(rowTotal * 100), locale)}</span>}</span>
+                  <span className="text-xs font-semibold text-zinc-500">{t("market.productN")} {idx + 1}{rowTotal > 0 && <span className="ml-2 text-zinc-900">• {formatCurrency(Math.round(rowTotal * 100), locale)}</span>}</span>
                   {items.length > 1 && <button type="button" onClick={() => removeRow(idx)} className="text-xs text-red-600 min-h-[44px] px-2">{t("market.remove")}</button>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -308,7 +308,7 @@ export default function AddMarketPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
                   <div className="col-span-1">
-                    <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? "(কেজি + গ্রাম)" : ""}</label>
+                    <label className="text-[11px] text-zinc-500">{t("market.quantity")} {it.unit === "kg" ? t("market.kgGramHint") : ""}</label>
                     {it.unit === "kg" ? (
                       <div className="flex gap-1">
                         {(() => {
@@ -321,7 +321,7 @@ export default function AddMarketPage() {
                                 type="number"
                                 min={0}
                                 step={1}
-                                placeholder="কেজি"
+                                placeholder={t("market.kgPh")}
                                 value={q ? String(kg) : it.quantity === "0" ? "0" : ""}
                                 onChange={(e) => onKgChange(idx, e.target.value, String(g))}
                                 className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white"
@@ -331,7 +331,7 @@ export default function AddMarketPage() {
                                 min={0}
                                 max={999}
                                 step={1}
-                                placeholder="গ্রাম"
+                                placeholder={t("market.gramPh")}
                                 value={q ? String(g) : ""}
                                 onChange={(e) => onKgChange(idx, String(kg), e.target.value)}
                                 className="w-1/2 border rounded-lg px-2 py-2.5 text-sm text-center bg-white"
@@ -359,11 +359,11 @@ export default function AddMarketPage() {
                     <input type="number" step="0.0001" placeholder={t("market.unitPrice")} value={it.unitPrice} onChange={(e) => onUnitPriceChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white min-h-[44px]" />
                   </div>
                   <div>
-                    <label className="text-[11px] text-zinc-500">মোট (জানা থাকলে)</label>
+                    <label className="text-[11px] text-zinc-500">{t("market.totalKnownLabel")}</label>
                     <input
                       type="number"
                       step="0.01"
-                      placeholder="যেমন ২৪৬০"
+                      placeholder={t("market.totalKnownExamplePh")}
                       value={it.total !== "" ? it.total : ""}
                       onChange={(e) => onTotalChange(idx, e.target.value)}
                       className="w-full border rounded-lg px-3 py-2.5 text-sm text-center bg-white border-amber-300 focus:border-amber-500"
