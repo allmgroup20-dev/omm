@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-2 text-sm">
-            <Link href="/dashboard" className="px-3 py-2 rounded-full border hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.dashboard")}</Link>
+            <Link href="/dashboard" className="px-3 py-2 rounded-full border hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.myMesses")}</Link>
             <Link href="/profile" className="px-3 py-2 rounded-full border hover:bg-zinc-50 whitespace-nowrap min-h-[44px] inline-flex items-center">{t("nav.profile")}</Link>
             <NotificationBell />
             <ThemeToggle />

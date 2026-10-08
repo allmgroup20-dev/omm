@@ -25,7 +25,7 @@ export function DashboardMobileNav({ userName, messName, messId }: { userName: s
                 <div className="font-medium truncate">{messName}</div>
               </div>
             )}
-            <Link onClick={() => setOpen(false)} href="/dashboard" className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.dashboard")}</Link>
+            <Link onClick={() => setOpen(false)} href="/dashboard" className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.myMesses")}</Link>
             {messId && (
               <>
                 <Link onClick={() => setOpen(false)} href={`/messes/${messId}`} className="px-4 py-3 rounded-xl border hover:bg-zinc-50 text-center min-h-[44px] flex items-center justify-center">{t("nav.overview")}</Link>

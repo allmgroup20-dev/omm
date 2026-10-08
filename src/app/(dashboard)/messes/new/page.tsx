@@ -62,7 +62,7 @@ export default function NewMessPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Link href="/dashboard" className="text-sm text-zinc-500 hover:text-zinc-900">← {t("nav.dashboard")}</Link>
+      <Link href="/dashboard" className="text-sm text-zinc-500 hover:text-zinc-900">← {t("mess.backDashboard")}</Link>
       <h1 className="text-xl font-bold mt-2">{t("mess.newTitle")}</h1>
       <p className="text-sm text-zinc-500">{t("mess.newDesc")}</p>
       {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error}</div>}
