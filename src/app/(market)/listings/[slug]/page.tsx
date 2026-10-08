@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getRequestDb } from "@/db";
 import { listings, listingImages } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getServerDict } from "@/i18n/server";
+import { formatCurrency } from "@/i18n/dict";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -25,6 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const { t, locale } = await getServerDict();
   const db = await getRequestDb();
   const rows = await db.select().from(listings).where(eq(listings.slug, slug)).limit(1);
   const listing = rows[0];
@@ -53,7 +56,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <Link href="/s" className="text-sm text-zinc-500">← সার্চে ফিরুন</Link>
+      <Link href="/s" className="text-sm text-zinc-500 min-h-[44px] inline-flex items-center">{t("listing.backSearch")}</Link>
 
       <div className="bg-white border rounded-2xl overflow-hidden">
         <div className="grid md:grid-cols-3 gap-2 p-2">
@@ -61,73 +64,62 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <div key={img.id} className="h-48 bg-zinc-100 rounded-xl overflow-hidden">
               <img src={img.url} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
             </div>
-          )) : <div className="md:col-span-3 h-48 bg-zinc-100 grid place-items-center text-zinc-400">ছবি নেই</div>}
+          )) : <div className="md:col-span-3 h-48 bg-zinc-100 grid place-items-center text-zinc-400">{t("listing.noPhoto")}</div>}
         </div>
         <div className="p-6">
           <h1 className="text-xl font-bold">{listing.title}</h1>
           <div className="text-xs text-zinc-500 mt-2 flex flex-wrap items-center gap-1">
-            <span>🇧🇩 বাংলাদেশ</span>
+            <span>{t("geo.country")} <b>{t("geo.countryName")}</b></span>
             {[listing.division, listing.district, listing.upazila, listing.unionName].filter(Boolean).map((p) => (
               <span key={p}>› <b>{p}</b></span>
             ))}
           </div>
           <div className="text-sm text-zinc-600 mt-1">
-            {[listing.area, listing.address].filter(Boolean).join(", ") || "লোকেশন"}
+            {[listing.area, listing.address].filter(Boolean).join(", ") || t("common.noData")}
             {listing.postalCode ? ` — ${listing.postalCode}` : ""}
           </div>
-          <div className="font-bold text-lg mt-3">৳{(listing.pricePaisa / 100).toLocaleString("bn-BD")} <span className="text-xs font-normal">/মাস</span> {listing.depositPaisa ? <span className="text-xs text-zinc-500">• জামানত ৳{(listing.depositPaisa / 100).toLocaleString("bn-BD")}</span> : null}</div>
-          <div className="flex gap-2 mt-3 text-xs">
-            <span className="border rounded-full px-3 py-1 bg-zinc-50">{listing.type}</span>
-            <span className="border rounded-full px-3 py-1 bg-zinc-50">{listing.genderPreference}</span>
-            {listing.furnished ? <span className="border rounded-full px-3 py-1 bg-emerald-50">Furnished</span> : null}
-            {listing.verified ? <span className="border rounded-full px-3 py-1 bg-emerald-600 text-white">✓ Verified</span> : null}
+          <div className="font-bold text-lg mt-3 tabular-nums">{formatCurrency(listing.pricePaisa, locale)} <span className="text-xs font-normal">{t("search.perMonth")}</span> {listing.depositPaisa ? <span className="text-xs text-zinc-500">• {t("listing.depositLabel")} {formatCurrency(listing.depositPaisa, locale)}</span> : null}</div>
+          <div className="flex gap-2 mt-3 text-xs flex-wrap">
+            <span className="border rounded-full px-3 py-1 bg-zinc-50">{t(`types.${listing.type}` as never) === `types.${listing.type}` ? listing.type : t(`types.${listing.type}` as never)}</span>
+            <span className="border rounded-full px-3 py-1 bg-zinc-50">{listing.genderPreference === "male" ? t("listing.genderMale") : listing.genderPreference === "female" ? t("listing.genderFemale") : t("listing.genderAny")}</span>
+            {listing.furnished ? <span className="border rounded-full px-3 py-1 bg-emerald-50">{t("listing.furnished")}</span> : null}
+            {listing.verified ? <span className="border rounded-full px-3 py-1 bg-emerald-600 text-white">✓ {t("listing.verifiedYes")}</span> : null}
           </div>
 
           <div className="mt-6 grid md:grid-cols-2 gap-4 text-sm">
             <div className="border rounded-xl p-4">
-              <div className="font-semibold">মূল তথ্য</div>
+              <div className="font-semibold">{t("listing.keyInfo")}</div>
               <ul className="mt-2 space-y-1 text-zinc-600">
-                <li>বেডরুম: {listing.bedrooms ?? "—"} • বাথরুম: {listing.bathrooms ?? "—"}</li>
-                <li>আয়তন: {listing.sqft ? `${listing.sqft} sqft` : "—"} • ফ্লোর: {listing.floor ?? "—"}/{listing.totalFloors ?? "—"}</li>
-                <li>সিট: {listing.occupancy ?? "—"}/{listing.totalSeats ?? "—"}</li>
-                <li>উপলব্ধ: {listing.availableFrom || "—"}</li>
+                <li>{t("listing.bedrooms")}: {listing.bedrooms ?? "—"} • {t("listing.bathrooms")}: {listing.bathrooms ?? "—"}</li>
+                <li>{t("listing.areaSqft")}: {listing.sqft ? `${listing.sqft} sqft` : "—"} • {t("listing.floorLabel")}: {listing.floor ?? "—"}/{listing.totalFloors ?? "—"}</li>
+                <li>{t("listing.seatsLabel")}: {listing.occupancy ?? "—"}/{listing.totalSeats ?? "—"}</li>
+                <li>{t("listing.availableLabel")}: {listing.availableFrom || "—"}</li>
               </ul>
             </div>
             <div className="border rounded-xl p-4">
-              <div className="font-semibold">সুবিধা</div>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                {["WiFi", "গ্যাস", "বিদ্যুৎ", "পানি", "পার্কিং", "লিফট", "জেনারেটর"].map((f) => (
-                  <span key={f} className="border rounded-full px-3 py-1 bg-zinc-50">{f}</span>
-                ))}
-              </div>
+              <div className="font-semibold">{t("listing.details")}</div>
+              <p className="text-sm text-zinc-600 mt-2">{listing.description || "—"}</p>
             </div>
           </div>
 
-          {listing.description && (
-            <div className="mt-6">
-              <div className="font-semibold">বিস্তারিত</div>
-              <p className="text-sm text-zinc-600 mt-2 whitespace-pre-wrap">{listing.description}</p>
-            </div>
-          )}
-
           <div className="mt-6 border rounded-xl p-4 bg-zinc-50">
-            <div className="font-semibold text-sm">যোগাযোগ</div>
-            <p className="text-xs text-zinc-500 mt-1">ফোন/WhatsApp আর্কিটেকচার-ready — মালিকের সাথে সরাসরি যোগাযোগ (privacy: masking controlled).</p>
+            <div className="font-semibold text-sm">{t("listing.contact")}</div>
+            <p className="text-xs text-zinc-500 mt-1">{t("listing.contactNote")}</p>
             <form action={`/api/listings/${listing.slug}/inquiry`} method="post" className="mt-3 space-y-2">
-              <textarea name="message" placeholder="আপনার বার্তা (কমপক্ষে ১০ অক্ষর)" className="w-full border rounded-xl px-3 py-2 text-sm" rows={3} required />
-              <input name="contactPhone" placeholder="ফোন (ঐচ্ছিক)" className="w-full border rounded-xl px-3 py-2 text-sm" />
+              <textarea name="message" placeholder={t("listing.msgPh")} aria-label={t("listing.msgPh")} className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm min-h-[52px]" rows={3} required />
+              <input name="contactPhone" placeholder={t("listing.phonePh")} aria-label={t("listing.phonePh")} inputMode="tel" className="w-full border rounded-xl px-3 py-3 text-base sm:text-sm min-h-[52px]" />
               <input name="honeypot" className="hidden" tabIndex={-1} autoComplete="off" />
-              <button type="submit" className="w-full rounded-full bg-zinc-900 text-white py-2 text-sm">বার্তা পাঠান</button>
+              <button type="submit" className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm min-h-[52px]">{t("listing.sendMsg")}</button>
             </form>
           </div>
 
-          <div className="mt-6 text-xs text-zinc-500">নিরাপত্তা: লিস্টিং যাচাই, রিপোর্ট, এবং মডারেশন সিস্টেম রয়েছে।</div>
+          <div className="mt-6 text-xs text-zinc-500">{t("listing.safety")}</div>
         </div>
       </div>
 
       <div className="rounded-2xl border bg-white p-4">
-        <div className="font-semibold text-sm">অনুরূপ লিস্টিং</div>
-        <p className="text-xs text-zinc-500 mt-1">একই এলাকার অন্যান্য সিট — শীঘ্রই আসছে (similar by district/area).</p>
+        <div className="font-semibold text-sm">{t("listing.similar")}</div>
+        <p className="text-xs text-zinc-500 mt-1">{t("listing.similarDesc")}</p>
       </div>
     </div>
   );

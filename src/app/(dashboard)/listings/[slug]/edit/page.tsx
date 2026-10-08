@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ListingForm from "@/components/listing-form";
+import { useLocale } from "@/i18n/provider";
 
 export default function EditListingPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useLocale();
   const [initial, setInitial] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
 
@@ -40,15 +42,15 @@ export default function EditListingPage() {
           });
         }
       })
-      .catch(() => setError("Load failed"));
+      .catch(() => setError(t("errors.loadFail")));
   }, [slug]);
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <Link href="/listings" className="text-sm text-zinc-500">← আমার লিস্টিং</Link>
-      <h1 className="text-lg font-bold">লিস্টিং এডিট</h1>
+      <Link href="/listings" className="text-sm text-zinc-500 min-h-[44px] inline-flex items-center">← {t("listing.myTitle")}</Link>
+      <h1 className="text-lg font-bold">{t("listing.editTitle")}</h1>
       {error && <div className="rounded-xl bg-red-50 border p-3 text-sm text-red-700">{error}</div>}
-      {!initial && !error && <div className="rounded-2xl border bg-white p-10 text-center text-sm animate-pulse">লোড হচ্ছে...</div>}
+      {!initial && !error && <div className="rounded-2xl border bg-white p-10 text-center text-sm animate-pulse">{t("common.loading")}</div>}
       {initial && <ListingForm initial={initial as never} slug={slug} />}
     </div>
   );

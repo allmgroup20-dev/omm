@@ -2,9 +2,9 @@
 import { useLocale } from "@/i18n/provider";
 
 export function LocaleSwitcher() {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
   return (
-    <div className="flex items-center border rounded-full overflow-hidden text-xs" role="group" aria-label="Language">
+    <div className="flex items-center border rounded-full overflow-hidden text-xs" role="group" aria-label={t("common.language")}>
       <button
         onClick={() => setLocale("bn")}
         className={`px-4 py-2.5 ${locale === "bn" ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"}`}

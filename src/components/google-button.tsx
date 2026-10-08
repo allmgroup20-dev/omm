@@ -15,7 +15,7 @@ export function GoogleButton({ text }: { text: string }) {
   );
 }
 
-export function OrDivider({ text = "অথবা ইমেইল দিয়ে" }: { text?: string }) {
+export function OrDivider({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-3 text-xs text-zinc-500">
       <span className="flex-1 border-t" />

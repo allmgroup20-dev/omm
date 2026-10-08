@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AddressSelect, { type AddressValue } from "./address-select";
 import { listingTypes } from "@/lib/validators-listing";
+import { useLocale } from "@/i18n/provider";
 
 export type ListingFormData = {
   title: string;
@@ -44,12 +45,13 @@ export const EMPTY_FORM: ListingFormData = {
 
 export default function ListingForm({ initial, slug }: { initial?: Partial<ListingFormData & { geo?: Partial<AddressValue> }>; slug?: string }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [form, setForm] = useState<ListingFormData>({ ...EMPTY_FORM, ...initial, geo: { ...EMPTY_GEO, ...(initial?.geo || {}) } });
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
 
   const set = (patch: Partial<ListingFormData>) => setForm((f) => ({ ...f, ...patch }));
-  const inp = "w-full border rounded-xl px-3 py-2.5 text-sm mt-1 bg-white";
+  const inp = "w-full border rounded-xl px-4 py-3 text-base sm:text-sm mt-1 bg-white min-h-[52px]";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,11 +84,11 @@ export default function ListingForm({ initial, slug }: { initial?: Partial<Listi
       const url = slug ? `/api/listings/${slug}` : "/api/listings";
       const res = await fetch(url, { method: slug ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setMsg(slug ? "আপডেট হয়েছে! পুনরায় moderation হবে।" : "জমা হয়েছে! Moderation-এর পর প্রকাশিত হবে।");
+      if (!res.ok) throw new Error(typeof data.error === "string" && data.error ? data.error : t("errors.saveFail"));
+      setMsg(slug ? t("listing.updatedMsg") : t("listing.createdMsg"));
       setTimeout(() => router.push("/listings"), 1000);
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : "Failed");
+      setMsg(err instanceof Error ? err.message : t("errors.saveFail"));
     } finally {
       setSaving(false);
     }
@@ -97,75 +99,85 @@ export default function ListingForm({ initial, slug }: { initial?: Partial<Listi
       {msg && <div className="rounded-xl border p-3 text-sm bg-white break-all">{msg}</div>}
 
       <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
-        <div className="font-semibold text-sm">মূল তথ্য</div>
+        <div className="font-semibold text-sm">{t("listing.basicInfo")}</div>
         <div>
-          <label className="text-xs text-zinc-600">শিরোনাম *</label>
-          <input value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="যেমন: মিরপুর ১০-এ ২ সিট খালি" className={inp} required minLength={5} maxLength={80} />
+          <label className="text-xs font-medium">{t("listing.titleLabel")} *</label>
+          <input value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder={t("listing.titlePh")} aria-label={t("listing.newTitle")} className={inp} required minLength={5} maxLength={80} />
         </div>
         <div className="grid md:grid-cols-3 gap-3">
           <div>
-            <label className="text-xs text-zinc-600">ধরন *</label>
+            <label className="text-xs font-medium">{t("listing.typeLabel")} *</label>
             <select value={form.type} onChange={(e) => set({ type: e.target.value })} className={inp}>
-              {(listingTypes as readonly string[]).map((t) => (
-                <option key={t} value={t}>{t}</option>
+              {(listingTypes as readonly string[]).map((ty) => (
+                <option key={ty} value={ty}>{t(`types.${ty}` as never) === `types.${ty}` ? ty : t(`types.${ty}` as never)}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-xs text-zinc-600">মাসিক ভাড়া (৳) *</label>
-            <input type="number" min={500} value={form.price} onChange={(e) => set({ price: e.target.value })} placeholder="3500" className={inp} required />
+            <label className="text-xs font-medium">{t("listing.rentLabel")} *</label>
+            <input type="number" min={500} value={form.price} onChange={(e) => set({ price: e.target.value })} placeholder="3500" inputMode="numeric" className={inp} required />
           </div>
           <div>
-            <label className="text-xs text-zinc-600">জামানত (৳)</label>
-            <input type="number" min={0} value={form.deposit} onChange={(e) => set({ deposit: e.target.value })} placeholder="0" className={inp} />
+            <label className="text-xs font-medium">{t("listing.depositLabel")}</label>
+            <input type="number" min={0} value={form.deposit} onChange={(e) => set({ deposit: e.target.value })} placeholder="0" inputMode="numeric" className={inp} />
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium">{t("listing.bedrooms")}</label>
+            <input type="number" min={0} value={form.bedrooms} onChange={(e) => set({ bedrooms: e.target.value })} inputMode="numeric" className={inp} />
+          </div>
+          <div>
+            <label className="text-xs font-medium">{t("listing.bathrooms")}</label>
+            <input type="number" min={0} value={form.bathrooms} onChange={(e) => set({ bathrooms: e.target.value })} inputMode="numeric" className={inp} />
           </div>
         </div>
         <div>
-          <label className="text-xs text-zinc-600">বিস্তারিত</label>
-          <textarea value={form.description} onChange={(e) => set({ description: e.target.value })} rows={3} placeholder="রুম, খাবার, নিয়মাবলী..." className={inp} />
+          <label className="text-xs font-medium">{t("listing.details")}</label>
+          <textarea value={form.description} onChange={(e) => set({ description: e.target.value })} rows={3} placeholder={t("listing.descPh")} className={inp} />
         </div>
         <div>
-          <label className="text-xs text-zinc-600">ছবির লিংক (ঐচ্ছিক)</label>
-          <input value={form.coverImageUrl} onChange={(e) => set({ coverImageUrl: e.target.value })} placeholder="https://..." className={inp} />
+          <label className="text-xs font-medium">{t("listing.imageUrlLabel")}</label>
+          <input value={form.coverImageUrl} onChange={(e) => set({ coverImageUrl: e.target.value })} placeholder="https://..." inputMode="url" className={inp} />
         </div>
       </div>
 
       <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
-        <div className="font-semibold text-sm">ঠিকানা (সরকারি তালিকা)</div>
+        <div className="font-semibold text-sm">{t("listing.addressSec")}</div>
         <AddressSelect value={form.geo} onChange={(geo) => set({ geo })} />
       </div>
 
       <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-3">
-        <div className="font-semibold text-sm">বৈশিষ্ট্য</div>
+        <div className="font-semibold text-sm">{t("listing.featuresSec")}</div>
         <div className="grid md:grid-cols-3 gap-3">
           <div>
-            <label className="text-xs text-zinc-600">লিঙ্গ</label>
+            <label className="text-xs font-medium">{t("listing.genderLabel")}</label>
             <select value={form.genderPreference} onChange={(e) => set({ genderPreference: e.target.value })} className={inp}>
-              <option value="any">যেকেউ</option>
-              <option value="male">পুরুষ</option>
-              <option value="female">নারী</option>
+              <option value="any">{t("listing.genderAny")}</option>
+              <option value="male">{t("listing.genderMale")}</option>
+              <option value="female">{t("listing.genderFemale")}</option>
             </select>
           </div>
           <div>
-            <label className="text-xs text-zinc-600">খালি সিট</label>
-            <input type="number" min={0} value={form.totalSeats} onChange={(e) => set({ totalSeats: e.target.value })} className={inp} />
+            <label className="text-xs font-medium">{t("listing.seatsLabel")}</label>
+            <input type="number" min={0} value={form.totalSeats} onChange={(e) => set({ totalSeats: e.target.value })} inputMode="numeric" className={inp} />
           </div>
           <div>
-            <label className="text-xs text-zinc-600">উপলব্ধ তারিখ</label>
+            <label className="text-xs font-medium">{t("listing.availableLabel")}</label>
             <input type="date" value={form.availableFrom} onChange={(e) => set({ availableFrom: e.target.value })} className={inp} />
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.furnished} onChange={(e) => set({ furnished: e.target.checked })} /> Furnished</label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.bachelorAllowed} onChange={(e) => set({ bachelorAllowed: e.target.checked })} /> ব্যাচেলর চলবে</label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.familyAllowed} onChange={(e) => set({ familyAllowed: e.target.checked })} /> ফ্যামিলি চলবে</label>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          <label className="flex items-center gap-2 min-h-[44px]"><input type="checkbox" checked={form.furnished} onChange={(e) => set({ furnished: e.target.checked })} className="w-5 h-5 accent-zinc-900" /> {t("listing.furnished")}</label>
+          <label className="flex items-center gap-2 min-h-[44px]"><input type="checkbox" checked={form.bachelorAllowed} onChange={(e) => set({ bachelorAllowed: e.target.checked })} className="w-5 h-5 accent-zinc-900" /> {t("listing.bachelor")}</label>
+          <label className="flex items-center gap-2 min-h-[44px]"><input type="checkbox" checked={form.familyAllowed} onChange={(e) => set({ familyAllowed: e.target.checked })} className="w-5 h-5 accent-zinc-900" /> {t("listing.family")}</label>
         </div>
       </div>
 
-      <button disabled={saving} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50">
-        {saving ? "জমা হচ্ছে..." : slug ? "আপডেট করুন" : "লিস্টিং জমা দিন"}
+      <button disabled={saving} className="w-full rounded-full bg-zinc-900 text-white py-3 text-sm font-medium disabled:opacity-50 min-h-[52px]">
+        {saving ? t("listing.submitting") : slug ? t("listing.submitEdit") : t("listing.submitNew")}
       </button>
-      <p className="text-xs text-zinc-500 text-center">জমার পর admin moderation হবে, তারপর প্রকাশিত হবে।</p>
+      <p className="text-xs text-zinc-500 text-center">{t("listing.moderationNote")}</p>
     </form>
   );
 }

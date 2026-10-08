@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { useLocale } from "@/i18n/provider";
 
 export function Drawer({
   open,
@@ -14,6 +15,7 @@ export function Drawer({
   subtitle?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useLocale();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -35,7 +37,7 @@ export function Drawer({
             <div className="font-semibold text-[15px] leading-tight">{title}</div>
             {subtitle && <div className="text-xs text-zinc-500 mt-1">{subtitle}</div>}
           </div>
-          <button onClick={onClose} className="shrink-0 w-8 h-8 grid place-items-center rounded-full border bg-white hover:bg-zinc-50 text-zinc-600" aria-label="Close">✕</button>
+          <button onClick={onClose} className="shrink-0 w-11 h-11 grid place-items-center rounded-full border bg-white hover:bg-zinc-50 text-zinc-600" aria-label={t("common.dismiss")}>✕</button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">{children}</div>
       </div>

@@ -83,7 +83,7 @@ export function MarketMobileNav() {
   return (
     <>
       <button
-        aria-label="Menu"
+        aria-label={t("common.menu")}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
         className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border bg-white hover:bg-zinc-50 text-lg leading-none shrink-0"
@@ -110,7 +110,7 @@ export function HomeMobileNav() {
   return (
     <>
       <button
-        aria-label="Menu"
+        aria-label={t("common.menu")}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
         className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border bg-white hover:bg-zinc-50 text-lg shrink-0"
