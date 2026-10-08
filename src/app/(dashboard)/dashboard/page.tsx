@@ -40,7 +40,7 @@ export default async function DashboardPage() {
             <Link key={r.mess.id} href={`/messes/${r.mess.id}`} className="rounded-2xl border bg-white p-4 sm:p-5 hover:shadow-sm transition">
               <div className="flex items-center justify-between">
                 <span className="text-xs border rounded-full px-2 py-1 bg-zinc-50">{r.mess.code}</span>
-                <span className={`text-xs rounded-full px-2 py-1 ${r.member.role === "manager" ? "bg-zinc-900 text-white" : r.member.role === "assistant_manager" ? "bg-amber-100" : "bg-zinc-100"}`}>{r.member.role}</span>
+                <span className={`text-xs rounded-full px-2 py-1 ${r.member.role === "manager" ? "bg-zinc-900 text-white" : r.member.role === "assistant_manager" ? "bg-amber-100 text-amber-900" : "bg-zinc-100"}`}>{t(`roles.${r.member.role}`)}</span>
               </div>
               <div className="font-semibold mt-3">{r.mess.name}</div>
               <div className="text-xs text-zinc-500 mt-1">{[r.mess.district, r.mess.area].filter(Boolean).join(", ") || r.mess.address || t("common.noData")} • {r.mess.startDate}</div>

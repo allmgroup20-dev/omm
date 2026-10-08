@@ -25,7 +25,7 @@ export default async function ProfilePage() {
         <div className="min-w-0">
           <div className="font-bold truncate">{user.fullName}</div>
           <div className="text-sm text-zinc-500 truncate">{user.email} • {user.phone || t("profile.noPhone")}</div>
-          <div className="text-xs text-zinc-500 mt-1">ID: {user.id.slice(0, 8)} • {t("common.status")}: {t(`status.${user.status}`)} • {t("common.status")}: {user.emailVerified ? t("profile.verifiedYes") : t("profile.verifiedPending")}{user.googleSub ? " • Google ✓" : ""}</div>
+          <div className="text-xs text-zinc-500 mt-1">{t("common.status")}: {t(`status.${user.status}`)} • {t("profile.emailVerified")}: {user.emailVerified ? t("profile.verifiedYes") : t("profile.verifiedPending")}{user.googleSub ? " • Google ✓" : ""}</div>
         </div>
       </div>
 

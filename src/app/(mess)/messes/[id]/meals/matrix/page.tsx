@@ -30,11 +30,17 @@ export default function MatrixPage() {
       {!data ? (
         <div className="bg-white border rounded-xl p-4 sm:p-6 text-sm">{t("common.loading")}</div>
       ) : (
+        <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("reports.kpiMeals")}</div><div className="font-bold tabular-nums">{formatNumber(data.totalMealsScaled / 100, locale)}</div></div>
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("meals.memberCol")}</div><div className="font-bold tabular-nums">{formatNumber(data.members.length, locale)}</div></div>
+          <div className="rounded-2xl border bg-white p-3"><div className="text-xs text-zinc-500">{t("common.date")}</div><div className="font-bold tabular-nums">{formatNumber(data.dates.length, locale)}</div></div>
+        </div>
         <div className="bg-white border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto hidden sm:block">
             <div className="min-w-[900px]">
               <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-zinc-50">
                   <th className="text-left p-2 sticky left-0 bg-zinc-50 z-10 shadow-sm">{t("meals.memberCol")}</th>
                   {data.dates.map((d) => (
@@ -87,6 +93,7 @@ export default function MatrixPage() {
           <p className="p-3 text-xs text-zinc-500">{t("meals.singleSource")}</p>
         </div>
         </div>
+      </div>
       )}
     </div>
   );
