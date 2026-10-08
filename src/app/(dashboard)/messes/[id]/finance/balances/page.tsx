@@ -11,8 +11,7 @@ export default function BalancesPage() {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLocale();
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [ym, setYm] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
   const [data, setData] = useState<{ mealRateBDT: number; breakdown: string; members: (Bal & { name?: string })[] } | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
 
@@ -25,20 +24,19 @@ export default function BalancesPage() {
   }, [id]);
 
   async function load() {
-    const res = await fetch(`/api/messes/${id}/finance/balances?year=${year}&month=${month}`);
+    const [y, m] = ym.split("-");
+    const res = await fetch(`/api/messes/${id}/finance/balances?year=${y}&month=${m}`);
     const j = await res.json();
     if (res.ok) setData(j);
   }
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [id, ym]);
 
   return (
     <div className="space-y-4">
       <Link href={`/messes/${id}/finance`} className="text-sm text-zinc-500">← {t("finance.hub")}</Link>
       <h1 className="text-lg font-bold">{t("finance.balTitle")}</h1>
       <div className="flex gap-2 items-center flex-wrap">
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.year")} />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.month")} />
-        <button onClick={load} className="px-6 py-3 border rounded-full text-sm min-h-[44px] bg-white">{t("common.load")}</button>
+        <input type="month" value={ym} onChange={(e) => e.target.value && setYm(e.target.value)} className="flex-1 sm:flex-none sm:w-48 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("reports.month")} />
       </div>
 
       {data && (

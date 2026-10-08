@@ -9,25 +9,23 @@ export default function MatrixPage() {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLocale();
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [ym, setYm] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
   const [data, setData] = useState<{ dates: string[]; members: { memberId: string; fullName: string }[]; matrix: Record<string, Record<string, number>>; memberTotals: Record<string, number>; totalMealsScaled: number } | null>(null);
 
   async function load() {
-    const res = await fetch(`/api/messes/${id}/meals/matrix?year=${year}&month=${month}`);
+    const [y, m] = ym.split("-");
+    const res = await fetch(`/api/messes/${id}/meals/matrix?year=${y}&month=${m}`);
     const j = await res.json();
     if (res.ok) setData(j);
   }
-  useEffect(() => { load(); }, [id, year, month]);
+  useEffect(() => { load(); }, [id, ym]);
 
   return (
     <div className="space-y-4">
       <Link href={`/messes/${id}/meals`} className="text-sm text-zinc-500">← {t("meals.dailyTitle")}</Link>
       <div className="flex items-center gap-2 flex-wrap">
         <h1 className="text-lg font-bold flex-1 min-w-[140px]">{t("meals.matrixTitle")}</h1>
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-24 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("meals.year")} />
-        <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(Number(e.target.value))} className="flex-1 sm:flex-none sm:w-20 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("meals.month")} />
-        <button onClick={load} className="px-6 py-3 border rounded-full text-sm min-h-[44px] bg-white">{t("common.load")}</button>
+        <input type="month" value={ym} onChange={(e) => e.target.value && setYm(e.target.value)} className="flex-1 sm:flex-none sm:w-48 border rounded-full px-4 py-3 text-base sm:text-sm min-h-[44px]" aria-label={t("meals.month")} />
       </div>
       {!data ? (
         <div className="bg-white border rounded-xl p-4 sm:p-6 text-sm">{t("common.loading")}</div>

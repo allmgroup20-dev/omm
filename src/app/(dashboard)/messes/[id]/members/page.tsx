@@ -315,7 +315,7 @@ export default function MembersPage() {
         title={
           !confirmState ? "" :
           confirmState.kind === "status"
-            ? t("members.statusConfirm")
+            ? (confirmState.status === "active" ? t("members.statusConfirm") : t("members.leaveTiming"))
             : confirmState.kind === "link"
               ? `${t("members.linkBtn")}? ${t("members.linkConfirmMsg")}`
               : `${t("members.unlinkBtn")}?`
@@ -323,10 +323,10 @@ export default function MembersPage() {
         confirmLabel={
           !confirmState ? t("common.confirm") :
           confirmState.kind === "status"
-            ? (confirmState.status === "active" ? t("members.activate") : t("members.markLeft"))
+            ? (confirmState.status === "active" ? t("members.activate") : t("members.leaveNow"))
             : confirmState.kind === "link" ? t("members.linkConfirm") : t("members.unlinkBtn")
         }
-        altLabel={confirmState?.kind === "status" && confirmState.status === "left" ? "মাসান্ত পর্যন্ত রাখুন" : undefined}
+        altLabel={confirmState?.kind === "status" && confirmState.status === "left" ? t("members.keepTillMonthEnd") : undefined}
         onAlt={confirmState?.kind === "status" && confirmState.status === "left" ? () => doStatus(true) : undefined}
         busy={confirmBusy}
         onConfirm={() => {
